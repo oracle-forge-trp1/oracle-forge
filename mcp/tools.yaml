@@ -1,0 +1,123 @@
+# MCP Toolbox Configuration — Oracle Forge
+# Defines database connections and tools for the data agent
+# Toolbox version: 0.30.0
+# Docs: github.com/googleapis/genai-toolbox
+
+# === SOURCES (Database Connections) ===
+
+---
+kind: source
+name: pg-dab
+type: postgres
+host: 127.0.0.1
+port: 5432
+database: dab_main
+user: oracle_forge
+password: ${PG_PASSWORD}
+
+---
+kind: source
+name: mongo-dab
+type: mongodb
+uri: mongodb://localhost:27017/
+
+---
+kind: source
+name: sqlite-dab
+type: sqlite
+database: /shared/DataAgentBench/query_yelp/query_dataset/yelp.db
+
+---
+# NOTE: DuckDB source — add when DuckDB datasets are loaded (Sprint 2)
+# kind: source
+# name: duckdb-dab
+# type: duckdb
+# database: /shared/DataAgentBench/duckdb/dab.duckdb
+
+# === TOOLS ===
+
+---
+kind: tool
+name: list-tables
+type: postgres-sql
+source: pg-dab
+description: List all tables in the PostgreSQL database
+statement: |
+  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+  ORDER BY table_name;
+
+---
+kind: tool
+name: describe-table
+type: postgres-sql
+source: pg-dab
+description: Get column names and types for a named PostgreSQL table
+parameters:
+  - name: table_name
+    type: string
+    description: Name of the table to describe
+statement: |
+  SELECT column_name, data_type, is_nullable
+  FROM information_schema.columns
+  WHERE table_name = $1
+  ORDER BY ordinal_position;
+
+---
+kind: tool
+name: search-yelp-businesses
+type: postgres-sql
+source: pg-dab
+description: Search Yelp businesses by category in PostgreSQL
+parameters:
+  - name: category
+    type: string
+    description: Business category to filter by (partial match)
+statement: |
+  SELECT business_id, name, city, stars, review_count
+  FROM business
+  WHERE categories ILIKE '%' || $1 || '%'
+  ORDER BY stars DESC
+  LIMIT 50;
+
+---
+kind: tool
+name: sqlite-list-tables
+type: sqlite-sql
+source: sqlite-dab
+description: List all tables in the SQLite Yelp database
+statement: |
+  SELECT name FROM sqlite_master
+  WHERE type = 'table'
+  ORDER BY name;
+
+---
+kind: tool
+name: sqlite-describe-table
+type: sqlite-sql
+source: sqlite-dab
+description: Get column info for a named SQLite table
+parameters:
+  - name: table_name
+    type: string
+    description: Name of the table to describe
+statement: |
+  PRAGMA table_info($1);
+
+# NOTE: Additional tools added incrementally as agent development progresses.
+# MongoDB and DuckDB tools will be added when those datasets are loaded.
+# Do not add a generic free-form SQL execution tool — define specific tools
+# per query pattern to keep the agent's tool surface controlled and auditable.
+
+# === TOOLSET ===
+
+---
+kind: toolset
+name: oracle-forge-sprint1
+tools:
+  - list-tables
+  - describe-table
+  - search-yelp-businesses
+  - sqlite-list-tables
+  - sqlite-describe-table
