@@ -1,0 +1,8 @@
+psycopg2-binary>=2.9.0
+pymongo>=4.6.0
+duckdb>=0.10.0
+pytest>=8.0.0
+# LLM providers for injection testing (install the one you use)
+openai>=1.0.0
+anthropic>=0.30.0
+google-generativeai>=0.7.0
