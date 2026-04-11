@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 
 AGENT_MD_PATH = Path(__file__).parent / "AGENT.md"
 DEFAULT_MODEL  = "anthropic/claude-haiku-4.5"
-MAX_ITERATIONS = 20
+MAX_ITERATIONS = 30
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
 
 logger = logging.getLogger(__name__)
@@ -162,6 +162,36 @@ def execute_duckdb_query(args: dict, db_path: str) -> dict:
         logger.error("DuckDB query failed: %s", exc)
         return {"success": False, "error": str(exc), "rows": 0, "data": []}
 
+# ── MongoDB restore ───────────────────────────────────────────────────────────
+
+def restore_mongodb(db_config_path: str) -> None:
+    """
+    Restore MongoDB collections from BSON dump folders defined in db_config.yaml.
+    Mirrors what the DAB scaffold does before each run.
+    """
+    import subprocess
+    config_path = Path(db_config_path).resolve()
+    config      = yaml.safe_load(config_path.read_text())
+    base_dir    = config_path.parent
+
+    for logical_name, details in config.get("db_clients", {}).items():
+        if details.get("db_type") != "mongo":
+            continue
+        dump_folder = details.get("dump_folder")
+        if not dump_folder:
+            continue
+        dump_path = base_dir / dump_folder
+        if not dump_path.exists():
+            logger.warning("MongoDB dump folder not found: %s", dump_path)
+            continue
+        cmd = ["mongorestore", "--drop", "--dir", str(dump_path)]
+        logger.info("Restoring MongoDB from %s ...", dump_path)
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info("MongoDB restore OK: %s", result.stderr.strip().splitlines()[-1])
+        else:
+            logger.error("MongoDB restore failed: %s", result.stderr[-300:])
+
 # ── Config loader ─────────────────────────────────────────────────────────────
 
 def load_db_config(db_config_path: str) -> dict:
@@ -242,6 +272,9 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
     """
     load_dotenv()
 
+    # Restore MongoDB collections from dump (matches DAB scaffold behaviour)
+    restore_mongodb(db_config_path)
+
     # Load DB connections from config
     connections = load_db_config(db_config_path)
 
@@ -277,6 +310,8 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
                 model=model,
                 messages=messages,
                 tools=TOOLS,
+                temperature=0,
+                max_tokens=4096,
                 timeout=120
             )
         except Exception as exc:

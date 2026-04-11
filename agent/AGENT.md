@@ -86,14 +86,17 @@ Record both the failed query and the corrected one in the query trace.
 ## 6. Unstructured Text Handling
 
 MongoDB `business.description` stores location as natural language. No structured address field exists.
+Descriptions use different formats — some say "Located at … in City, ST,", others "Situated at … in City, ST,", others "This City, ST location…".
+**Use the simple comma-state pattern** — it works for all formats:
 
 ```python
 import re
-m = re.search(r"Located at .+ in ([^,]+),\s*([A-Z]{2})", doc["description"], re.IGNORECASE)
-city, state = m.group(1).strip(), m.group(2).strip()
+# Extract state code: find ", ST," or ", ST " anywhere in description
+m = re.search(r",\s*([A-Z]{2})(?:,|\s)", doc["description"])
+state = m.group(1).upper() if m else None
 ```
 
-Use **exact** city + state match — partial matching over-counts results.
+**Never use** the "Located at .+ in City, ST" pattern — it misses businesses that use "Situated at" or city-first descriptions, silently under-counting and producing wrong averages.
 
 DuckDB date formats (same column, three patterns):
 - `"August 01, 2016 at 03:44 AM"` → `'%B %d, %Y at %I:%M %p'`
@@ -110,6 +113,51 @@ DuckDB date formats (same column, three patterns):
 
 ## 8. Known Corrections
 
-> **TO BE POPULATED from `kb/corrections/corrections-log.md`**
->
-> Read before answering any query. If a similar query has failed before, apply the documented fix.
+> Additional corrections in `kb/corrections/corrections-log.md`. Read before answering any query.
+
+**[CORRECTION 1] Weighted vs unweighted average across businesses**
+- **Query type:** "What is the average rating of businesses in [location]?"
+- **Wrong approach:** GROUP BY business, get per-business AVG, then average those → returns ~3.86
+- **Root cause:** Businesses with few reviews get equal weight to businesses with many reviews
+- **Correct approach:** Flat `SELECT AVG(rating) FROM review WHERE business_ref IN (...)` over all review rows → returns 3.547
+- **Rule:** Never average a column of averages. Always aggregate over the raw review rows directly.
+
+**[CORRECTION 3] MongoDB `attributes` field — serialized string values, not native types**
+- **Problem:** All values in the `attributes` dict are stored as Python-representation strings, not native booleans or dicts. Using `== True` or `== "free"` will return zero matches.
+- **Boolean attributes** (e.g. `BikeParking`, `BusinessAcceptsCreditCards`): stored as string `'True'` / `'False'`
+  ```python
+  # Correct
+  doc['attributes'].get('BikeParking') == 'True'
+  doc['attributes'].get('BusinessAcceptsCreditCards') == 'True'
+  ```
+- **WiFi**: stored as Python-2-style unicode string `"u'free'"`, `"u'paid'"`, `"'free'"`, `"'no'"`, `"u'no'"`
+  ```python
+  # Correct — detect WiFi available
+  wifi = doc['attributes'].get('WiFi', '')
+  has_wifi = 'free' in wifi or 'paid' in wifi
+  # MongoDB query equivalent
+  {"attributes.WiFi": {"$in": ["u'free'", "'free'", "u'paid'", "'paid'"]}}
+  ```
+- **BusinessParking**: stored as a serialized Python dict string — must `ast.literal_eval` before checking keys
+  ```python
+  import ast
+  bp_str = doc['attributes'].get('BusinessParking', '{}')
+  bp = ast.literal_eval(bp_str) if isinstance(bp_str, str) else bp_str
+  has_parking = isinstance(bp, dict) and any(bp.values())
+  ```
+- **Rule:** Never compare attribute values to Python booleans or plain strings without checking the format above first.
+
+**[CORRECTION 2] Answer format — lead with the key value**
+- **Query type:** "Which [X] has the highest [Y], and what is its [Z]?"
+- **Wrong format:** "Pennsylvania (PA) has the highest number... The average rating for those businesses is 3.48." (number is 80+ chars from the state name — validation window misses it)
+- **Correct format:** Lead with the concise key-value pair: `"PA, 3.48"` or `"Pennsylvania: 3.48"` — put the name and number close together in the first sentence.
+
+**[CORRECTION 4] Location extraction — use simple `,\s*STATE` pattern, not "Located at" regex**
+- **Problem:** Some descriptions say "Situated at … in City, ST," or "This City, ST location…" — they never say "Located at". The regex `Located at .+ in ([^,]+),\s*([A-Z]{2})` misses ~8% of businesses, producing wrong state-level averages.
+- **Root cause:** Greedy `.+` also picks up wrong states when " in " appears multiple times in the description.
+- **Correct approach:**
+  ```python
+  m = re.search(r",\s*([A-Z]{2})(?:,|\s)", doc["description"])
+  state = m.group(1).upper() if m else None
+  ```
+- **Rule:** Always use the comma-state pattern for state extraction. Never use the "Located at" pattern.
