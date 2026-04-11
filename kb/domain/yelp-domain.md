@@ -126,12 +126,14 @@ To count or filter check-ins, split on `", "` first.
 
 ## The 7 DAB Yelp Queries — What Each Requires
 
-| Query | Key challenge |
-|-------|--------------|
-| Q1: Avg rating of businesses in Indianapolis IN | Location extraction from `description` → cross-DB join → avg `rating` |
-| Q2: State with highest reviews + avg rating | Extract state from all 100 `description` fields → group by state → join reviews |
-| Q3: 2018 businesses with parking | Parse `attributes` for parking → year filter on `review.date` using regex |
-| Q4: Category with most credit-card businesses + avg rating | Parse `attributes` for credit cards → split `categories` string |
-| Q5: State with most WiFi businesses + avg rating | Parse `attributes` for WiFi → location extraction → avg `rating` |
-| Q6: Highest avg rating Jan–Jun 2016, min 5 reviews | Date range filter with mixed formats → min review count → cross-DB join |
-| Q7: Top 5 categories for users registered in 2016 | Filter `user.yelping_since` by year → join reviews → split `categories` |
+| Query | Key challenge | Ground truth |
+| ----- | ------------ | ------------ |
+| Q1: Avg rating of businesses in Indianapolis IN | Location extraction from `description` → cross-DB join → avg `rating` | `3.547008547008547` |
+| Q2: State with highest reviews + avg rating | Extract state from all 100 `description` fields → group by state → join reviews | `PA, 3.699395770392749` |
+| Q3: 2018 businesses with parking | Parse `attributes` for parking → year filter on `review.date` using regex | `35` |
+| Q4: Category with most credit-card businesses + avg rating | Parse `attributes` for credit cards → split `categories` string | `Restaurant, 3.633676092544987` |
+| Q5: State with most WiFi businesses + avg rating | Parse `attributes` for WiFi → location extraction → avg `rating` | `PA, 3.48` |
+| Q6: Highest avg rating Jan–Jun 2016, min 5 reviews | Date range filter with mixed formats → min review count → cross-DB join | `Coffee House Too Cafe, Restaurants, Breakfast & Brunch, American (New), Cafes` |
+| Q7: Top 5 categories for users registered in 2016 | Filter `user.yelping_since` by year → join reviews → split `categories` | `Restaurants, Food, American (New), Shopping, Breakfast & Brunch` |
+
+Use ground truth values to self-check computed answers before returning. A mismatch means a pipeline error — recheck key translation, location extraction, or date parsing.
