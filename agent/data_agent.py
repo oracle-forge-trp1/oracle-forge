@@ -2,7 +2,9 @@
 agent/data_agent.py — Oracle Forge Data Analytics Agent
 
 ReAct-style agent: Think → Act (query DB) → Observe → Think → Answer
-Uses Claude via OpenRouter. Connects directly to MongoDB and DuckDB.
+Uses Claude via OpenRouter. Database access routes through the Oracle Forge
+MCP server (mcp/toolbox_server.py) when available; falls back to direct
+Python drivers (pymongo, duckdb) if the MCP server is not running.
 Loads AGENT.md as system context at startup.
 """
 
@@ -15,6 +17,7 @@ from typing import Any
 
 import pymongo
 import duckdb
+import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -24,8 +27,51 @@ AGENT_MD_PATH = Path(__file__).parent / "AGENT.md"
 DEFAULT_MODEL  = "anthropic/claude-haiku-4.5"
 MAX_ITERATIONS = 30
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
+MCP_URL        = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp")
 
 logger = logging.getLogger(__name__)
+
+# ── MCP client ───────────────────────────────────────────────────────────────
+
+_mcp_available: bool | None = None   # None = not yet probed
+
+def _probe_mcp() -> bool:
+    """Return True if the MCP server responds to a tools/list call."""
+    global _mcp_available
+    if _mcp_available is not None:
+        return _mcp_available
+    try:
+        r = requests.post(
+            MCP_URL,
+            json={"jsonrpc": "2.0", "id": 0, "method": "tools/list", "params": {}},
+            timeout=2,
+        )
+        _mcp_available = r.status_code == 200
+    except Exception:
+        _mcp_available = False
+    logger.info("MCP server at %s: %s", MCP_URL, "available" if _mcp_available else "not available (using direct drivers)")
+    return _mcp_available
+
+
+def _call_mcp(tool_name: str, arguments: dict) -> dict:
+    """
+    Call a tool on the MCP server. Returns the same dict shape as the
+    direct driver executors: {success, rows, data} or {success, error}.
+    """
+    try:
+        r = requests.post(
+            MCP_URL,
+            json={"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                  "params": {"name": tool_name, "arguments": arguments}},
+            timeout=120,
+        )
+        r.raise_for_status()
+        rpc_result = r.json().get("result", {})
+        content_text = rpc_result.get("content", [{}])[0].get("text", "{}")
+        return json.loads(content_text)
+    except Exception as exc:
+        logger.warning("MCP call failed, falling back to direct driver: %s", exc)
+        return None   # caller checks for None and falls back
 
 # ── Tool definitions (exposed to the LLM) ────────────────────────────────────
 
@@ -234,7 +280,26 @@ def load_db_config(db_config_path: str) -> dict:
 # ── Tool dispatcher ───────────────────────────────────────────────────────────
 
 def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
-    """Route a tool call to the correct database executor."""
+    """
+    Route a tool call to the correct database executor.
+
+    Priority:
+      1. Oracle Forge MCP server (mcp/toolbox_server.py) when running — this
+         is the standard interface the challenge requires.
+      2. Direct Python drivers (pymongo / duckdb) as fallback when the MCP
+         server is not available.
+    """
+    if tool_name == "return_answer":
+        return {"success": True, "answer": tool_args.get("answer", "")}
+
+    # Attempt MCP route for DB tools
+    if tool_name in ("query_mongodb", "query_duckdb") and _probe_mcp():
+        result = _call_mcp(tool_name, tool_args)
+        if result is not None:
+            return result
+        # MCP call failed — fall through to direct drivers below
+
+    # Direct driver fallback
     if tool_name == "query_mongodb":
         logical = tool_args["db_name"]
         if logical not in connections["mongo"]:
@@ -249,9 +314,6 @@ def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
             available = list(connections["duckdb"].keys())
             return {"success": False, "error": f"Unknown DuckDB db_name '{logical}'. Available: {available}"}
         return execute_duckdb_query(tool_args, connections["duckdb"][logical])
-
-    elif tool_name == "return_answer":
-        return {"success": True, "answer": tool_args.get("answer", "")}
 
     else:
         return {"success": False, "error": f"Unknown tool: {tool_name}"}

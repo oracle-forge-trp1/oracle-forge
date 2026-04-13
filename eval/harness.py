@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EVAL_DIR = Path(__file__).resolve().parent
 AGENT_DIR = REPO_ROOT / "agent"
 CHILD_SCRIPT = EVAL_DIR / "agent_runner_child.py"
-DEFAULT_DAB = "/shared/DataAgentBench"
+DEFAULT_DAB = str(REPO_ROOT / "DataAgentBench")
 SCORE_LOG = EVAL_DIR / "score_log.json"
 QUERY_TIMEOUT_SEC = 120
 

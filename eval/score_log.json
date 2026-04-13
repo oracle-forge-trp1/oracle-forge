@@ -1,1 +1,78 @@
-[]
+[
+  {
+    "run_id": "2026-04-13-001",
+    "dataset": "yelp",
+    "date": "2026-04-13",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "dummy",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.026,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "No answer",
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  }
+]
