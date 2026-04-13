@@ -1,14 +1,8 @@
 # Community Participation Log
 
-Substantive comments on Reddit, Discord, and X threads. Updated daily.
-
-## Entry Template:
-
-**Date:** YYYY-MM-DD
-**Platform:** Reddit / Discord / X
-**Thread/post:** [URL]
-**Our comment:** [URL or paste]
-**Summary:**
-[what was said, what response it got]
-
----
+## April 9, 2026
+- **GitHub Watch** — ucbepic/DataAgentBench (All Activity)
+  https://github.com/ucbepic/DataAgentBench
+- **Joined** @oracle-forge-trp1 GitHub organization
+- **Joined** r/MachineLearning — https://reddit.com/r/MachineLearning
+- **Joined** r/LocalLLaMA — https://reddit.com/r/LocalLLaMA
