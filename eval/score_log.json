@@ -150,5 +150,385 @@
         "error": null
       }
     ]
+  },
+  {
+    "run_id": "2026-04-13-003",
+    "dataset": "yelp",
+    "date": "2026-04-13",
+    "total_queries": 7,
+    "passed": 3,
+    "failed": 4,
+    "pass_at_1": 0.4286,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Perfect! I've found the answer by querying both databases.\n\n## Query Trace\n\n**Step 1: MongoDB Query** — Identified businesses in Indianapolis, Indiana\n- Database: `businessinfo_database` (MongoDB)\n- Collection: `business`\n- Query: `{\"description\": {\"$regex\": \"Indianapolis|IN\"}}`\n- Result: Found 12 businesses with \"Indianapolis\" or \"IN\" in their description. After filtering for those specifically in Indianapolis (excluding Avon and Fishers), I identified **8 businesses**:\n  - businessid_52 (Architectural Antiques of Indianapolis)\n  - businessid_84 (Gamestop)\n  - businessid_76 (Big Lots)\n  - businessid_87 (Jordans Fish and Chicken)\n  - businessid_65 (Pat Flynn's Public House)\n  - businessid_94 (Taste of Europe)\n  - businessid_90 (Long John Silver's)\n  - businessid_16 (Fox and Hound English Pub and Grille)\n\n**Step 2: DuckDB Query** — Calculated average rating for these businesses\n- Database: `user_database` (DuckDB)\n- Table: `review`\n- Query: Aggregated all reviews for the 8 Indianapolis businesses using the cross-database join key translation (businessid_N → businessref_N)\n- Result: Computed flat average across all review rows (following CORRECTION 1 — never average per-business averages)\n\n## Answer\n\n**3.55** (rounded to 2 decimal places) or **3.547008547008547** (exact)\n\nThe average rating of all businesses located in Indianapolis, Indiana is approximately **3.55 stars**, based on all reviews in the system for those 8 businesses.",
+        "passed": true,
+        "execution_time_sec": 17.701,
+        "validation_message": "Found matching number: 3.55 ≈ 3.55",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Pennsylvania (PA), 3.70",
+        "passed": true,
+        "execution_time_sec": 66.234,
+        "validation_message": "Found: name='PA', value≈3.7",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "33",
+        "passed": false,
+        "execution_time_sec": 26.808,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "I cannot answer this question because the MongoDB business collection does not contain a \"category\" field. While the data includes 100 businesses with various attributes (including BusinessAcceptsCreditCards), there is no explicit categorization system in the database schema. To answer which business category has the largest number of credit card accepting businesses, the data would need to include a category field or a separate categories collection that links businesses to their categories.",
+        "passed": false,
+        "execution_time_sec": 50.113,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "PA, 3.69\n\nPennsylvania (PA) has the highest number of businesses that offer WiFi with 19 businesses, and the average rating for those businesses is 3.69.\n\nQuery Trace:\n1. Database: MongoDB (businessinfo_database, collection: business)\n   - Query: Retrieved all 100 businesses with their business_id, description, and attributes\n   - Result: Extracted WiFi availability from attributes field and state from description using regex pattern `,\\s*([A-Z]{2})(?:,|\\s)`\n   - Found 19 businesses with WiFi (free or paid) in PA, 5 in FL, 4 in IN, 3 in NJ, 2 in ID, 2 in MO, 1 in AZ, 1 in CA, 1 in IL, 1 in LA, 1 in NV, 1 in TN\n\n2. Database: DuckDB (user_database, table: review)\n   - Query: Calculated average rating for all reviews of the 19 PA WiFi businesses by joining on business_ref (businessref_64, businessref_54, businessref_91, businessref_93, businessref_89, businessref_97, businessref_40, businessref_44, businessref_51, businessref_26, businessref_6, businessref_20, businessref_77, businessref_82, businessref_86, businessref_25, businessref_43, businessref_55, businessref_67)\n   - Result: Average rating = 3.6941580756013748 ≈ 3.69 (rounded to 2 decimal places)",
+        "passed": false,
+        "execution_time_sec": 21.829,
+        "validation_message": "Number near 'PA' does not match ≈3.48",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Coffee House Too Cafe received the highest average rating of 4.29 between January 1, 2016 and June 30, 2016 (with 7 reviews). It belongs to the categories: Restaurants, Breakfast & Brunch, American (New), and Cafes.",
+        "passed": true,
+        "execution_time_sec": 9.947,
+        "validation_message": "Name and all categories are present.",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Based on reviews from users who registered on Yelp in 2016, the 5 business categories that have received the most total reviews from those users since 2016 are:\n\n1. **Pet Services** (Pit Stop HQ - businessid_79) - 8 reviews\n2. **Home Services/Restaurants** (Big Boys Moving And Storage - businessid_57) - 7 reviews\n3. **Fitness & Instruction** (Orangetheory Fitness Carrollwood - businessid_37) - 6 reviews\n4. **Grocery/Food** (The Fresh Market - businessid_45) - 5 reviews\n5. **Vietnamese/Restaurants** (Hanoi's Pho - businessid_67) - 5 reviews\n\n**Query Trace:**\n1. **Database: user_database (DuckDB)** - Identified users with yelping_since in 2016 using TRY_STRPTIME with multiple date formats\n2. **Database: user_database (DuckDB)** - Counted reviews from those 2016-registered users for reviews dated 2016 or later, grouped by business_ref\n3. **Database: businessinfo_database (MongoDB)** - Retrieved business names and descriptions for the top 5 business_ref values to extract categories\n\nThe top business by review count is Pit Stop HQ (Pet Services) with 8 reviews, followed by Big Boys Moving And Storage (Home Services/Restaurants) with 7 reviews.",
+        "passed": false,
+        "execution_time_sec": 43.776,
+        "validation_message": "Missing category: american (new)",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-13-004",
+    "dataset": "yelp",
+    "date": "2026-04-13",
+    "total_queries": 7,
+    "passed": 3,
+    "failed": 4,
+    "pass_at_1": 0.4286,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "3.55",
+        "passed": true,
+        "execution_time_sec": 14.432,
+        "validation_message": "Found matching number: 3.55 ≈ 3.55",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "",
+        "passed": false,
+        "execution_time_sec": 120.1,
+        "validation_message": null,
+        "error": "agent_timeout_after_120s"
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "35\n\nDuring 2018, 35 businesses that received reviews offered either business parking or bike parking.\n\nQuery trace:\n1. DuckDB (user_database): Identified 67 distinct businesses that received reviews in 2018 using COALESCE date parsing across all 6 date formats.\n2. MongoDB (businessinfo_database): Retrieved attributes for all 67 businesses to check for BikeParking='True' or BusinessParking with at least one parking type set to True.\n3. Analysis: Of the 67 businesses, 35 had either BikeParking='True' or BusinessParking with at least one value (garage, street, validated, lot, or valet) set to True.",
+        "passed": true,
+        "execution_time_sec": 36.831,
+        "validation_message": "Found number: 35",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "",
+        "passed": false,
+        "execution_time_sec": 120.105,
+        "validation_message": null,
+        "error": "agent_timeout_after_120s"
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "PA, 3.72\n\nPennsylvania (PA) has the highest number of businesses that offer WiFi with 7 businesses (businessid_89, businessid_97, businessid_67, businessid_77, businessid_86, businessid_40, businessid_44, businessid_82). The average rating for these WiFi-offering businesses across all states is 3.72 (based on 651 total reviews from 21 WiFi-enabled businesses).\n\nQuery trace:\n1. MongoDB businessinfo_database.business: Queried for all businesses with WiFi attribute containing 'free' or 'paid' (21 businesses found)\n2. Extracted states from descriptions using comma-state pattern:\n   - PA: 7 businesses (Cheltenham, Havertown, Philadelphia x4, King of Prussia)\n   - FL: 5 businesses (Tampa x2, Seminole, St. Petersburg x2)\n   - IL: 1 business (Troy)\n   - LA: 1 business (New Orleans)\n   - MO: 1 business (Saint Louis)\n   - NV: 1 business (Reno)\n   - ID: 1 business (Boise)\n   - IN: 1 business (Indianapolis)\n   - AB (Canada): 2 businesses (Edmonton)\n3. DuckDB user_database.review: Calculated overall average rating across all 21 WiFi businesses = 3.72 (651 reviews)",
+        "passed": false,
+        "execution_time_sec": 24.862,
+        "validation_message": "Number near 'PA' does not match ≈3.48",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Coffee House Too Cafe, 4.375 average rating. Categories: Restaurants, Breakfast & Brunch, American (New), Cafes",
+        "passed": true,
+        "execution_time_sec": 12.494,
+        "validation_message": "Name and all categories are present.",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Based on analysis of users who registered on Yelp in 2016, the 5 business categories that have received the most total reviews from those users since 2016 are:\n\n1. **Restaurants** - 20 reviews (appears in 4 of the top 5 businesses: businessid_57, businessid_67, and others)\n2. **Food** - 18 reviews (appears in 3 of the top 5 businesses: businessid_57, businessid_45, businessid_67)\n3. **Pet Services** - 8 reviews (Pet Groomers, Pet Stores, Pet Training, Dog Walkers, Pet Services, Pets, Pet Sitting from businessid_79)\n4. **Fitness & Instruction** - 6 reviews (Fitness & Instruction, Gyms, Boot Camps, Trainers, Active Life, Interval Training Gyms from businessid_37)\n5. **Home Services** - 7 reviews (appears in businessid_57 and related service categories)\n\nQuery trace:\n- Database 1 (DuckDB user_database): Identified 168 users who registered in 2016 using COALESCE date parsing\n- Database 2 (DuckDB user_database): Found 62 distinct businesses reviewed by these users since 2016, with review counts per business\n- Database 3 (MongoDB businessinfo_database): Retrieved business descriptions for the top 5 businesses by review count\n- Top 5 businesses by review volume: businessref_79 (8 reviews), businessref_57 (7 reviews), businessref_37 (6 reviews), businessref_45 (5 reviews), businessref_67 (5 reviews)\n- Categories extracted from business descriptions using pattern matching on natural language text",
+        "passed": false,
+        "execution_time_sec": 36.225,
+        "validation_message": "Missing category: american (new)",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-13-005",
+    "dataset": "yelp",
+    "date": "2026-04-13",
+    "total_queries": 7,
+    "passed": 2,
+    "failed": 5,
+    "pass_at_1": 0.2857,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "3.55",
+        "passed": true,
+        "execution_time_sec": 10.153,
+        "validation_message": "Found matching number: 3.55 ≈ 3.55",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Pennsylvania (PA) has the highest number of reviews with 626 total reviews, and the average rating of businesses in that state is 3.78.",
+        "passed": false,
+        "execution_time_sec": 60.546,
+        "validation_message": "No number found near name: PA",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "23\n\nDuring 2018, 23 businesses that received reviews offered either business parking or bike parking.\n\nQuery trace:\n1. **DuckDB (user_database)**: Identified 67 distinct businesses that received reviews in 2018 using COALESCE date parsing across all 6 date formats.\n2. **MongoDB (businessinfo_database)**: Retrieved all 100 businesses with their attributes, then cross-referenced the 67 businesses from step 1.\n3. **Analysis**: For each of the 67 businesses, checked if:\n   - BikeParking attribute == 'True', OR\n   - BusinessParking attribute contains at least one True value (parsed from serialized dict string)\n   \nResult: 23 businesses met the criteria (had either bike parking or business parking with at least one parking type available).",
+        "passed": false,
+        "execution_time_sec": 10.362,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Restaurants, 3.59\n\n**Query Trace:**\n\n1. **MongoDB (businessinfo_database.business)**: Retrieved all 100 businesses with their attributes and descriptions.\n   - Filtered for businesses where `attributes.BusinessAcceptsCreditCards == 'True'` (note: stored as string, not boolean)\n   - Found 62 businesses that accept credit cards\n\n2. **Category Extraction**: Parsed the `description` field of each credit-card-accepting business using regex patterns to extract categories embedded in natural language:\n   - Patterns: `\"categor(?:y|ies) of '?(.+?)'?\\.\"`, `\"(?:menu|experience|selection) (?:featuring|of|with) (.+?)\\.\"`, etc.\n   - Split extracted text on `, ` and stripped leading `\"and \"`\n\n3. **Category Aggregation**: For each category, summed the total review counts from all businesses in that category (from DuckDB review table):\n   - Restaurants: 22 businesses, 490 total reviews\n   - Beauty & Spas: 11 businesses, 189 total reviews\n   - Health & Medical: 9 businesses, 108 total reviews\n   - Shopping: 8 businesses, 145 total reviews\n   - (and others with fewer reviews)\n\n4. **DuckDB (user_database.review)**: Computed average rating for the 22 Restaurants businesses that accept credit cards:\n   - Query: `SELECT AVG(rating) FROM review WHERE business_ref IN (businessref_10, businessref_27, businessref_48, businessref_50, businessref_26, businessref_93, businessref_95, businessref_32, businessref_67, businessref_86, businessref_53, businessref_44, businessref_43, businessref_9, businessref_20, businessref_82, businessref_12, businessref_13, businessref_36, businessref_96, businessref_25, businessref_90)`\n   - Result: **3.59** (3.5913978494623655)\n\n**Answer:** The business category with the largest number of businesses that accept credit card payments is **Restaurants** with **22 businesses**, and the average rating for these restaurants is **3.59**.",
+        "passed": false,
+        "execution_time_sec": 45.272,
+        "validation_message": "Value '3.63' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Pennsylvania (PA), 3.71\n\nPennsylvania has the highest number of businesses that offer WiFi with 7 businesses (businessid_64, businessid_89, businessid_97, businessid_40, businessid_44, businessid_82, businessid_86), and the average rating for those businesses is 3.71 (based on 607 total reviews across all 19 WiFi-offering businesses in the dataset).\n\nQuery trace:\n1. MongoDB businessinfo_database, collection business: Retrieved all 100 business documents and identified 19 businesses with WiFi available (WiFi attribute containing 'free' or 'paid'). Extracted state from description field using comma-state pattern.\n2. State distribution of WiFi businesses: PA (7), FL (5), IN (4), MO (2), ID (1)\n3. DuckDB user_database, review table: Computed average rating across all 607 reviews for the 19 WiFi-offering businesses, yielding 3.71.",
+        "passed": false,
+        "execution_time_sec": 16.316,
+        "validation_message": "Number near 'PA' does not match ≈3.48",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Coffee House Too Cafe, 4.375. Categories: Restaurants, Breakfast & Brunch, American (New), Cafes",
+        "passed": true,
+        "execution_time_sec": 22.275,
+        "validation_message": "Name and all categories are present.",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "The 5 business categories that have received the most total reviews from users who registered on Yelp in 2016 (since 2016) are:\n\n1. **Restaurants** - 67 total reviews\n2. **Food** - 33 total reviews\n3. **American (New)** - 26 total reviews\n4. **Shopping** - 16 total reviews\n5. **Bars** - 14 total reviews\n\n**Query Trace:**\n- **Database 1 (DuckDB user_database):** Identified 168 users who registered in 2016 using COALESCE across all date formats in the `yelping_since` column. Then queried the `review` table to find all reviews from these users dated 2016 or later, grouping by `business_ref` to get review counts per business (62 businesses total).\n- **Database 2 (MongoDB businessinfo_database):** Retrieved the `description` field for all 62 businesses to extract category information embedded in natural language text.\n- **Category Aggregation:** Extracted categories from each business description using regex patterns and summed review counts across all businesses sharing each category. The top 5 categories by total review volume are listed above.",
+        "passed": false,
+        "execution_time_sec": 61.53,
+        "validation_message": "Missing category: breakfast & brunch",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-13-006",
+    "dataset": "yelp",
+    "date": "2026-04-13",
+    "total_queries": 7,
+    "passed": 1,
+    "failed": 6,
+    "pass_at_1": 0.1429,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "The average rating of all businesses located in Indianapolis, Indiana is 3.55 (or more precisely, 3.547).",
+        "passed": true,
+        "execution_time_sec": 11.86,
+        "validation_message": "Found matching number: 3.55 ≈ 3.55",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 402 - {'error': {'message': 'Prompt tokens limit exceeded: 22321 > 21607. To increase, visit https://openrouter.ai/settings/keys and create a key with a higher weekly limit', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'org_3B7LqR6KG0MSzOr4fEskO8X8zKr'}",
+        "passed": false,
+        "execution_time_sec": 22.961,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 4.18,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 1.124,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.957,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.905,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.934,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-13-007",
+    "dataset": "yelp",
+    "date": "2026-04-13",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 1.055,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.953,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.98,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.939,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.909,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.916,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "passed": false,
+        "execution_time_sec": 0.921,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
   }
 ]

@@ -27,7 +27,7 @@ AGENT_DIR = REPO_ROOT / "agent"
 CHILD_SCRIPT = EVAL_DIR / "agent_runner_child.py"
 DEFAULT_DAB = str(REPO_ROOT / "DataAgentBench")
 SCORE_LOG = EVAL_DIR / "score_log.json"
-QUERY_TIMEOUT_SEC = 120
+QUERY_TIMEOUT_SEC = 240
 MCP_SERVER_SCRIPT = REPO_ROOT / "mcp" / "toolbox_server.py"
 MCP_HEALTH_URL = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp").replace("/mcp", "/health")
 
