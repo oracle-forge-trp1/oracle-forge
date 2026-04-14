@@ -410,7 +410,7 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
             )
         except Exception as exc:
             logger.error("LLM call failed: %s", exc)
-            return f"Agent error: {exc}"
+            return {"answer": f"Agent error: {exc}", "query_trace": query_trace}
 
         msg = response.choices[0].message
 
@@ -465,7 +465,7 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
         final_answer = ""
 
     logger.info("Query trace (%d steps):\n%s", len(query_trace), json.dumps(query_trace, indent=2))
-    return final_answer
+    return {"answer": final_answer, "query_trace": query_trace}
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
@@ -488,12 +488,14 @@ if __name__ == "__main__":
     os.environ.setdefault("OPENROUTER_MODEL", args.model)
 
     db_description = Path(args.db_description).read_text()
-    answer = run_agent(
+    result = run_agent(
         query=args.query,
         db_config_path=args.db_config,
         db_description=db_description
     )
 
     print(f"\n{'─'*60}")
-    print(f"Answer: {answer}")
+    print(f"Answer: {result['answer']}")
+    print(f"Query trace ({len(result['query_trace'])} steps):")
+    print(json.dumps(result['query_trace'], indent=2))
     print(f"{'─'*60}")
