@@ -26,6 +26,7 @@ Never attempt direct string equality across these two fields.
 
 **Category:** Ill-formatted join key
 **Dataset:** Yelp (MongoDB + DuckDB)
+**Verified Fixed:** Yes — runs 003-006 all pass query1 (3.55 matches ground truth 3.547). See PROBE-001.
 
 ---
 
@@ -51,6 +52,7 @@ WHERE TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S') IS NOT NULL
 
 **Category:** Unstructured text extraction / Type mismatch
 **Dataset:** Yelp (DuckDB)
+**Verified Fixed:** Partial — run 004 query3 passes (35), but run 005 regresses to 23 due to ast.literal_eval issue (see PROBE-007). Date parsing itself is fixed.
 
 ---
 
@@ -77,6 +79,7 @@ Apply this extraction in the MongoDB aggregation pipeline using `$regexFind` bef
 
 **Category:** Domain knowledge gap / Unstructured text extraction
 **Dataset:** Yelp (MongoDB)
+**Verified Fixed:** Yes — runs 003-005 all successfully extract state from description for query1 and query2. See PROBE-004.
 
 ---
 
@@ -102,6 +105,7 @@ document["is_open"] == "0"   # True = closed
 
 **Category:** Domain knowledge gap / Type mismatch
 **Dataset:** Yelp (MongoDB)
+**Verified Fixed:** Yes — agent correctly casts review_count as int and is_open as string comparison in runs 003-005. No type errors observed.
 
 ---
 
@@ -124,6 +128,7 @@ count = len(checkin_dates)
 
 **Category:** Unstructured text extraction
 **Dataset:** Yelp (MongoDB)
+**Verified Fixed:** Not directly tested — no query in runs 003-007 required checkin date parsing. Pending re-run with checkin-specific query.
 
 ---
 

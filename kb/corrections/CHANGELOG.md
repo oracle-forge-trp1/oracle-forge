@@ -1,25 +1,28 @@
 # Changelog — kb/corrections
 
-## 2026-04-09
-- Initial directory created; corrections log format defined — [query failed] → [what was wrong] → [correct approach] per Karpathy KB method
-
-## 2026-04-11
-- `corrections-log.md` created with first 5 entries (Entries 001–005) covering Sprint 1 Day 3–4 failures:
-  - Entry 001: Ill-formatted cross-DB join key (businessid_N ≠ businessref_N) — PASS after fix
-  - Entry 002: Mixed date formats in DuckDB (three formats in one column) — PASS after COALESCE
-  - Entry 003: Location extraction from unstructured MongoDB description field — PASS after regex fix
-  - Entry 004: String type coercion for review_count and is_open — PASS after cast
-  - Entry 005: Checkin date splitting (pipe-separated multi-date strings) — PASS after split logic
-
-## 2026-04-12
-- Entries 006–009 added from Sprint 1 evaluation runs (harness runs 003–005):
-  - Entry 006: Stock index symbol + country code proximity pairing — PASS
-  - Entry 007: Forbidden value contamination (query answer should not contain example values from question) — PASS
-  - Entry 008: "Up day" domain definition (close > open, not close > previous close) — PASS
-  - Entry 009: DCA vs. buy-and-hold compounding calculation — PASS
-- Template for future entries added at bottom of log
-
 ## 2026-04-14
+
 - Corrections log reviewed at Sprint 2 kickoff; 9 active entries, all confirmed correct
 - Log is injected into agent system prompt at session start (data_agent.py line 388–389)
 - Future entries to be added as Sprint 2 probe re-runs surface new failure patterns
+
+## 2026-04-13 — v1.0 Initial Corrections from Yelp + StockIndex Runs
+
+- `corrections-log.md` populated with 9 entries from evaluation runs 003-009
+- **Entries 001–005 (Yelp):**
+  - Entry 001: Cross-DB join key mismatch (businessid_N vs businessref_N)
+  - Entry 002: Mixed date format parsing (3 formats in same column)
+  - Entry 003: Location extraction from description field (no city/state columns)
+  - Entry 004: String-typed numeric/boolean fields in MongoDB
+  - Entry 005: Comma-separated checkin dates (not single datetime)
+- **Entries 006–009 (StockIndex):**
+  - Entry 006: Stock index symbol + country code proximity formatting
+  - Entry 007: Forbidden value contamination (single winner, no runners-up)
+  - Entry 008: "Up day" domain definition (close > open, not close > previous close)
+  - Entry 009: DCA vs. buy-and-hold compounding calculation
+- All entries derived from real agent failures documented in eval/score_log.json
+- Categories covered: ill-formatted join key, unstructured text extraction, domain knowledge gap
+
+## 2026-04-09
+
+- Initial directory created; corrections log format defined — [query failed] → [what was wrong] → [correct approach] per Karpathy KB method

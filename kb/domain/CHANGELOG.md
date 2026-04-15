@@ -1,21 +1,38 @@
-# Changelog — kb/domain
+# Domain KB — Changelog
+
+## 2026-04-13 — v2.0 Complete Rewrite (Corrected to Real DAB Datasets)
+
+### Critical Fix
+- **v1.0 contained fabricated datasets** (Retail, Telecom, Healthcare, Finance/AML) that do not exist in DataAgentBench
+- All 5 documents rewritten from scratch using actual DAB repository data (db_config.yaml + db_description.txt for each of the 12 real datasets)
+
+### Added / Updated — dab_schemas.md
+- All 12 real DAB datasets: agnews, bookreview, crmarenapro, deps_dev_v1, github_repos, googlelocal, music_brainz_20k, pancancer_atlas, patents, stockindex, stockmarket, yelp
+- Each dataset: domain, DB types, tables/collections, columns, cross-DB join keys, known issues
+
+### Added / Updated — join_keys.md
+- Real mismatches: yelp businessid_N/businessref_N prefix mismatch, bookreview book_id/purchase_id name mismatch, crmarenapro leading `#` corruption and trailing whitespace
+- Listed datasets with clean keys (no mismatch)
+
+### Added / Updated — query_patterns.md
+- 10 patterns with real dataset examples (yelp cross-DB join, MongoDB aggregation, DuckDB TRY_STRPTIME, PostgreSQL JSONB, CRM key corruption, hierarchical CPC lookup)
+
+### Added / Updated — domain_terms.md
+- Real dataset-specific terms: CRM, Finance/Stock, Biomedical (Variant_Classification), Patents (CPC), Software (package ecosystem, SPDX)
+
+### Added / Updated — unstructured_fields.md
+- All 12 real datasets ranked by unstructured field complexity; per-field extraction approaches
+
+### Added — yelp-domain.md (Sprint 1)
+- Yelp-specific rules: state/city extraction from description field, attribute serialisation format, date COALESCE pattern, category parsing, cross-DB join key translation, 7 DAB queries with ground truth and solution approaches
+- 7 injection tests run; 6 pass immediately, 1 fixed after doc revision (domain_terms.md biomedical codes); all 7 PASS confirmed
+
+## 2026-04-11 — v1.0 Initial Release (SUPERSEDED)
+
+- dab_schemas.md, join_keys.md, query_patterns.md, domain_terms.md, unstructured_fields.md — initial versions
+- **This version was incorrect.** It contained fabricated dataset schemas not present in DAB. Fully replaced by v2.0.
+- Source: fabricated from LLM knowledge rather than actual DAB files
 
 ## 2026-04-09
+
 - Initial directory created; domain KB scope defined — DAB schemas, join key glossary, unstructured field inventory, domain terms
-
-## 2026-04-10
-- `dab_schemas.md` drafted — all 12 DAB datasets documented with DB types (PostgreSQL, MongoDB, SQLite, DuckDB), table structures, and primary join key formats
-- `join_keys.md` drafted — cross-database join key format mismatches catalogued for 7 datasets; includes yelp businessid_N ↔ businessref_N map, CRM # corruption pattern, and normalization code
-- `query_patterns.md` drafted — 10 patterns documented: cross-DB join (Pattern 1), MongoDB aggregation (Pattern 2), DuckDB TRY_STRPTIME mixed dates (Pattern 3), PostgreSQL JSONB (Pattern 4), SQLite (Pattern 5), CRM key corruption (Pattern 6), hierarchy flattening (Pattern 7), unstructured text extraction (Pattern 8), null handling (Pattern 9), large table pagination (Pattern 10)
-
-## 2026-04-11
-- `domain_terms.md` drafted — CRM lead/opportunity/pipeline definitions, finance position/drawdown/alpha terms, biomedical variant classification codes, patent CPC codes, software dependency scoping, review sentiment terms, music ISRC/ISWC formats, news category codes
-- `unstructured_fields.md` drafted — all 12 datasets ranked by unstructured field complexity; extraction approach documented per field type (regex, NLP, structured parsing)
-- `yelp-domain.md` drafted — Yelp-specific rules: state/city extraction from unstructured description field, attribute serialisation format (u'value' strings), date COALESCE pattern for three mixed formats, category parsing, cross-DB join key translation, 7 DAB queries with ground truth answers and solution approaches
-- Yonas committed all domain documents at Day 4 mob session
-
-## 2026-04-13
-- 7 injection tests run against domain KB documents; 6 pass on first attempt
-- `domain_terms.md` Test 7 (biomedical Variant_Classification) initially failed — document revised to include explicit code table; re-test passed
-- All injection test results documented in `injection_tests/test_results.md`
-- `README.md` updated to reflect actual document list (6 docs, not 3 originally planned)
