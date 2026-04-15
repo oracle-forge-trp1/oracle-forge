@@ -1,15 +1,6 @@
 # Engagement Log — Oracle Forge Signal Corps
 
-## Week 8 (April 9–13, 2026)
-
-### April 9, 2026 — Infrastructure & Community Setup
-- Set up Signal Corps infrastructure (GitHub, Cloudflare Workers free tier registered)
-- Identified key X accounts to follow: @adityagp, @UCBEPIC, @tanmaigo, @rakyll
-- Subscribed to DataAgentBench repository (All Activity notifications)
-- Joined @oracle-forge-trp1 GitHub organization
-- Joined r/MachineLearning and r/LocalLLaMA communities
-
-**Daily Slack post:** Infrastructure day — EC2 server being set up, Yelp data loading, KB architecture docs started
+## Week 8 (April 10–13, 2026)
 
 ### April 10, 2026 — First Community Engagement
 - **X reply** to @karpathy post on LLM Knowledge Bases — applied the method to data agent context engineering
