@@ -99,18 +99,4 @@ Sprint 2 is complete when all of the following are verifiably true. "I think it 
 | Apr 18 | P2 | Publish X thread / LinkedIn article. Commit all links to engagement log. |
 | Apr 18 | P2 | Sprint 2 close mob session — walk through final scores across datasets, probes, and submission. |
 
----
 
-## Mob Approval Record
-
-**Status:** PENDING
-
-| Field | Value |
-|-------|-------|
-| Approval date | |
-| Approved by | |
-| Hardest question asked | |
-| Answer given | |
-| Any items sent back for revision | |
-
-*No Construction work begins until this section is filled in and committed.*

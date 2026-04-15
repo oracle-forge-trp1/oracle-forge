@@ -45,6 +45,15 @@ TOOLS_YAML = Path(__file__).resolve().parent / "tools.yaml"
 DAB_ROOT = Path(os.getenv("DATAAGENTBENCH_ROOT", str(REPO_ROOT / "DataAgentBench")))
 MAX_ROWS = 500
 
+# ── Utils import (JoinKeyResolver) ───────────────────────────────────────────
+# Repo root is added to sys.path so `utils` is importable regardless of cwd.
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from utils.join_key_resolver import JoinKeyResolver  # noqa: E402
+
+_join_resolver = JoinKeyResolver()
+
 # ── Tool schemas (for tools/list response) ────────────────────────────────────
 
 TOOL_SCHEMAS: list[dict] = [
@@ -102,6 +111,40 @@ TOOL_SCHEMAS: list[dict] = [
             "required": ["db_name", "sql"],
         },
     },
+    {
+        "name": "normalize_join_key",
+        "description": (
+            "Normalize a cross-database join key to its canonical integer form, "
+            "then optionally re-prefix it for the target database. "
+            "Handles all DAB prefix mismatches: businessid_N→N, businessref_N→N, "
+            "CRM #-prefix corruption, zero-padded integers, trailing whitespace. "
+            "Use this whenever a cross-database join returns 0 rows."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "value":         {"type": "string", "description": "Raw key value to normalize (e.g. 'businessid_42')"},
+                "target_prefix": {"type": "string", "description": "Optional prefix for target DB (e.g. 'businessref_'). If omitted, returns the integer N."},
+            },
+            "required": ["value"],
+        },
+    },
+    {
+        "name": "diagnose_join",
+        "description": (
+            "Diagnose why a cross-database join returned 0 results. "
+            "Pass sample key values (JSON arrays) from both sides. "
+            "Returns detected formats, mismatch type, and a suggested fix."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "left_values":  {"type": "string", "description": "JSON array of sample key values from the left database (e.g. '[\"businessid_1\",\"businessid_2\"]')"},
+                "right_values": {"type": "string", "description": "JSON array of sample key values from the right database (e.g. '[\"businessref_1\",\"businessref_2\"]')"},
+            },
+            "required": ["left_values", "right_values"],
+        },
+    },
 ]
 
 # ── Connection registry — populated from db_config.yaml files ─────────────────
@@ -113,29 +156,45 @@ _postgres_connections: dict[str, dict] = {}   # logical_name → {db_name, host,
 
 
 def register_dataset(db_config_path: str) -> None:
-    """Load a db_config.yaml and register its connections globally."""
+    """Load a db_config.yaml and register its connections globally.
+    Entries whose db_path / dump_folder / sql_file does not exist on disk are skipped
+    (same behaviour as the DAB scaffold db_config.py fix).
+    """
     cfg_path = Path(db_config_path).resolve()
     cfg = yaml.safe_load(cfg_path.read_text())
     base = cfg_path.parent
     for name, details in cfg.get("db_clients", {}).items():
         db_type = details.get("db_type", "")
-        if db_type == "mongo":
-            _mongo_connections[name] = {
-                "db_name": details["db_name"],
-                "uri": os.getenv("MONGO_URI", "mongodb://localhost:27017/"),
-            }
-        elif db_type == "duckdb":
-            _duckdb_connections[name] = str(base / details["db_path"])
-        elif db_type == "sqlite":
-            _sqlite_connections[name] = str(base / details["db_path"])
-        elif db_type in ("postgres", "postgresql"):
-            _postgres_connections[name] = {
-                "db_name":  details["db_name"],
-                "host":     os.getenv("PG_HOST",     "localhost"),
-                "port":     int(os.getenv("PG_PORT", "5432")),
-                "user":     os.getenv("PG_USER",     "oracle_forge"),
-                "password": os.getenv("PG_PASSWORD", "oracle_forge_pw"),
-            }
+
+        # Validate that referenced files/folders actually exist before registering
+        for file_key in ("db_path", "dump_folder", "sql_file"):
+            if file_key in details:
+                resolved = base / details[file_key]
+                if not resolved.exists():
+                    logger.warning(
+                        "[%s] %s does not exist: %s — skipping this client.",
+                        name, file_key, resolved
+                    )
+                    break  # skip this db_client entirely
+        else:
+            # All referenced paths exist (or no file references) — register normally
+            if db_type == "mongo":
+                _mongo_connections[name] = {
+                    "db_name": details["db_name"],
+                    "uri": os.getenv("MONGO_URI", "mongodb://localhost:27017/"),
+                }
+            elif db_type == "duckdb":
+                _duckdb_connections[name] = str(base / details["db_path"])
+            elif db_type == "sqlite":
+                _sqlite_connections[name] = str(base / details["db_path"])
+            elif db_type in ("postgres", "postgresql"):
+                _postgres_connections[name] = {
+                    "db_name":  details["db_name"],
+                    "host":     os.getenv("PG_HOST",     "localhost"),
+                    "port":     int(os.getenv("PG_PORT", "5432")),
+                    "user":     os.getenv("PG_USER",     "oracle_forge"),
+                    "password": os.getenv("PG_PASSWORD", "oracle_forge_pw"),
+                }
     logger.info(
         "Registered dataset from %s: mongo=%s duckdb=%s sqlite=%s postgres=%s",
         cfg_path, list(_mongo_connections), list(_duckdb_connections),
@@ -239,6 +298,61 @@ def _exec_postgres(args: dict) -> dict:
         return {"success": False, "error": str(exc), "rows": 0, "data": []}
 
 
+def _exec_normalize_join_key(args: dict) -> dict:
+    """Normalize a single join key using JoinKeyResolver."""
+    raw = args.get("value")
+    if raw is None:
+        return {"success": False, "error": "Missing required parameter: value"}
+    target_prefix = args.get("target_prefix")
+    try:
+        normalized_int = _join_resolver.normalize(raw, target_type="integer")
+        if target_prefix is not None:
+            result = f"{target_prefix}{normalized_int}"
+        else:
+            result = normalized_int
+        detected = _join_resolver.detect_format([raw])
+        return {
+            "success": True,
+            "original": raw,
+            "normalized_int": normalized_int,
+            "result": result,
+            "detected_format": detected,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+
+def _exec_diagnose_join(args: dict) -> dict:
+    """Diagnose join key mismatches between two sets of sample values."""
+    try:
+        left_vals  = json.loads(args["left_values"])
+        right_vals = json.loads(args["right_values"])
+    except (KeyError, json.JSONDecodeError) as exc:
+        return {"success": False, "error": f"Invalid JSON input: {exc}"}
+    try:
+        left_format  = _join_resolver.detect_format(left_vals)
+        right_format = _join_resolver.detect_format(right_vals)
+        left_norm  = _join_resolver.normalize_batch(left_vals)
+        right_norm = _join_resolver.normalize_batch(right_vals)
+        overlap = set(left_norm) & set(right_norm)
+        return {
+            "success": True,
+            "left_format":  left_format,
+            "right_format": right_format,
+            "left_samples_normalized":  left_norm[:5],
+            "right_samples_normalized": right_norm[:5],
+            "normalized_overlap_count": len(overlap),
+            "suggestion": (
+                "Normalize both sides to integer before joining. "
+                f"Left prefix: '{left_format.get('prefix')}', "
+                f"Right prefix: '{right_format.get('prefix')}'."
+            ) if left_format.get("prefix") != right_format.get("prefix") else
+            "Key formats appear compatible after normalization.",
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+
 # ── MCP dispatcher ────────────────────────────────────────────────────────────
 
 def dispatch(tool_name: str, arguments: dict) -> Any:
@@ -250,6 +364,10 @@ def dispatch(tool_name: str, arguments: dict) -> Any:
         return _exec_sqlite(arguments)
     elif tool_name == "query_postgres":
         return _exec_postgres(arguments)
+    elif tool_name == "normalize_join_key":
+        return _exec_normalize_join_key(arguments)
+    elif tool_name == "diagnose_join":
+        return _exec_diagnose_join(arguments)
     return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
 

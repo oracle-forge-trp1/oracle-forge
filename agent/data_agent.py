@@ -9,6 +9,7 @@ Loads AGENT.md as system context at startup.
 """
 
 import os
+import sys
 import json
 import logging
 import yaml
@@ -23,13 +24,27 @@ import psycopg2.extras
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# ── Utils import (SchemaIntrospector) ────────────────────────────────────────
+# Repo root is added to sys.path so `utils` is importable regardless of cwd.
+_REPO_ROOT = Path(__file__).parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+try:
+    from utils.schema_introspector import SchemaIntrospector
+    _SCHEMA_INTROSPECTOR = SchemaIntrospector()
+except ImportError:
+    _SCHEMA_INTROSPECTOR = None  # type: ignore[assignment]
+
 # ── Constants ────────────────────────────────────────────────────────────────
 
-AGENT_MD_PATH = Path(__file__).parent / "AGENT.md"
-DEFAULT_MODEL  = "anthropic/claude-haiku-4.5"
-MAX_ITERATIONS = 30
+AGENT_MD_PATH   = Path(__file__).parent / "AGENT.md"
+KB_ROOT         = Path(__file__).parent.parent / "kb"
+CORRECTIONS_LOG = KB_ROOT / "corrections" / "corrections-log.md"
+DEFAULT_MODEL   = "anthropic/claude-haiku-4.5"
+MAX_ITERATIONS  = 30
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
-MCP_URL        = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp")
+MCP_URL         = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp")
 
 logger = logging.getLogger(__name__)
 
@@ -350,6 +365,178 @@ def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
 
     return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
+# ── System prompt builder ─────────────────────────────────────────────────────
+
+def _build_system_prompt(
+    db_config_path: str, db_description: str, connections: dict | None = None
+) -> str:
+    """
+    Assemble the full system prompt from five layers:
+      1. AGENT.md           — generic ReAct protocol (dataset-agnostic)
+      2. Corrections log    — kb/corrections/corrections-log.md (all past failures + fixes)
+      3. Domain KB          — kb/domain/<dataset>.md if it exists
+      4. Live schema        — dynamically introspected from each connected DB (SchemaIntrospector)
+      5. DB description     — passed in from harness (human-written schema + hints)
+    """
+    parts: list[str] = []
+
+    # 1. Generic agent protocol
+    if AGENT_MD_PATH.exists():
+        parts.append(AGENT_MD_PATH.read_text())
+
+    # 2. Corrections log — always inject (critical: prevents repeat failures)
+    if CORRECTIONS_LOG.exists():
+        parts.append("---\n\n## CORRECTIONS LOG\n\n" + CORRECTIONS_LOG.read_text())
+    else:
+        logger.warning("Corrections log not found: %s", CORRECTIONS_LOG)
+
+    # 3. Dataset-specific domain knowledge
+    dataset_name = Path(db_config_path).parent.name.replace("query_", "")
+    domain_file  = KB_ROOT / "domain" / f"{dataset_name}.md"
+    if domain_file.exists():
+        parts.append(f"---\n\n## DOMAIN KNOWLEDGE ({dataset_name})\n\n" + domain_file.read_text())
+
+    # 4. Live schema — introspect each connected DB and format as markdown
+    if _SCHEMA_INTROSPECTOR is not None and connections:
+        schema_sections: list[str] = []
+
+        for logical_name, cfg in connections.get("mongo", {}).items():
+            try:
+                schema = _SCHEMA_INTROSPECTOR.introspect(
+                    "mongodb",
+                    connection_string=cfg["uri"],
+                    db_name=cfg["db_name"],
+                )
+                schema_sections.append(
+                    f"### {logical_name} (MongoDB — {cfg['db_name']})\n"
+                    + _SCHEMA_INTROSPECTOR.format_for_context(schema)
+                )
+            except Exception as exc:
+                logger.warning("Schema introspection failed for %s: %s", logical_name, exc)
+
+        for logical_name, db_path in connections.get("duckdb", {}).items():
+            if Path(db_path).exists():
+                try:
+                    schema = _SCHEMA_INTROSPECTOR.introspect("duckdb", path=db_path)
+                    schema_sections.append(
+                        f"### {logical_name} (DuckDB — {Path(db_path).name})\n"
+                        + _SCHEMA_INTROSPECTOR.format_for_context(schema)
+                    )
+                except Exception as exc:
+                    logger.warning("Schema introspection failed for %s: %s", logical_name, exc)
+
+        for logical_name, db_path in connections.get("sqlite", {}).items():
+            if Path(db_path).exists():
+                try:
+                    schema = _SCHEMA_INTROSPECTOR.introspect("sqlite", path=db_path)
+                    schema_sections.append(
+                        f"### {logical_name} (SQLite — {Path(db_path).name})\n"
+                        + _SCHEMA_INTROSPECTOR.format_for_context(schema)
+                    )
+                except Exception as exc:
+                    logger.warning("Schema introspection failed for %s: %s", logical_name, exc)
+
+        for logical_name, cfg in connections.get("postgres", {}).items():
+            try:
+                conn_str = (
+                    f"postgresql://{cfg['user']}:{cfg['password']}"
+                    f"@{cfg['host']}:{cfg['port']}/{cfg['db_name']}"
+                )
+                schema = _SCHEMA_INTROSPECTOR.introspect("postgresql", connection_string=conn_str)
+                schema_sections.append(
+                    f"### {logical_name} (PostgreSQL — {cfg['db_name']})\n"
+                    + _SCHEMA_INTROSPECTOR.format_for_context(schema)
+                )
+            except Exception as exc:
+                logger.warning("Schema introspection failed for %s: %s", logical_name, exc)
+
+        if schema_sections:
+            parts.append("---\n\n## LIVE SCHEMA\n\n" + "\n\n".join(schema_sections))
+
+    # 5. Current dataset schema / DB description (human-written, always present)
+    parts.append("---\n\n## DATABASE DESCRIPTION\n\n" + db_description)
+
+    return "\n\n".join(parts).strip()
+
+
+# ── PostgreSQL loader ─────────────────────────────────────────────────────────
+
+def ensure_postgres_loaded(db_config_path: str) -> None:
+    """
+    For each PostgreSQL entry in db_config.yaml, check if the database exists.
+    If not and a sql_file is provided, load it via psql.
+    Skips gracefully when the oracle_forge user lacks superuser privileges.
+    """
+    import subprocess
+    config_path = Path(db_config_path).resolve()
+    config      = yaml.safe_load(config_path.read_text())
+    base_dir    = config_path.parent
+
+    pg_user     = os.getenv("PG_USER",     "oracle_forge")
+    pg_password = os.getenv("PG_PASSWORD", "oracle_forge_pw")
+    pg_host     = os.getenv("PG_HOST",     "localhost")
+    pg_port     = int(os.getenv("PG_PORT", "5432"))
+
+    for logical_name, details in config.get("db_clients", {}).items():
+        if details.get("db_type") not in ("postgres", "postgresql"):
+            continue
+        db_name  = details.get("db_name", "")
+        sql_file = details.get("sql_file")
+        if not db_name:
+            continue
+
+        # Check if database already exists
+        try:
+            conn = psycopg2.connect(
+                dbname="postgres", user=pg_user, password=pg_password,
+                host=pg_host, port=pg_port
+            )
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+            exists = cur.fetchone() is not None
+            conn.close()
+        except Exception as exc:
+            logger.warning("Cannot check PostgreSQL for %s: %s", logical_name, exc)
+            continue
+
+        if exists:
+            logger.info("PostgreSQL DB '%s' already exists — skipping load.", db_name)
+            continue
+
+        if not sql_file:
+            logger.warning("PostgreSQL DB '%s' missing and no sql_file specified.", db_name)
+            continue
+
+        sql_path = base_dir / sql_file
+        if not sql_path.exists():
+            logger.warning("PostgreSQL sql_file not found: %s", sql_path)
+            continue
+
+        # Create DB then load
+        try:
+            conn = psycopg2.connect(
+                dbname="postgres", user=pg_user, password=pg_password,
+                host=pg_host, port=pg_port
+            )
+            conn.autocommit = True
+            conn.cursor().execute(f'CREATE DATABASE "{db_name}"')
+            conn.close()
+        except Exception as exc:
+            logger.warning("Could not create PostgreSQL DB '%s': %s — skipping.", db_name, exc)
+            continue
+
+        env = os.environ.copy()
+        env["PGPASSWORD"] = pg_password
+        cmd = ["psql", "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", db_name, "-f", str(sql_path)]
+        logger.info("Loading PostgreSQL DB '%s' from %s ...", db_name, sql_path)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if result.returncode == 0:
+            logger.info("PostgreSQL load OK for '%s'.", db_name)
+        else:
+            logger.error("PostgreSQL load failed for '%s': %s", db_name, result.stderr[-300:])
+
+
 # ── Main agent ────────────────────────────────────────────────────────────────
 
 def run_agent(query: str, db_config_path: str, db_description: str) -> str:
@@ -369,16 +556,14 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
     # Restore MongoDB collections from dump (matches DAB scaffold behaviour)
     restore_mongodb(db_config_path)
 
+    # Ensure PostgreSQL databases are loaded (skips gracefully if already present)
+    ensure_postgres_loaded(db_config_path)
+
     # Load DB connections from config
     connections = load_db_config(db_config_path)
 
-    # Build system prompt: AGENT.md + current dataset description
-    agent_context = AGENT_MD_PATH.read_text() if AGENT_MD_PATH.exists() else ""
-    system_prompt = (
-        f"{agent_context}\n\n"
-        f"---\n\n"
-        f"## DATABASE DESCRIPTION\n\n{db_description}"
-    ).strip()
+    # Build system prompt: AGENT.md + corrections log + domain KB + live schema + DB description
+    system_prompt = _build_system_prompt(db_config_path, db_description, connections)
 
     # Init LLM client (OpenRouter)
     client = OpenAI(

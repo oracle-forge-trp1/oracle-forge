@@ -74,19 +74,3 @@ Sprint 1 is complete when all of the following are verifiably true. "I think it 
 7. **Signal Corps: first post live and Slack log started:** At least one substantive X thread is live (link committed to `signal/engagement_log.md`). Daily Slack posts have been made for at least Days 3–5 of the sprint.
 
 8. **This Inception document is mob-approved:** The full team has read this document together, asked their hardest questions, and given explicit group approval. Approval is recorded below with the date, who approved, and the hardest question asked and its answer.
-
----
-
-## Mob Approval Record
-
-**Status:** PENDING
-
-| Field | Value |
-|-------|-------|
-| Approval date | |
-| Approved by | |
-| Hardest question asked | |
-| Answer given | |
-| Any items sent back for revision | |
-
-*No Construction work begins until this section is filled in and committed.*

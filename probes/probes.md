@@ -3,6 +3,28 @@
 # All probes drawn from observed agent failures during evaluation runs 2026-04-13-001 through 2026-04-13-005.
 # 15 probes across 4 failure categories.
 
+## Logging Policy (Reproducible Status)
+
+For every probe update, record both statuses:
+
+1. **Strict status**: PASS/FAIL from raw model output.
+2. **Repaired status**: PASS/FAIL after optional ground-truth repair fallback.
+
+Do not mark a probe as fully fixed unless strict status is PASS.
+If repaired status is PASS but strict is FAIL, mark as **Operational pass / Model pending**.
+
+Required evidence for each status update:
+
+- `run_id` from `eval/score_log.json`
+- dataset + query id
+- `strict_validation_message`
+- `validation_message`
+- `repaired` flag
+
+Template for new status lines:
+
+`Run: <run_id> | Strict: <PASS/FAIL> | Repaired: <PASS/FAIL> | repaired=<true/false> | note: <reason>`
+
 ---
 
 ## PROBE-001
