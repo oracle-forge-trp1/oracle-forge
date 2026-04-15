@@ -549,7 +549,12 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
         db_description: Schema description text (contents of db_description.txt).
 
     Returns:
-        Agent's answer as a plain text string.
+        dict with keys:
+          - "answer" (str): the agent's final answer as plain text
+          - "query_trace" (list): list of tool-call trace dicts, each with keys
+            tool, args, success, rows, preview
+        Note: agent_runner_child.py unpacks this dict; callers expecting a plain
+        string should use result["answer"].
     """
     load_dotenv()
 

@@ -130,7 +130,17 @@ python eval/run_query.py --dataset yelp --query 0
 ### Live Agent Access
 
 - Server: `deepseek.10academy.org`
-- Agent endpoint: [TBD after deployment]
+- Agent endpoint (CLI): SSH to server, then:
+  ```bash
+  conda activate dab
+  cd /shared/oracle-forge
+  python agent/data_agent.py \
+    --query "What is the average rating of all businesses in Indianapolis?" \
+    --db_config DataAgentBench/query_yelp/db_config.yaml \
+    --db_description DataAgentBench/query_yelp/db_description.txt
+  ```
+- MCP endpoint (HTTP): `http://127.0.0.1:5000/mcp` (accessible on the server after starting MCP with `conda run -n dabench python mcp/toolbox_server.py`)
+- Sandbox endpoint (HTTP): `http://0.0.0.0:8080/execute` (after `python3 sandbox/sandbox_server.py --port 8080`)
 
 ## Repository Structure
 

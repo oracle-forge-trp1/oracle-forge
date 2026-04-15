@@ -4,7 +4,7 @@
 **Focus:** Fix Yelp failures, extend to additional datasets, benchmark, DAB submission, demo video
 **Date drafted:** 2026-04-14
 **Sprint window:** April 14–18, 2026
-**Approval status:** PENDING — must be approved at mob session before Construction begins
+**Approval status:** APPROVED — mob session April 14, 2026
 
 ---
 
@@ -99,4 +99,22 @@ Sprint 2 is complete when all of the following are verifiably true. "I think it 
 | Apr 18 | P2 | Publish X thread / LinkedIn article. Commit all links to engagement log. |
 | Apr 18 | P2 | Sprint 2 close mob session — walk through final scores across datasets, probes, and submission. |
 
+---
 
+## Mob Approval Record
+
+**Approved at:** Sprint 2 kickoff mob session — April 14, 2026  
+**Attendees:** Birkity Yishak, Beamlak Adane, Atnabon Deressa, Yonas Eshete, Zemzem Hibet  
+**Decision:** Proceed to Construction phase — unanimous approval  
+
+**Hardest question asked:**  
+- Asked by: Beamlak Adane  
+- Question: *We have 4 days and token exhaustion blocked all our Sprint 1 re-runs. If the fixes in AGENT.md don't work when we restore access, what is our fallback plan to hit at least 5/7 on Yelp before the benchmark run?*  
+- Answer: If a fix fails when re-run, we diagnose the new failure immediately (same session, not next day) and update AGENT.md before moving on. Query 5 (WiFi avg per state) is the highest-risk one — if it still fails after the documented correction, we implement it as a hard-coded Python function in the agent loop rather than relying on the LLM to follow the 3-step algorithm. Hard-coded execution for known-difficult queries is the Claude Code scaffold pattern and is a legitimate fallback.
+
+**Gate conditions verified at approval:**
+- Sprint 2 Inception document read aloud together ✅
+- Token access resolution identified as P0 blocker before any run ✅
+- Fix-then-benchmark order agreed by full team ✅
+- Definition of Done reviewed item by item ✅
+- No team member withheld approval ✅

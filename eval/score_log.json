@@ -1112,5 +1112,2417 @@
         "repaired": true
       }
     ]
+  },
+  {
+    "run_id": "test-001",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 2,
+    "failed": 5,
+    "pass_at_1": 0.2857,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Based on my query of the databases, I found 8 businesses located in Indianapolis, Indiana and calculated the average rating of all reviews for these businesses.\n\n**Query Trace:**\n\n1. **Database: businessinfo_database (MongoDB)**\n   - Query: Searched the `business` collection for all documents with \"Indianapolis\" in the description field\n   - Result: Found 8 businesses with business_ids: businessid_52, businessid_84, businessid_76, businessid_87, businessid_65, businessid_94, businessid_90, businessid_16\n\n2. **Database: user_database (DuckDB)**\n   - Query: Calculated the average rating from the `review` table for all reviews matching the 8 Indianapolis businesses (converting business_id format from \"businessid_X\" to \"businessref_X\" per the join key format documented in the corrections log)\n   - Result: Average rating = 3.547008547008547\n\n**Answer: The average rating of all businesses located in Indianapolis, Indiana is approximately 3.55 (or 3.547 to be precise).**",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "aggregate",
+              "query": "[\n  {\n    \"$match\": {\n      \"description\": {\n        \"$regex\": \"Indianapolis.*Indiana|Indiana.*Indianapolis\",\n        \"$options\": \"i\"\n      }\n    }\n  },\n  {\n    \"$project\": {\n      \"business_id\": 1,\n      \"name\": 1,\n      \"description\": 1\n    }\n  }\n]"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"description\": {\"$regex\": \"Indianapolis\", \"$options\": \"i\"}}",
+              "projection": "{\"business_id\": 1, \"name\": 1, \"description\": 1}"
+            },
+            "success": true,
+            "rows": 8,
+            "preview": "[{'_id': '6859a000fe8b31cd7362e2b3', 'business_id': 'businessid_52', 'name': 'Architectural Antiques of Indianapolis', 'description': 'Located at 5000 W 96th St in Indianapolis, IN, this establishment offers a diverse selection of Antiques, Shopping, Home Services, and Lighting Fixtures & Equipment for all your home and decorative needs.'}, {'_id': '6859a000fe8b31cd7362e2c2', 'business_id': 'busin"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_52', 'businessref_84', 'businessref_76', 'businessref_87', 'businessref_65', 'businessref_94', 'businessref_90', 'businessref_16')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.547008547008547}]"
+          }
+        ],
+        "passed": true,
+        "execution_time_sec": 17.321,
+        "validation_message": "Found matching number: 3.547008547008547 ≈ 3.55",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Pennsylvania, 3.64",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{}",
+              "projection": "{\"business_id\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_id': 'businessid_49', 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'businessid_47', 'description': 'Located at 9916 Clayton Rd in St. Louis, MO, this est"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "SELECT business_ref, rating FROM review;"
+            },
+            "success": true,
+            "rows": 2000,
+            "preview": "[{'business_ref': 'businessref_34', 'rating': 2}, {'business_ref': 'businessref_89', 'rating': 5}, {'business_ref': 'businessref_82', 'rating': 4}, {'business_ref': 'businessref_66', 'rating': 2}, {'business_ref': 'businessref_95', 'rating': 1}, {'business_ref': 'businessref_24', 'rating': 4}, {'business_ref': 'businessref_40', 'rating': 4}, {'business_ref': 'businessref_47', 'rating': 5}, {'busin"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Count reviews by business_ref\nSELECT business_ref, COUNT(*) as review_count\nFROM review\nGROUP BY business_ref\nORDER BY review_count DESC;\n"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_ref': 'businessref_67', 'review_count': 46}, {'business_ref': 'businessref_86', 'review_count': 46}, {'business_ref': 'businessref_91', 'review_count': 45}, {'business_ref': 'businessref_8', 'review_count': 45}, {'business_ref': 'businessref_66', 'review_count': 44}, {'business_ref': 'businessref_46', 'review_count': 44}, {'business_ref': 'businessref_36', 'review_count': 44}, {'busine"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Calculate average rating for all businesses in PA\n-- First, I need to join with the business descriptions to filter by state\n-- Since I have the business data from MongoDB, I'll calculate based on the business_refs\n-- that correspond to PA businesses\n\n-- PA businesses from the MongoDB data:\n-- businessref_92, businessref_89, businessref_97, businessref_22, businessref_18, businessref_63, businessref_75, businessref_67, businessref_36, businessref_35, businessref_38, businessref_40, businessref_53, businessref_44, businessref_86, businessref_78, businessref_79, businessref_82, businessref_77, businessref_85, businessref_98, businessref_100\n\nSELECT AVG(rating) as avg_rating\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_22', 'businessref_18', 'businessref_63', 'businessref_75', 'businessref_67', 'businessref_36', 'businessref_35', 'businessref_38', 'businessref_40', 'businessref_53', 'businessref_44', 'businessref_86', 'businessref_78', 'businessref_79', 'businessref_82', 'businessref_77', 'businessref_85', 'businessref_98', 'businessref_100');\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'avg_rating': 3.638095238095238}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Count total reviews per state by mapping business_refs to states\n-- I'll create a mapping based on the MongoDB business descriptions\n\n-- FL businesses: businessref_41, businessref_61, businessref_54, businessref_26, businessref_74, businessref_3, businessref_45, businessref_51, businessref_19, businessref_37, businessref_56, businessref_62, businessref_57, businessref_55, businessref_31, businessref_73, businessref_20, businessref_21, businessref_68, businessref_83\n\n-- PA businesses: businessref_92, businessref_89, businessref_97, businessref_22, businessref_18, businessref_63, businessref_75, businessref_67, businessref_36, businessref_35, businessref_38, businessref_40, businessref_53, businessref_44, businessref_86, businessref_78, businessref_79, businessref_82, businessref_77, businessref_85, businessref_98, businessref_100\n\n-- MO businesses: businessref_47, businessref_64, businessref_10, businessref_24, businessref_4, businessref_11, businessref_30, businessref_46, businessref_96, businessref_15\n\n-- IN businesses: businessref_33, businessref_52, businessref_50, businessref_84, businessref_87, businessref_76, businessref_65, businessref_94, businessref_39, businessref_90\n\n-- Other states...\n\nSELECT \n  'FL' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_41', 'businessref_61', 'businessref_54', 'businessref_26', 'businessref_74', 'businessref_3', 'businessref_45', 'businessref_51', 'businessref_19', 'businessref_37', 'businessref_56', 'businessref_62', 'businessref_57', 'businessref_55', 'businessref_31', 'businessref_73', 'businessref_20', 'businessref_21', 'businessref_68', 'businessref_83')\n\nUNION ALL\n\nSELECT \n  'PA' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_22', 'businessref_18', 'businessref_63', 'businessref_75', 'businessref_67', 'businessref_36', 'businessref_35', 'businessref_38', 'businessref_40', 'businessref_53', 'businessref_44', 'businessref_86', 'businessref_78', 'businessref_79', 'businessref_82', 'businessref_77', 'businessref_85', 'businessref_98', 'businessref_100')\n\nUNION ALL\n\nSELECT \n  'MO' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_47', 'businessref_64', 'businessref_10', 'businessref_24', 'businessref_4', 'businessref_11', 'businessref_30', 'businessref_46', 'businessref_96', 'businessref_15')\n\nUNION ALL\n\nSELECT \n  'IN' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_33', 'businessref_52', 'businessref_50', 'businessref_84', 'businessref_87', 'businessref_76', 'businessref_65', 'businessref_94', 'businessref_39', 'businessref_90')\n\nUNION ALL\n\nSELECT \n  'LA' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_91', 'businessref_32', 'businessref_70', 'businessref_95', 'businessref_80', 'businessref_15')\n\nUNION ALL\n\nSELECT \n  'TN' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_28', 'businessref_13', 'businessref_23')\n\nUNION ALL\n\nSELECT \n  'CA' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_49', 'businessref_14', 'businessref_66')\n\nUNION ALL\n\nSELECT \n  'ID' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_88', 'businessref_7', 'businessref_71', 'businessref_25')\n\nUNION ALL\n\nSELECT \n  'AZ' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_48')\n\nUNION ALL\n\nSELECT \n  'IL' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_42', 'businessref_93', 'businessref_34')\n\nUNION ALL\n\nSELECT \n  'NV' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_27', 'businessref_6')\n\nUNION ALL\n\nSELECT \n  'NJ' as state, COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_29', 'businessref_1')\n\nORDER BY review_count DESC;\n"
+            },
+            "success": true,
+            "rows": 12,
+            "preview": "[{'state': 'PA', 'review_count': 525}, {'state': 'FL', 'review_count': 389}, {'state': 'MO', 'review_count': 230}, {'state': 'ID', 'review_count': 126}, {'state': 'IN', 'review_count': 114}, {'state': 'LA', 'review_count': 93}, {'state': 'CA', 'review_count': 75}, {'state': 'NV', 'review_count': 65}, {'state': 'TN', 'review_count': 39}, {'state': 'IL', 'review_count': 28}, {'state': 'NJ', 'review_"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 60.182,
+        "validation_message": "Number near 'Pennsylvania' does not match ≈3.699395770392749",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "34",
+        "query_trace": [
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT DISTINCT business_ref\nFROM review\nWHERE COALESCE(\n  TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),\n  TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),\n  TRY_STRPTIME(date, '%d %b %Y, %H:%M'),\n  TRY_STRPTIME(date, '%d %B %Y, %H:%M'),\n  TRY_STRPTIME(date, '%B %d, %Y at %H:%M'),\n  TRY_STRPTIME(date, '%m/%d/%Y %H:%M:%S')\n) IS NOT NULL\nAND YEAR(COALESCE(\n  TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),\n  TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),\n  TRY_STRPTIME(date, '%d %b %Y, %H:%M'),\n  TRY_STRPTIME(date, '%d %B %Y, %H:%M'),\n  TRY_STRPTIME(date, '%B %d, %Y at %H:%M'),\n  TRY_STRPTIME(date, '%m/%d/%Y %H:%M:%S')\n)) = 2018\n"
+            },
+            "success": true,
+            "rows": 67,
+            "preview": "[{'business_ref': 'businessref_79'}, {'business_ref': 'businessref_6'}, {'business_ref': 'businessref_47'}, {'business_ref': 'businessref_13'}, {'business_ref': 'businessref_44'}, {'business_ref': 'businessref_91'}, {'business_ref': 'businessref_71'}, {'business_ref': 'businessref_46'}, {'business_ref': 'businessref_73'}, {'business_ref': 'businessref_59'}, {'business_ref': 'businessref_25'}, {'bu"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{}",
+              "projection": "{\"business_id\": 1, \"attributes.BusinessParking\": 1, \"attributes.BikeParking\": 1}"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'_id': '6859a000fe8b31cd7362e2ab', 'business_id': 'businessid_49', 'attributes': {}}, {'_id': '6859a000fe8b31cd7362e2ac', 'business_id': 'businessid_47', 'attributes': {'BikeParking': 'False', 'BusinessParking': \"{'garage': False, 'street': False, 'validated': False, 'lot': True, 'valet': False}\"}}, {'_id': '6859a000fe8b31cd7362e2ad', 'business_id': 'businessid_88', 'attributes': {'BusinessParki"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 26.877,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 105.59,
+        "validation_message": null,
+        "error": "JSONDecodeError(\"Expecting ',' delimiter: line 1 column 28 (char 27)\")"
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Pennsylvania, 3.67",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"attributes.WiFi\": {\"$exists\": true}}",
+              "projection": "{\"business_id\": 1, \"name\": 1, \"description\": 1, \"attributes.WiFi\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 35,
+            "preview": "[{'business_id': 'businessid_49', 'name': 'Steps to Learning Montessori Preschool', 'attributes': {'WiFi': \"u'no'\"}, 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'bu"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT business_ref, rating\nFROM review\nWHERE business_ref IN ('businessref_64', 'businessref_54', 'businessref_91', 'businessref_93', 'businessref_26', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_51', 'businessref_6', 'businessref_55', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_43', 'businessref_20', 'businessref_25', 'businessref_82', 'businessref_16', 'businessref_46')\n"
+            },
+            "success": true,
+            "rows": 667,
+            "preview": "[{'business_ref': 'businessref_89', 'rating': 5}, {'business_ref': 'businessref_82', 'rating': 4}, {'business_ref': 'businessref_40', 'rating': 4}, {'business_ref': 'businessref_16', 'rating': 3}, {'business_ref': 'businessref_46', 'rating': 5}, {'business_ref': 'businessref_26', 'rating': 1}, {'business_ref': 'businessref_43', 'rating': 1}, {'business_ref': 'businessref_51', 'rating': 5}, {'busin"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating,\n  COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_82')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.4839857651245554, 'review_count': 281}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "aggregate",
+              "query": "[\n  {\n    \"$match\": {\n      \"attributes.WiFi\": {\"$exists\": true, \"$ne\": null}\n    }\n  },\n  {\n    \"$project\": {\n      \"business_id\": 1,\n      \"name\": 1,\n      \"description\": 1,\n      \"wifi\": \"$attributes.WiFi\",\n      \"state\": {\n        \"$regexFind\": {\n          \"input\": \"$description\",\n          \"regex\": \"in ([A-Z]{2})(?:[,.]|$)\"\n        }\n      }\n    }\n  },\n  {\n    \"$group\": {\n      \"_id\": {\n        \"$cond\": [\n          {\"$eq\": [{\"$type\": \"$state\"}, \"null\"]},\n          \"UNKNOWN\",\n          {\"$arrayElemAt\": [\"$state.captures.0.value\", 0]}\n        ]\n      },\n      \"count\": {\"$sum\": 1},\n      \"businesses\": {\"$push\": \"$name\"}\n    }\n  },\n  {\n    \"$sort\": {\"count\": -1}\n  }\n]"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'_id': 'UNKNOWN', 'count': 35, 'businesses': ['Steps to Learning Montessori Preschool', 'Luminosity', 'Nail Care Salon', '7-Eleven', 'Cafe Porche and snowbar', \"Callahan's Corner\", 'FroYo Frozen Yogurt', \"McDonald's\", 'King of Prussia Laundromat', 'The Recovery Room Bar & Grill', 'Executive Auto Body', 'Egg Roll King Two', \"Hanoi's Pho\", 'Eagle Luxe Reel Theatre', \"Gram's Place\", 'Simply Done Ca"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"attributes.WiFi\": {\"$exists\": true}}",
+              "projection": "{\"business_id\": 1, \"name\": 1, \"description\": 1, \"attributes.WiFi\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 35,
+            "preview": "[{'business_id': 'businessid_49', 'name': 'Steps to Learning Montessori Preschool', 'attributes': {'WiFi': \"u'no'\"}, 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'bu"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_82', 'businessref_9')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.6}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_85', 'businessref_82', 'businessref_36')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.7006802721088436}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_85', 'businessref_82', 'businessref_36')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.7006802721088436}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating,\n  COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_36', 'businessref_85')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.636591478696742, 'review_count': 399}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating,\n  COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_36')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.667605633802817, 'review_count': 355}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 79.507,
+        "validation_message": "Number near 'Pennsylvania' does not match ≈3.48",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Coffee House Too Cafe, Restaurants, Breakfast & Brunch, American (New), Cafes",
+        "query_trace": [
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  business_ref,\n  COUNT(*) as review_count,\n  AVG(rating) as avg_rating\nFROM review\nWHERE \n  COALESCE(\n    TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),\n    TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),\n    TRY_STRPTIME(date, '%d %b %Y, %H:%M'),\n    TRY_STRPTIME(date, '%d %B %Y, %H:%M'),\n    TRY_STRPTIME(date, '%B %d, %Y at %H:%M'),\n    TRY_STRPTIME(date, '%m/%d/%Y %H:%M:%S')\n  ) >= '2016-01-01'\n  AND COALESCE(\n    TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),\n    TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),\n    TRY_STRPTIME(date, '%d %b %Y, %H:%M'),\n    TRY_STRPTIME(date, '%d %B %Y, %H:%M'),\n    TRY_STRPTIME(date, '%B %d, %Y at %H:%M'),\n    TRY_STRPTIME(date, '%m/%d/%Y %H:%M:%S')\n  ) <= '2016-06-30'\nGROUP BY business_ref\nHAVING COUNT(*) >= 5\nORDER BY avg_rating DESC\nLIMIT 10\n"
+            },
+            "success": true,
+            "rows": 3,
+            "preview": "[{'business_ref': 'businessref_9', 'review_count': 16, 'avg_rating': 4.375}, {'business_ref': 'businessref_37', 'review_count': 7, 'avg_rating': 4.0}, {'business_ref': 'businessref_8', 'review_count': 5, 'avg_rating': 3.6}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"business_id\": \"businessid_9\"}",
+              "projection": "{\"name\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'name': 'Coffee House Too Cafe', 'description': 'Located at 501 Fairmount Ave in Philadelphia, PA, this inviting establishment offers a delightful menu featuring Restaurants, Breakfast & Brunch, American (New), Cafes, perfect for a cozy meal any time of the day.'}]"
+          }
+        ],
+        "passed": true,
+        "execution_time_sec": 14.508,
+        "validation_message": "Name and all categories are present.",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT user_id, yelping_since\nFROM \"user\"\nWHERE regexp_extract(yelping_since, '\\d{4}') = '2016'\nLIMIT 10\n"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'user_id': 'userid_1231', 'yelping_since': '14 Sep 2016, 00:32'}, {'user_id': 'userid_343', 'yelping_since': '02 Feb 2016, 04:30'}, {'user_id': 'userid_746', 'yelping_since': '2016-06-23 01:59:28'}, {'user_id': 'userid_505', 'yelping_since': 'September 10, 2016 at 08:02 PM'}, {'user_id': 'userid_898', 'yelping_since': 'January 15, 2016 at 06:33 PM'}, {'user_id': 'userid_144', 'yelping_since': '2"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{}",
+              "projection": "{\"business_id\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_id': 'businessid_49', 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'businessid_47', 'description': 'Located at 9916 Clayton Rd in St. Louis, MO, this est"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT user_id\nFROM \"user\"\nWHERE regexp_extract(yelping_since, '\\d{4}') = '2016'\n"
+            },
+            "success": true,
+            "rows": 168,
+            "preview": "[{'user_id': 'userid_1231'}, {'user_id': 'userid_343'}, {'user_id': 'userid_746'}, {'user_id': 'userid_505'}, {'user_id': 'userid_898'}, {'user_id': 'userid_144'}, {'user_id': 'userid_1927'}, {'user_id': 'userid_1109'}, {'user_id': 'userid_1950'}, {'user_id': 'userid_1316'}, {'user_id': 'userid_805'}, {'user_id': 'userid_1182'}, {'user_id': 'userid_431'}, {'user_id': 'userid_1287'}, {'user_id': 'u"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT user_id, business_ref, rating, date\nFROM review\nWHERE user_id IN (\n  'userid_1231', 'userid_343', 'userid_746', 'userid_505', 'userid_898', 'userid_144', 'userid_1927', 'userid_1109', 'userid_1950', 'userid_1316', 'userid_805', 'userid_1182', 'userid_431', 'userid_1287', 'userid_151', 'userid_1274', 'userid_1158', 'userid_643', 'userid_1558', 'userid_1542', 'userid_508', 'userid_435', 'userid_1398', 'userid_958', 'userid_68', 'userid_145', 'userid_518', 'userid_1879', 'userid_1981', 'userid_64', 'userid_211', 'userid_308', 'userid_1444', 'userid_1179', 'userid_677', 'userid_537', 'userid_208', 'userid_1397', 'userid_324', 'userid_795', 'userid_863', 'userid_100', 'userid_1333', 'userid_1636', 'userid_38', 'userid_1850', 'userid_401', 'userid_711', 'userid_729', 'userid_1505', 'userid_374', 'userid_1315', 'userid_597', 'userid_386', 'userid_1978', 'userid_862', 'userid_1068', 'userid_1708', 'userid_522', 'userid_1246', 'userid_339', 'userid_1786', 'userid_1661', 'userid_152', 'userid_1376', 'userid_851', 'userid_1940', 'userid_216', 'userid_39', 'userid_850', 'userid_1419', 'userid_425', 'userid_582', 'userid_333', 'userid_1288', 'userid_252', 'userid_676', 'userid_361', 'userid_1675', 'userid_1490', 'userid_123', 'userid_227', 'userid_510', 'userid_577', 'userid_242', 'userid_771', 'userid_1350', 'userid_1077', 'userid_1013', 'userid_1030', 'userid_1902', 'userid_367', 'userid_257', 'userid_598', 'userid_847', 'userid_1343', 'userid_792', 'userid_673', 'userid_243', 'userid_1072', 'userid_369', 'userid_622', 'userid_1758', 'userid_1856', 'userid_384', 'userid_1533', 'userid_1736', 'userid_1161', 'userid_359', 'userid_318', 'userid_1871', 'userid_655', 'userid_108', 'userid_131', 'userid_1760', 'userid_935', 'userid_1139', 'userid_210', 'userid_70', 'userid_25', 'userid_1101', 'userid_97', 'userid_1624', 'userid_1739', 'userid_942', 'userid_945', 'userid_842', 'userid_986', 'userid_1717', 'userid_1351', 'userid_406', 'userid_230', 'userid_914', 'userid_593', 'userid_1083', 'userid_742', 'userid_1938', 'userid_356', 'userid_876', 'userid_1431', 'userid_424', 'userid_686', 'userid_527', 'userid_641', 'userid_1346', 'userid_1766', 'userid_207', 'userid_1070', 'userid_989', 'userid_927', 'userid_244', 'userid_1816', 'userid_1756', 'userid_393', 'userid_1409', 'userid_197', 'userid_1178', 'userid_526', 'userid_90', 'userid_661', 'userid_238', 'userid_1897', 'userid_241', 'userid_1262', 'userid_1727', 'userid_1105', 'userid_744', 'userid_1263'\n)\nAND regexp_extract(date, '\\d{4}') >= '2016'\n"
+            },
+            "success": true,
+            "rows": 150,
+            "preview": "[{'user_id': 'userid_655', 'business_ref': 'businessref_36', 'rating': 5, 'date': '22 Oct 2021, 21:44'}, {'user_id': 'userid_582', 'business_ref': 'businessref_79', 'rating': 1, 'date': '17 Jul 2020, 20:30'}, {'user_id': 'userid_1397', 'business_ref': 'businessref_23', 'rating': 5, 'date': '2016-06-28 02:18:33'}, {'user_id': 'userid_1274', 'business_ref': 'businessref_67', 'rating': 3, 'date': '20"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"business_id\": {\"$in\": [\"businessid_36\", \"businessid_79\", \"businessid_23\", \"businessid_67\", \"businessid_37\", \"businessid_44\", \"businessid_9\", \"businessid_88\", \"businessid_62\", \"businessid_8\", \"businessid_45\", \"businessid_21\", \"businessid_14\", \"businessid_6\", \"businessid_15\", \"businessid_74\", \"businessid_96\", \"businessid_3\", \"businessid_57\", \"businessid_40\", \"businessid_10\", \"businessid_46\", \"businessid_26\", \"businessid_56\", \"businessid_31\", \"businessid_99\", \"businessid_92\", \"businessid_7\", \"businessid_60\", \"businessid_29\", \"businessid_86\", \"businessid_53\", \"businessid_41\", \"businessid_25\", \"businessid_51\", \"businessid_66\", \"businessid_12\", \"businessid_17\", \"businessid_91\", \"businessid_13\", \"businessid_98\", \"businessid_81\", \"businessid_82\", \"businessid_39\", \"businessid_89\", \"businessid_43\", \"businessid_61\", \"businessid_72\", \"businessid_22\", \"businessid_4\", \"businessid_85\", \"businessid_20\", \"businessid_33\", \"businessid_1\", \"businessid_16\", \"businessid_42\", \"businessid_55\", \"businessid_47\", \"businessid_11\", \"businessid_9\", \"businessid_2\", \"businessid_5\", \"businessid_63\", \"businessid_18\", \"businessid_65\", \"businessid_68\", \"businessid_69\", \"businessid_70\", \"businessid_71\", \"businessid_75\", \"businessid_76\", \"businessid_77\", \"businessid_78\", \"businessid_80\", \"businessid_83\", \"businessid_84\", \"businessid_87\", \"businessid_90\", \"businessid_93\", \"businessid_94\", \"businessid_95\", \"businessid_97\", \"businessid_100\", \"businessid_19\", \"businessid_24\", \"businessid_27\", \"businessid_28\", \"businessid_30\", \"businessid_32\", \"businessid_34\", \"businessid_35\", \"businessid_38\", \"businessid_48\", \"businessid_49\", \"businessid_50\", \"businessid_52\", \"businessid_54\", \"businessid_58\", \"businessid_59\", \"businessid_64\", \"businessid_73\", \"businessid_27\"]}}",
+              "projection": "{\"business_id\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_id': 'businessid_49', 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'businessid_47', 'description': 'Located at 9916 Clayton Rd in St. Louis, MO, this est"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nWITH user_2016 AS (\n  SELECT user_id\n  FROM \"user\"\n  WHERE regexp_extract(yelping_since, '\\d{4}') = '2016'\n),\nreviews_2016_plus AS (\n  SELECT user_id, business_ref\n  FROM review\n  WHERE user_id IN (SELECT user_id FROM user_2016)\n    AND regexp_extract(date, '\\d{4}') >= '2016'\n)\nSELECT business_ref, COUNT(*) as review_count\nFROM reviews_2016_plus\nGROUP BY business_ref\nORDER BY review_count DESC\n"
+            },
+            "success": true,
+            "rows": 62,
+            "preview": "[{'business_ref': 'businessref_79', 'review_count': 8}, {'business_ref': 'businessref_57', 'review_count': 7}, {'business_ref': 'businessref_37', 'review_count': 6}, {'business_ref': 'businessref_67', 'review_count': 5}, {'business_ref': 'businessref_33', 'review_count': 5}, {'business_ref': 'businessref_45', 'review_count': 5}, {'business_ref': 'businessref_8', 'review_count': 4}, {'business_ref'"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 31.573,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-011",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "dummy",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "test-001",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 2,
+    "failed": 5,
+    "pass_at_1": 0.2857,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Based on my query of the databases, I found 8 businesses located in Indianapolis, Indiana and calculated the average rating of all reviews for these businesses.\n\n**Query Trace:**\n\n1. **Database: businessinfo_database (MongoDB)**\n   - Query: Searched the `business` collection for all documents with \"Indianapolis\" in the description field\n   - Result: Found 8 businesses with business_ids: businessid_52, businessid_84, businessid_76, businessid_87, businessid_65, businessid_94, businessid_90, businessid_16\n\n2. **Database: user_database (DuckDB)**\n   - Query: Calculated the average rating from the `review` table for all reviews matching the 8 Indianapolis businesses (converting business_id format from \"businessid_X\" to \"businessref_X\" per the join key format documented in the corrections log)\n   - Result: Average rating = 3.547008547008547\n\n**Answer: The average rating of all businesses located in Indianapolis, Indiana is approximately 3.55 (or 3.547 to be precise).**",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "aggregate",
+              "query": "[\n  {\n    \"$match\": {\n      \"description\": {\n        \"$regex\": \"Indianapolis.*Indiana|Indiana.*Indianapolis\",\n        \"$options\": \"i\"\n      }\n    }\n  },\n  {\n    \"$project\": {\n      \"business_id\": 1,\n      \"name\": 1,\n      \"description\": 1\n    }\n  }\n]"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"description\": {\"$regex\": \"Indianapolis\", \"$options\": \"i\"}}",
+              "projection": "{\"business_id\": 1, \"name\": 1, \"description\": 1}"
+            },
+            "success": true,
+            "rows": 8,
+            "preview": "[{'_id': '6859a000fe8b31cd7362e2b3', 'business_id': 'businessid_52', 'name': 'Architectural Antiques of Indianapolis', 'description': 'Located at 5000 W 96th St in Indianapolis, IN, this establishment offers a diverse selection of Antiques, Shopping, Home Services, and Lighting Fixtures & Equipment for all your home and decorative needs.'}, {'_id': '6859a000fe8b31cd7362e2c2', 'business_id': 'busin"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_52', 'businessref_84', 'businessref_76', 'businessref_87', 'businessref_65', 'businessref_94', 'businessref_90', 'businessref_16')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.547008547008547}]"
+          }
+        ],
+        "passed": true,
+        "execution_time_sec": 15.974,
+        "validation_message": "Found matching number: 3.547008547008547 ≈ 3.55",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Pennsylvania, 3.74",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{}",
+              "projection": "{\"business_id\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_id': 'businessid_49', 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'businessid_47', 'description': 'Located at 9916 Clayton Rd in St. Louis, MO, this est"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "SELECT business_ref, rating FROM review;"
+            },
+            "success": true,
+            "rows": 2000,
+            "preview": "[{'business_ref': 'businessref_34', 'rating': 2}, {'business_ref': 'businessref_89', 'rating': 5}, {'business_ref': 'businessref_82', 'rating': 4}, {'business_ref': 'businessref_66', 'rating': 2}, {'business_ref': 'businessref_95', 'rating': 1}, {'business_ref': 'businessref_24', 'rating': 4}, {'business_ref': 'businessref_40', 'rating': 4}, {'business_ref': 'businessref_47', 'rating': 5}, {'busin"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Count reviews by business_ref\nSELECT business_ref, COUNT(*) as review_count\nFROM review\nGROUP BY business_ref\nORDER BY review_count DESC;\n"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_ref': 'businessref_67', 'review_count': 46}, {'business_ref': 'businessref_86', 'review_count': 46}, {'business_ref': 'businessref_91', 'review_count': 45}, {'business_ref': 'businessref_8', 'review_count': 45}, {'business_ref': 'businessref_66', 'review_count': 44}, {'business_ref': 'businessref_96', 'review_count': 44}, {'business_ref': 'businessref_46', 'review_count': 44}, {'busine"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Get average rating for each business_ref\nSELECT business_ref, AVG(rating) as avg_rating, COUNT(*) as review_count\nFROM review\nGROUP BY business_ref\nORDER BY review_count DESC\nLIMIT 10;\n"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'business_ref': 'businessref_86', 'avg_rating': 3.739130434782609, 'review_count': 46}, {'business_ref': 'businessref_67', 'avg_rating': 3.3260869565217392, 'review_count': 46}, {'business_ref': 'businessref_8', 'avg_rating': 2.8222222222222224, 'review_count': 45}, {'business_ref': 'businessref_91', 'avg_rating': 4.911111111111111, 'review_count': 45}, {'business_ref': 'businessref_46', 'avg_ra"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Get the top businesses by review count with their business_ref\nSELECT business_ref, COUNT(*) as review_count\nFROM review\nGROUP BY business_ref\nORDER BY review_count DESC\nLIMIT 1;\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'business_ref': 'businessref_86', 'review_count': 46}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"business_id\": \"businessid_86\"}",
+              "projection": "{\"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'description': 'Located at 705 East Passyunk Ave in Philadelphia, PA, this vibrant eatery offers a diverse menu featuring American (New), Restaurants, American (Traditional), Asian Fusion, Noodles, Dim Sum, Fast Food, Chinese, catering to a variety of tastes and preferences.'}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Get average rating for businessref_86\nSELECT AVG(rating) as avg_rating\nFROM review\nWHERE business_ref = 'businessref_86';\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'avg_rating': 3.739130434782609}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 27.015,
+        "validation_message": "Number near 'Pennsylvania' does not match ≈3.699395770392749",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "32",
+        "query_trace": [
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT DISTINCT business_ref\nFROM review\nWHERE COALESCE(\n  TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),\n  TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),\n  TRY_STRPTIME(date, '%d %b %Y, %H:%M'),\n  TRY_STRPTIME(date, '%d %B %Y, %H:%M'),\n  TRY_STRPTIME(date, '%B %d, %Y at %H:%M'),\n  TRY_STRPTIME(date, '%m/%d/%Y %H:%M:%S')\n) IS NOT NULL\nAND YEAR(COALESCE(\n  TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),\n  TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),\n  TRY_STRPTIME(date, '%d %b %Y, %H:%M'),\n  TRY_STRPTIME(date, '%d %B %Y, %H:%M'),\n  TRY_STRPTIME(date, '%B %d, %Y at %H:%M'),\n  TRY_STRPTIME(date, '%m/%d/%Y %H:%M:%S')\n)) = 2018\n"
+            },
+            "success": true,
+            "rows": 67,
+            "preview": "[{'business_ref': 'businessref_79'}, {'business_ref': 'businessref_6'}, {'business_ref': 'businessref_47'}, {'business_ref': 'businessref_13'}, {'business_ref': 'businessref_44'}, {'business_ref': 'businessref_91'}, {'business_ref': 'businessref_71'}, {'business_ref': 'businessref_46'}, {'business_ref': 'businessref_73'}, {'business_ref': 'businessref_77'}, {'business_ref': 'businessref_50'}, {'bu"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\n  \"business_id\": {\n    \"$in\": [\n      \"businessid_79\", \"businessid_6\", \"businessid_47\", \"businessid_13\", \"businessid_44\", \"businessid_91\", \"businessid_71\", \"businessid_46\", \"businessid_73\", \"businessid_77\", \"businessid_50\", \"businessid_3\", \"businessid_20\", \"businessid_28\", \"businessid_76\", \"businessid_22\", \"businessid_69\", \"businessid_14\", \"businessid_27\", \"businessid_70\", \"businessid_18\", \"businessid_59\", \"businessid_25\", \"businessid_29\", \"businessid_66\", \"businessid_86\", \"businessid_8\", \"businessid_72\", \"businessid_62\", \"businessid_85\", \"businessid_57\", \"businessid_56\", \"businessid_80\", \"businessid_90\", \"businessid_51\", \"businessid_97\", \"businessid_37\", \"businessid_67\", \"businessid_15\", \"businessid_81\", \"businessid_24\", \"businessid_52\", \"businessid_33\", \"businessid_89\", \"businessid_36\", \"businessid_60\", \"businessid_12\", \"businessid_43\", \"businessid_99\", \"businessid_31\", \"businessid_17\", \"businessid_26\", \"businessid_68\", \"businessid_40\", \"businessid_34\", \"businessid_92\", \"businessid_83\", \"businessid_21\", \"businessid_95\", \"businessid_4\", \"businessid_61\", \"businessid_49\", \"businessid_45\", \"businessid_82\", \"businessid_35\", \"businessid_10\", \"businessid_23\"\n    ]\n  }\n}",
+              "projection": "{\"business_id\": 1, \"attributes.BusinessParking\": 1, \"attributes.BikeParking\": 1}"
+            },
+            "success": true,
+            "rows": 67,
+            "preview": "[{'_id': '6859a000fe8b31cd7362e2ab', 'business_id': 'businessid_49', 'attributes': {}}, {'_id': '6859a000fe8b31cd7362e2ac', 'business_id': 'businessid_47', 'attributes': {'BikeParking': 'False', 'BusinessParking': \"{'garage': False, 'street': False, 'validated': False, 'lot': True, 'valet': False}\"}}, {'_id': '6859a000fe8b31cd7362e2af', 'business_id': 'businessid_33', 'attributes': {'BusinessParki"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 19.69,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Restaurants, 3.63",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"attributes.BusinessAcceptsCreditCards\": {\"$exists\": true}}",
+              "projection": "{\"name\": 1, \"description\": 1, \"attributes.BusinessAcceptsCreditCards\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 77,
+            "preview": "[{'name': 'Steps to Learning Montessori Preschool', 'attributes': {'BusinessAcceptsCreditCards': 'True'}, 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'name': 'Breeze Blow Dry Bar'"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"attributes.BusinessAcceptsCreditCards\": \"True\"}",
+              "projection": "{\"business_id\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 75,
+            "preview": "[{'business_id': 'businessid_49', 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'businessid_47', 'description': 'Located at 9916 Clayton Rd in St. Louis, MO, this est"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  business_ref,\n  AVG(rating) as avg_rating,\n  COUNT(*) as review_count\nFROM review\nGROUP BY business_ref\n"
+            },
+            "success": true,
+            "rows": 100,
+            "preview": "[{'business_ref': 'businessref_47', 'avg_rating': 3.9047619047619047, 'review_count': 42}, {'business_ref': 'businessref_16', 'avg_rating': 3.024390243902439, 'review_count': 41}, {'business_ref': 'businessref_46', 'avg_rating': 4.181818181818182, 'review_count': 44}, {'business_ref': 'businessref_79', 'avg_rating': 4.627906976744186, 'review_count': 43}, {'business_ref': 'businessref_91', 'avg_ra"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Create a mapping of business_ref to business_id for joining\n-- business_ref format is \"businessref_N\" and business_id format is \"businessid_N\"\n-- We need to extract the N and match them\n\nWITH credit_card_businesses AS (\n  SELECT \n    CAST(REGEXP_EXTRACT(business_ref, '\\d+') AS INTEGER) as biz_num,\n    business_ref\n  FROM (\n    SELECT DISTINCT business_ref FROM review\n  )\n)\nSELECT * FROM credit_card_businesses LIMIT 10\n"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'biz_num': 47, 'business_ref': 'businessref_47'}, {'biz_num': 16, 'business_ref': 'businessref_16'}, {'biz_num': 46, 'business_ref': 'businessref_46'}, {'biz_num': 79, 'business_ref': 'businessref_79'}, {'biz_num': 91, 'business_ref': 'businessref_91'}, {'biz_num': 1, 'business_ref': 'businessref_1'}, {'biz_num': 55, 'business_ref': 'businessref_55'}, {'biz_num': 44, 'business_ref': 'businessref"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "aggregate",
+              "query": "[\n  {\"$match\": {\"attributes.BusinessAcceptsCreditCards\": \"True\"}},\n  {\"$project\": {\n    \"business_id\": 1,\n    \"description\": 1,\n    \"_id\": 0\n  }}\n]"
+            },
+            "success": true,
+            "rows": 75,
+            "preview": "[{'business_id': 'businessid_49', 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'businessid_47', 'description': 'Located at 9916 Clayton Rd in St. Louis, MO, this est"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Parse the business descriptions to extract categories\n-- Categories are listed after \"categories of\" or \"categories such as\"\n-- We'll extract the first major category mentioned\n\nWITH parsed_categories AS (\n  SELECT \n    CAST(REGEXP_EXTRACT(business_ref, '\\d+') AS INTEGER) as biz_num,\n    business_ref,\n    CASE \n      WHEN business_ref IN ('businessref_49') THEN 'Education'\n      WHEN business_ref IN ('businessref_47', 'businessref_33', 'businessref_64', 'businessref_38', 'businessref_81') THEN 'Beauty & Spas'\n      WHEN business_ref IN ('businessref_88') THEN 'Active Life'\n      WHEN business_ref IN ('businessref_92') THEN 'Health & Medical'\n      WHEN business_ref IN ('businessref_52') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_29') THEN 'Event Planning & Services'\n      WHEN business_ref IN ('businessref_10', 'businessref_27', 'businessref_66') THEN 'Restaurants'\n      WHEN business_ref IN ('businessref_61', 'businessref_11', 'businessref_4', 'businessref_22') THEN 'Health & Medical'\n      WHEN business_ref IN ('businessref_54', 'businessref_15', 'businessref_31', 'businessref_21', 'businessref_71', 'businessref_97') THEN 'Automotive'\n      WHEN business_ref IN ('businessref_8') THEN 'Transportation'\n      WHEN business_ref IN ('businessref_91', 'businessref_48', 'businessref_95', 'businessref_26', 'businessref_43', 'businessref_20', 'businessref_25', 'businessref_82', 'businessref_9', 'businessref_44', 'businessref_86', 'businessref_53', 'businessref_36', 'businessref_67', 'businessref_6', 'businessref_87', 'businessref_90', 'businessref_93', 'businessref_16', 'businessref_46', 'businessref_96') THEN 'Restaurants'\n      WHEN business_ref IN ('businessref_83') THEN 'Health & Medical'\n      WHEN business_ref IN ('businessref_24', 'businessref_55') THEN 'Food'\n      WHEN business_ref IN ('businessref_84') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_89') THEN 'Local Services'\n      WHEN business_ref IN ('businessref_32') THEN 'Restaurants'\n      WHEN business_ref IN ('businessref_14') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_3') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_75') THEN 'Home & Garden'\n      WHEN business_ref IN ('businessref_2') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_30') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_63') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_45') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_68') THEN 'Beauty & Spas'\n      WHEN business_ref IN ('businessref_37') THEN 'Active Life'\n      WHEN business_ref IN ('businessref_62') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_94') THEN 'Restaurants'\n      WHEN business_ref IN ('businessref_77') THEN 'Hotels & Travel'\n      WHEN business_ref IN ('businessref_18') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_65') THEN 'Restaurants'\n      WHEN business_ref IN ('businessref_40') THEN 'Event Planning & Services'\n      WHEN business_ref IN ('businessref_58') THEN 'Active Life'\n      WHEN business_ref IN ('businessref_60') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_98') THEN 'Real Estate'\n      WHEN business_ref IN ('businessref_73') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_85') THEN 'Food'\n      WHEN business_ref IN ('businessref_13') THEN 'Arts & Entertainment'\n      WHEN business_ref IN ('businessref_17') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_100') THEN 'Home Services'\n      ELSE 'Other'\n    END as category\n  FROM (SELECT DISTINCT business_ref FROM review)\n)\nSELECT category, COUNT(*) as count\nFROM parsed_categories\nGROUP BY category\nORDER BY count DESC\n"
+            },
+            "success": true,
+            "rows": 17,
+            "preview": "[{'category': 'Restaurants', 'count': 27}, {'category': 'Other', 'count': 26}, {'category': 'Shopping', 'count': 9}, {'category': 'Beauty & Spas', 'count': 6}, {'category': 'Health & Medical', 'count': 6}, {'category': 'Automotive', 'count': 6}, {'category': 'Home Services', 'count': 5}, {'category': 'Active Life', 'count': 3}, {'category': 'Food', 'count': 3}, {'category': 'Event Planning & Servi"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Get average rating for Restaurants category (businesses that accept credit cards)\n-- Restaurants business_refs: 10, 27, 66, 91, 48, 95, 26, 43, 20, 25, 82, 9, 44, 86, 53, 36, 67, 6, 87, 90, 93, 16, 46, 96, 32, 65, 94\n\nSELECT \n  AVG(avg_rating) as category_avg_rating,\n  COUNT(*) as num_businesses\nFROM (\n  SELECT \n    business_ref,\n    AVG(rating) as avg_rating\n  FROM review\n  WHERE business_ref IN (\n    'businessref_10', 'businessref_27', 'businessref_66', 'businessref_91', \n    'businessref_48', 'businessref_95', 'businessref_26', 'businessref_43', \n    'businessref_20', 'businessref_25', 'businessref_82', 'businessref_9', \n    'businessref_44', 'businessref_86', 'businessref_53', 'businessref_36', \n    'businessref_67', 'businessref_6', 'businessref_87', 'businessref_90', \n    'businessref_93', 'businessref_16', 'businessref_46', 'businessref_96', \n    'businessref_32', 'businessref_65', 'businessref_94'\n  )\n  GROUP BY business_ref\n)\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'category_avg_rating': 3.434216555812821, 'num_businesses': 27}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Verify: Get all businesses that accept credit cards and their categories\n-- Let me recalculate more carefully by looking at the descriptions\n\nSELECT \n  business_ref,\n  COUNT(*) as review_count,\n  AVG(rating) as avg_rating\nFROM review\nWHERE business_ref IN (\n  'businessref_10', 'businessref_27', 'businessref_66', 'businessref_91', \n  'businessref_48', 'businessref_95', 'businessref_26', 'businessref_43', \n  'businessref_20', 'businessref_25', 'businessref_82', 'businessref_9', \n  'businessref_44', 'businessref_86', 'businessref_53', 'businessref_36', \n  'businessref_67', 'businessref_6', 'businessref_87', 'businessref_90', \n  'businessref_93', 'businessref_16', 'businessref_46', 'businessref_96', \n  'businessref_32', 'businessref_65', 'businessref_94'\n)\nGROUP BY business_ref\nORDER BY business_ref\n"
+            },
+            "success": true,
+            "rows": 27,
+            "preview": "[{'business_ref': 'businessref_10', 'review_count': 16, 'avg_rating': 4.1875}, {'business_ref': 'businessref_16', 'review_count': 41, 'avg_rating': 3.024390243902439}, {'business_ref': 'businessref_20', 'review_count': 42, 'avg_rating': 3.2142857142857144}, {'business_ref': 'businessref_25', 'review_count': 36, 'avg_rating': 4.444444444444445}, {'business_ref': 'businessref_26', 'review_count': 24"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Count all businesses that accept credit cards by category\n-- Using the business descriptions from MongoDB\n\nWITH all_cc_businesses AS (\n  SELECT \n    CAST(REGEXP_EXTRACT(business_ref, '\\d+') AS INTEGER) as biz_num,\n    business_ref\n  FROM (SELECT DISTINCT business_ref FROM review)\n),\ncategorized AS (\n  SELECT \n    business_ref,\n    CASE \n      WHEN business_ref IN ('businessref_49') THEN 'Education'\n      WHEN business_ref IN ('businessref_47', 'businessref_33', 'businessref_64', 'businessref_38', 'businessref_81', 'businessref_68') THEN 'Beauty & Spas'\n      WHEN business_ref IN ('businessref_88') THEN 'Active Life'\n      WHEN business_ref IN ('businessref_92') THEN 'Health & Medical'\n      WHEN business_ref IN ('businessref_52') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_29') THEN 'Event Planning & Services'\n      WHEN business_ref IN ('businessref_10', 'businessref_27', 'businessref_66', 'businessref_91', 'businessref_48', 'businessref_95', 'businessref_26', 'businessref_43', 'businessref_20', 'businessref_25', 'businessref_82', 'businessref_9', 'businessref_44', 'businessref_86', 'businessref_53', 'businessref_36', 'businessref_67', 'businessref_6', 'businessref_87', 'businessref_90', 'businessref_93', 'businessref_16', 'businessref_46', 'businessref_96', 'businessref_32', 'businessref_65', 'businessref_94') THEN 'Restaurants'\n      WHEN business_ref IN ('businessref_61', 'businessref_11', 'businessref_4', 'businessref_22', 'businessref_83') THEN 'Health & Medical'\n      WHEN business_ref IN ('businessref_54', 'businessref_15', 'businessref_31', 'businessref_21', 'businessref_71', 'businessref_97') THEN 'Automotive'\n      WHEN business_ref IN ('businessref_8') THEN 'Transportation'\n      WHEN business_ref IN ('businessref_24', 'businessref_55') THEN 'Food'\n      WHEN business_ref IN ('businessref_84') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_89') THEN 'Local Services'\n      WHEN business_ref IN ('businessref_14') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_3') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_75') THEN 'Home & Garden'\n      WHEN business_ref IN ('businessref_2') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_30') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_63') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_45') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_37') THEN 'Active Life'\n      WHEN business_ref IN ('businessref_62') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_77') THEN 'Hotels & Travel'\n      WHEN business_ref IN ('businessref_18') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_40') THEN 'Event Planning & Services'\n      WHEN business_ref IN ('businessref_58') THEN 'Active Life'\n      WHEN business_ref IN ('businessref_60') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_98') THEN 'Real Estate'\n      WHEN business_ref IN ('businessref_73') THEN 'Home Services'\n      WHEN business_ref IN ('businessref_85') THEN 'Food'\n      WHEN business_ref IN ('businessref_13') THEN 'Arts & Entertainment'\n      WHEN business_ref IN ('businessref_17') THEN 'Shopping'\n      WHEN business_ref IN ('businessref_100') THEN 'Home Services'\n      ELSE 'Other'\n    END as category\n  FROM all_cc_businesses\n)\nSELECT category, COUNT(*) as count\nFROM categorized\nGROUP BY category\nORDER BY count DESC\n"
+            },
+            "success": true,
+            "rows": 17,
+            "preview": "[{'category': 'Restaurants', 'count': 27}, {'category': 'Other', 'count': 26}, {'category': 'Shopping', 'count': 9}, {'category': 'Beauty & Spas', 'count': 6}, {'category': 'Health & Medical', 'count': 6}, {'category': 'Automotive', 'count': 6}, {'category': 'Home Services', 'count': 5}, {'category': 'Food', 'count': 3}, {'category': 'Active Life', 'count': 3}, {'category': 'Event Planning & Servi"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\n-- Final verification: Calculate average rating for Restaurants category\nSELECT \n  'Restaurants' as category,\n  COUNT(DISTINCT business_ref) as num_businesses,\n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN (\n  'businessref_10', 'businessref_27', 'businessref_66', 'businessref_91', \n  'businessref_48', 'businessref_95', 'businessref_26', 'businessref_43', \n  'businessref_20', 'businessref_25', 'businessref_82', 'businessref_9', \n  'businessref_44', 'businessref_86', 'businessref_53', 'businessref_36', \n  'businessref_67', 'businessref_6', 'businessref_87', 'businessref_90', \n  'businessref_93', 'businessref_16', 'businessref_46', 'businessref_96', \n  'businessref_32', 'businessref_65', 'businessref_94'\n)\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'category': 'Restaurants', 'num_businesses': 27, 'average_rating': 3.633676092544987}]"
+          }
+        ],
+        "passed": true,
+        "execution_time_sec": 65.977,
+        "validation_message": "Found: Restaurant, 3.63",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Pennsylvania, 3.67",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"attributes.WiFi\": {\"$exists\": true}}",
+              "projection": "{\"business_id\": 1, \"name\": 1, \"description\": 1, \"attributes.WiFi\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 35,
+            "preview": "[{'business_id': 'businessid_49', 'name': 'Steps to Learning Montessori Preschool', 'attributes': {'WiFi': \"u'no'\"}, 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'bu"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT business_ref, rating\nFROM review\nWHERE business_ref IN ('businessref_64', 'businessref_54', 'businessref_91', 'businessref_93', 'businessref_26', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_51', 'businessref_6', 'businessref_55', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_43', 'businessref_20', 'businessref_25', 'businessref_82', 'businessref_16', 'businessref_46')\n"
+            },
+            "success": true,
+            "rows": 667,
+            "preview": "[{'business_ref': 'businessref_89', 'rating': 5}, {'business_ref': 'businessref_82', 'rating': 4}, {'business_ref': 'businessref_40', 'rating': 4}, {'business_ref': 'businessref_16', 'rating': 3}, {'business_ref': 'businessref_46', 'rating': 5}, {'business_ref': 'businessref_26', 'rating': 1}, {'business_ref': 'businessref_43', 'rating': 1}, {'business_ref': 'businessref_51', 'rating': 5}, {'busin"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating,\n  COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_82')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.4839857651245554, 'review_count': 281}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "aggregate",
+              "query": "[\n  {\n    \"$match\": {\n      \"attributes.WiFi\": {\"$exists\": true, \"$ne\": null}\n    }\n  },\n  {\n    \"$project\": {\n      \"business_id\": 1,\n      \"name\": 1,\n      \"description\": 1,\n      \"wifi\": \"$attributes.WiFi\",\n      \"state\": {\n        \"$regexFind\": {\n          \"input\": \"$description\",\n          \"regex\": \"in ([A-Z]{2})(?:[,.]|$)\"\n        }\n      }\n    }\n  },\n  {\n    \"$group\": {\n      \"_id\": {\n        \"$cond\": [\n          {\"$eq\": [{\"$type\": \"$state\"}, \"null\"]},\n          \"UNKNOWN\",\n          {\"$arrayElemAt\": [\"$state.captures.0.value\", 0]}\n        ]\n      },\n      \"count\": {\"$sum\": 1},\n      \"businesses\": {\"$push\": \"$name\"}\n    }\n  },\n  {\n    \"$sort\": {\"count\": -1}\n  }\n]"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'_id': 'UNKNOWN', 'count': 35, 'businesses': ['Steps to Learning Montessori Preschool', 'Luminosity', 'Nail Care Salon', '7-Eleven', 'Cafe Porche and snowbar', \"Callahan's Corner\", 'FroYo Frozen Yogurt', \"McDonald's\", 'King of Prussia Laundromat', 'The Recovery Room Bar & Grill', 'Executive Auto Body', 'Egg Roll King Two', \"Hanoi's Pho\", 'Eagle Luxe Reel Theatre', \"Gram's Place\", 'Simply Done Ca"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "businessinfo_database",
+              "collection": "business",
+              "query_type": "find",
+              "query": "{\"attributes.WiFi\": {\"$exists\": true}}",
+              "projection": "{\"business_id\": 1, \"name\": 1, \"description\": 1, \"attributes.WiFi\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 35,
+            "preview": "[{'business_id': 'businessid_49', 'name': 'Steps to Learning Montessori Preschool', 'attributes': {'WiFi': \"u'no'\"}, 'description': 'Located at 6901 Phelps Rd in Goleta, CA, this facility offers a nurturing environment for young learners, providing a range of services in Education, Elementary Schools, Child Care & Day Care, Local Services, Preschools, and Montessori Schools.'}, {'business_id': 'bu"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_82', 'businessref_9')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.6}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_85', 'businessref_82', 'businessref_36')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.7006802721088436}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_85', 'businessref_82', 'businessref_36')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.7006802721088436}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating,\n  COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_36', 'businessref_85')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.636591478696742, 'review_count': 399}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "user_database",
+              "sql": "\nSELECT \n  AVG(rating) as average_rating,\n  COUNT(*) as review_count\nFROM review\nWHERE business_ref IN ('businessref_92', 'businessref_89', 'businessref_97', 'businessref_67', 'businessref_77', 'businessref_86', 'businessref_40', 'businessref_44', 'businessref_9', 'businessref_36')\n"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'average_rating': 3.667605633802817, 'review_count': 355}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 83.839,
+        "validation_message": "Number near 'Pennsylvania' does not match ≈3.48",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.546,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.44,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-013",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "dummy",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.026,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.033,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.061,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial00",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.768,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.34,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.573,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.492,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.541,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.397,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.547,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial00",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.463,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.502,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.916,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.517,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.473,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.461,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.409,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial01",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.525,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.515,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.541,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.503,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.435,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.486,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.47,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial01",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.442,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.437,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.498,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.475,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.475,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.425,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.384,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial02",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.511,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.516,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.44,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.511,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.475,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.47,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.529,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial02",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.478,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.479,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.417,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.375,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.491,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.533,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.451,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial00",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.488,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.386,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.437,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.46,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.474,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.861,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.366,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial00",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.399,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.527,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.495,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.377,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.401,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.522,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.483,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial01",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.451,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.447,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.436,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.499,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.496,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.617,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.554,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "test-001",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.468,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.53,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.523,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.541,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.447,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.451,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.477,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-024",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "dummy",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.026,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.024,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "No answer",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.025,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial01",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.521,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.51,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.493,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.491,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.574,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.489,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.494,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial00",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.439,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.375,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.367,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.422,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.368,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.399,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.369,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial01",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.395,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.404,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.427,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.363,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.369,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.406,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.552,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial02",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.291,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.347,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.333,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.32,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.36,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 2.085,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.554,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial00",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.308,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.575,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.451,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.343,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.389,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.442,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.355,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
+  },
+  {
+    "run_id": "2026-04-15-trial01",
+    "dataset": "yelp",
+    "date": "2026-04-15",
+    "total_queries": 7,
+    "passed": 0,
+    "failed": 7,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.284,
+        "validation_message": "No number found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which U.S. state has the highest number of reviews, and what is the average rating of businesses in that state?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.304,
+        "validation_message": "Missing name: ['PA', 'Pennsylvania']",
+        "error": null
+      },
+      {
+        "query_id": "query3",
+        "question": "During 2018, how many businesses that received reviews offered either business parking or bike parking?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.386,
+        "validation_message": "Number 35 not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which business category has the largest number of businesses that accept credit card payments, and what is its average rating?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.353,
+        "validation_message": "Category 'Restaurant' not found in LLM output.",
+        "error": null
+      },
+      {
+        "query_id": "query5",
+        "question": "Which U.S. state has the highest number of businesses that offer WiFi, and what is the average rating for those businesses?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.339,
+        "validation_message": "Neither 'PA' nor 'Pennsylvania' found in LLM output",
+        "error": null
+      },
+      {
+        "query_id": "query6",
+        "question": "Which business received the highest average rating between January 1, 2016 and June 30, 2016, and what category does it belong to? Consider only businesses with at least 5 reviews.",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.346,
+        "validation_message": "Missing name: Coffee House Too Cafe",
+        "error": null
+      },
+      {
+        "query_id": "query7",
+        "question": "Among users who registered on Yelp in 2016, which 5 business categories have received the most total reviews from those users since 2016?",
+        "agent_answer": "Agent error: Error code: 403 - {'error': {'message': 'Key limit exceeded (weekly limit). Manage it using https://openrouter.ai/settings/keys', 'code': 403}}",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.419,
+        "validation_message": "Missing category: restaurants",
+        "error": null
+      }
+    ]
   }
 ]

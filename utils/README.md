@@ -136,6 +136,80 @@ pip install -r utils/requirements.txt
 
 Note: You only need to install the LLM provider package you'll use for injection testing. The core utilities (schema_introspector, join_key_resolver) work without any LLM packages.
 
+### 4. `multi_pass_retrieval.py` — Multi-Pass KB Retrieval Helper
+
+Implements the OpenAI data agent's multi-pass retrieval pattern: attempt a query, detect what knowledge is missing from the failure signal, retrieve the targeted KB document, and retry with the new context injected.
+
+**Usage:**
+```python
+from utils.multi_pass_retrieval import MultiPassRetriever
+
+retriever = MultiPassRetriever(kb_root="kb/")
+
+# Suggest the right KB doc for a failure
+doc_path = retriever.suggest_document(
+    question="What is the average rating of businesses in Indianapolis?",
+    failed_answer="0 rows returned",
+)
+# Returns: "domain/join_keys.md"
+
+# Full retry loop with context injection
+result = retriever.retrieve_and_retry(
+    question="Which state has the highest average rating for WiFi businesses?",
+    attempt_fn=lambda extra_ctx: agent.run(question, extra_context=extra_ctx),
+    validate_fn=lambda ans: ans.strip() != "" and "error" not in ans.lower(),
+    max_passes=3,
+)
+print(result["succeeded"], result["passes"], result["retrieved_docs"])
+```
+
+**Returns:**
+```python
+{
+    "answer": "3.55",
+    "passes": 2,
+    "retrieved_docs": ["domain/join_keys.md"],
+    "succeeded": True
+}
+```
+
+### 5. `benchmark_harness.py` — Benchmark Harness Wrapper
+
+Callable wrapper around `eval/harness.py` for programmatic use from scripts and notebooks. Adds multi-trial looping, pass@k computation, and DAB-format JSON export.
+
+**Usage:**
+```python
+from utils.benchmark_harness import BenchmarkHarness
+
+harness = BenchmarkHarness(
+    agent_module="agent.data_agent",
+    dab_root="/shared/oracle-forge/DataAgentBench",
+)
+
+# Single trial
+result = harness.run_dataset("yelp")
+print(f"pass@1: {result['pass_at_1']}")  # e.g. 0.4286
+
+# Multiple trials (DAB submission requires n >= 5)
+results = harness.run_trials("yelp", n_trials=5)
+print(f"pass@k: {results['pass_at_k']}")  # fraction passing in at least 1 trial
+
+# Export in DAB submission format
+harness.export_results(results, "results/team_oracle_forge_results.json")
+```
+
+**Returns from `run_trials()`:**
+```python
+{
+    "dataset": "yelp",
+    "n_trials": 5,
+    "pass_at_1": 0.4286,        # mean pass@1 across trials
+    "pass_at_k": 0.5714,        # queries passing in >= 1 trial
+    "query_pass_counts": {"query1": 5, "query2": 3, ...},
+    "trial_runs": [...]          # full run_harness output per trial
+}
+```
+
 ## Running Tests
 
 ```bash
