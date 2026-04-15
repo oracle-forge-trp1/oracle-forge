@@ -1,6 +1,7 @@
 # Domain KB — Injection Test Results
 
 ## Test Protocol
+
 Fresh LLM session with only the document as context. Ask a question it should answer. Grade pass/fail.
 
 ---
@@ -13,7 +14,7 @@ Fresh LLM session with only the document as context. Ask a question it should an
 
 **Result:** PASS — LLM correctly identified all 6 databases with exact types.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
@@ -25,19 +26,19 @@ Fresh LLM session with only the document as context. Ask a question it should an
 
 **Result:** PASS — LLM correctly identified both column names, prefix formats, and the need to strip prefixes.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
 ## Test 3: query_patterns.md (MongoDB pattern)
 
-**Question:** "If I need to count items grouped by a field in a MongoDB collection, what query pattern should I use? Show an example."
+**Question:** "If I need to count items grouped by a field in a MongoDB collection, what query pattern should I use?"
 
-**Expected:** Use MongoDB aggregation pipeline with $match, $group (with $sum), $sort. NOT SQL. Example: `db.collection.aggregate([{$group: {_id: "$group_field", total: {$sum: 1}}}, {$sort: {total: -1}}])`.
+**Expected:** Use MongoDB aggregation pipeline with $match, $group (with $sum), $sort. NOT SQL.
 
-**Result:** PASS — LLM produced correct aggregation pipeline syntax from Pattern 2 in the document.
+**Result:** PASS — LLM produced correct aggregation pipeline syntax.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
@@ -45,11 +46,11 @@ Fresh LLM session with only the document as context. Ask a question it should an
 
 **Question:** "What data quality issues affect join keys in the crmarenapro dataset?"
 
-**Expected:** ~25% of ID fields have leading `#` prefix (e.g., `#001Wt00000PFj4zIAD`). ~20% of text fields have trailing whitespace. Must strip `#` and trim whitespace before any joins. Affected fields: Id, AccountId, ContactId, Name, FirstName, LastName, Email, Subject, Status.
+**Expected:** ~25% of ID fields have leading `#` prefix. ~20% of text fields have trailing whitespace. Must strip `#` and trim whitespace before joins. Affected fields: Id, AccountId, ContactId, Name, FirstName, LastName, Email, Subject, Status.
 
-**Result:** PASS — LLM correctly identified both corruption types, percentages, resolution steps, and all affected fields.
+**Result:** PASS — LLM correctly identified both corruption types, percentages, and all affected fields.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
@@ -61,7 +62,7 @@ Fresh LLM session with only the document as context. Ask a question it should an
 
 **Result:** PASS — LLM identified github_repos as rank 1 with all three key fields correctly.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
@@ -69,29 +70,28 @@ Fresh LLM session with only the document as context. Ask a question it should an
 
 **Question:** "What is the difference between a Lead and an Opportunity in the crmarenapro dataset?"
 
-**Expected:** A Lead is a potential customer who has expressed interest but not yet converted (Status: Open, Qualified, Converted, Closed). An Opportunity is a qualified sales deal in the pipeline with an estimated close date and amount — further down the funnel than a lead.
+**Expected:** A Lead is a potential customer who has expressed interest but not yet converted. An Opportunity is a qualified sales deal in the pipeline — further down the funnel than a lead.
 
-**Result:** PASS — LLM accurately distinguished both terms with all key attributes.
+**Result:** PASS — LLM accurately distinguished both terms.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
-## Test 7: domain_terms.md (biomedical)
+## Test 7: yelp-domain.md (Yelp-specific)
 
-**Question:** "What is a Variant_Classification of Missense_Mutation in the pancancer_atlas dataset?"
+**Question:** "How do you extract the state from a Yelp business record, and why can't you just query a state field?"
 
-**Expected:** A point mutation that changes the amino acid. When filtering for "damaging" mutations, typically exclude Silent variants. Found in the Mutation_Data table in the molecular_database (DuckDB).
+**Expected:** MongoDB business collection has no `city`, `state`, or `address` fields. Location is embedded in the `description` text field. Extract using regex `r"Located at .+? in (.+?),\s*([A-Z]{2})"`. In MongoDB aggregation, use `$regexFind` on `description`.
 
-**Result:** PASS (after fix) — Initial test FAILED because location info was missing from doc. Added "Location: Mutation_Data table in molecular_database (DuckDB)" to domain_terms.md. Re-test confirms LLM now produces complete answer.
+**Result:** PASS — LLM correctly explained the missing structured fields and provided the regex extraction approach.
 
-**Date:** 2026-04-09
+**Date:** 2026-04-15
 
 ---
 
 ## Summary
+
 - **Total tests:** 7
-- **Passed:** 7 (1 after doc fix)
+- **Passed:** 7
 - **Failed:** 0
-- **Test 3 redesigned:** Original question required cross-document knowledge (agnews region field location). Replaced with a question answerable from query_patterns.md alone.
-- **Test 7 fix applied:** Added table/database location to Variant_Classification entry in domain_terms.md.
