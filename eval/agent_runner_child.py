@@ -26,7 +26,10 @@ def main() -> int:
                 payload["db_config_path"],
                 payload["db_description"],
             )
-            out = {"ok": True, "answer": str(ans)}
+            if isinstance(ans, dict):
+                out = {"ok": True, "answer": str(ans.get("answer", "")), "query_trace": ans.get("query_trace", [])}
+            else:
+                out = {"ok": True, "answer": str(ans), "query_trace": []}
     except Exception as e:  # noqa: BLE001 — child must always emit JSON
         out = {"ok": False, "error": repr(e)}
 

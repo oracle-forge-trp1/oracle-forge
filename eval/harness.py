@@ -146,7 +146,7 @@ def invoke_agent_subprocess(
     db_description: str,
     dummy: bool,
     timeout_sec: float,
-) -> Tuple[str, Optional[str]]:
+) -> Tuple[str, list, Optional[str]]:
     payload = {
         "repo_root": str(REPO_ROOT),
         "agent_dir": str(AGENT_DIR),
@@ -167,24 +167,24 @@ def invoke_agent_subprocess(
             check=False,
         )
     except subprocess.TimeoutExpired:
-        return "", "timeout"
+        return "", [], "timeout"
 
     if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "").strip() or f"exit {proc.returncode}"
-        return "", f"subprocess_error: {err}"
+        return "", [], f"subprocess_error: {err}"
 
     line = (proc.stdout or "").strip()
     if not line:
-        return "", "empty_child_stdout"
+        return "", [], "empty_child_stdout"
 
     try:
         msg = json.loads(line)
     except json.JSONDecodeError as e:
-        return "", f"invalid_child_json: {e}: {line[:200]!r}"
+        return "", [], f"invalid_child_json: {e}: {line[:200]!r}"
 
     if not msg.get("ok"):
-        return "", str(msg.get("error", "unknown_error"))
-    return str(msg.get("answer", "")), None
+        return "", [], str(msg.get("error", "unknown_error"))
+    return str(msg.get("answer", "")), msg.get("query_trace", []), None
 
 
 def next_run_id(score_log_path: Path, day: str) -> str:
@@ -287,6 +287,7 @@ def run_harness(
                 "query_id": qid,
                 "question": None,
                 "agent_answer": None,
+                "query_trace": [],
                 "passed": False,
                 "execution_time_sec": None,
                 "validation_message": None,
@@ -307,7 +308,7 @@ def run_harness(
             question = load_question(qjson)
             row["question"] = question
 
-            answer, err = invoke_agent_subprocess(
+            answer, trace, err = invoke_agent_subprocess(
                 module_name=mod_name,
                 query=question,
                 db_config_path=db_config_path,
@@ -320,16 +321,19 @@ def run_harness(
 
             if err == "timeout":
                 row["agent_answer"] = ""
+                row["query_trace"] = trace
                 row["error"] = f"agent_timeout_after_{timeout_sec}s"
                 results.append(row)
                 continue
             if err:
                 row["agent_answer"] = answer or ""
+                row["query_trace"] = trace
                 row["error"] = err
                 results.append(row)
                 continue
 
             row["agent_answer"] = answer
+            row["query_trace"] = trace
 
             try:
                 validate_fn = load_validate_fn(vpy)
