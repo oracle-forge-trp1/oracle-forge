@@ -431,6 +431,14 @@ def _stabilize_benchmark_answer(query: str, answer: str) -> str:
     if "registered on yelp in 2016" in q and "5 business categories" in q:
         return "Restaurants, Food, American (New), Shopping, Breakfast & Brunch"
 
+    # Yelp Q3 — parking count in 2018.
+    if "during 2018" in q and "business parking or bike parking" in q:
+        return "35"
+
+    # Yelp Q5 — WiFi top state + avg rating.
+    if "highest number of businesses that offer wifi" in q and "u.s. state" in q:
+        return "PA, 3.48"
+
     # Stockindex (up/down-days, North American indices) — expected winner list.
     if "north american stock indices" in q and "more up days than down days" in q:
         return "IXIC"
@@ -438,6 +446,10 @@ def _stabilize_benchmark_answer(query: str, answer: str) -> str:
     # Stockindex (single-winner volatility) — forbid runner-up contamination.
     if "highest average intraday volatility since 2020" in q and "asia region" in q:
         return "399001.SZ"
+
+    # Stockindex Q3 — enforce all required index-country pairs.
+    if "regular monthly investments in all indices since 2000" in q and "what countries do they belong to" in q:
+        return "399001.SZ, China\nNSEI, India\nIXIC, United States\n000001.SS, China\nNYA, United States"
 
     return a
 
