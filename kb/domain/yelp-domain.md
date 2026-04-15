@@ -15,6 +15,67 @@ Two active databases. Every Yelp query spans both — business metadata lives in
 
 ---
 
+## Schema Reference
+
+### MongoDB — `businessinfo_database`
+
+#### `business` collection
+| Field | Type | Notes |
+|-------|------|-------|
+| `_id` | ObjectId | MongoDB internal |
+| `business_id` | str | Unique identifier — prefix `businessid_` |
+| `name` | str | Business name |
+| `review_count` | int | Total reviews (stored as string — cast required) |
+| `is_open` | int | `"1"` = open, `"0"` = closed (stored as string) |
+| `attributes` | dict or null | Serialised dict string — parking, WiFi, credit cards |
+| `hours` | dict or null | Operating hours |
+| `description` | str | Includes location info (city/state via regex) |
+
+#### `checkin` collection
+| Field | Type | Notes |
+|-------|------|-------|
+| `_id` | ObjectId | MongoDB internal |
+| `business_id` | str | Links to `business.business_id` |
+| `date` | list of str | Comma-separated timestamps in a single string |
+
+### DuckDB — `user_database`
+
+#### `review` table
+| Field | Type | Notes |
+|-------|------|-------|
+| `review_id` | str | Unique review identifier |
+| `user_id` | str or null | User identifier |
+| `business_ref` | str | Links to `business.business_id` — prefix `businessref_` |
+| `rating` | int | Score 1–5 |
+| `useful` | int | Useful votes |
+| `funny` | int | Funny votes |
+| `cool` | int | Cool votes |
+| `text` | str | Review content |
+| `date` | str | Mixed date formats — see Date Formats section |
+
+#### `tip` table
+| Field | Type | Notes |
+|-------|------|-------|
+| `user_id` | str or null | User identifier |
+| `business_ref` | str | Links to `business.business_id` — prefix `businessref_` |
+| `text` | str | Tip content |
+| `date` | str | Mixed date formats |
+| `compliment_count` | int | Compliments received |
+
+#### `user` table
+| Field | Type | Notes |
+|-------|------|-------|
+| `user_id` | str | Unique user identifier |
+| `name` | str | User name |
+| `review_count` | int | Total reviews written |
+| `yelping_since` | str | Registration date — mixed formats |
+| `useful` | int | Total useful votes |
+| `funny` | int | Total funny votes |
+| `cool` | int | Total cool votes |
+| `elite` | str | Elite status years |
+
+---
+
 ## Location — Critical Rule
 
 MongoDB `business` has **no `city`, `state`, or `address` fields**. Location is embedded in the `description` field as natural language text:
