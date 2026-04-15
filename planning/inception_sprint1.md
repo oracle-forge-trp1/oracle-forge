@@ -3,7 +3,7 @@
 **Sprint:** 1 of 2 (Week 8, Days 3-5)  
 **Focus:** Infrastructure + Core Agent Build  
 **Date drafted:** 2026-04-09  
-**Approval status:** PENDING — must be approved at mob session before Construction begins
+**Approval status:** APPROVED — mob session April 10, 2026
 
 ---
 
@@ -79,14 +79,17 @@ Sprint 1 is complete when all of the following are verifiably true. "I think it 
 
 ## Mob Approval Record
 
-**Status:** PENDING
+**Approved at:** Day 3 mob session — April 10, 2026  
+**Attendees:** Birkity Yishak, Beamlak Adane, Atnabon Deressa, Yonas Eshete, Zemzem Hibet  
+**Decision:** Proceed to Construction phase — unanimous approval  
 
-| Field | Value |
-|-------|-------|
-| Approval date | |
-| Approved by | |
-| Hardest question asked | |
-| Answer given | |
-| Any items sent back for revision | |
+**Hardest question asked:**  
+- Asked by: Yonas Eshete  
+- Question: *The DAB benchmark has 12 datasets across 4 database types — do we try to cover all of them or focus on Yelp first?*  
+- Answer: Yelp first. It is the only dataset already loaded on the server, it has the most complex failure modes (cross-DB join key mismatch, unstructured text, mixed dates), and fixing it validates the full agent architecture. We load other datasets in parallel once the Yelp pipeline is working.
 
-*No Construction work begins until this section is filled in and committed.*
+**Gate conditions verified at approval:**
+- Inception document read aloud together ✅
+- All FAQ questions answered by group ✅
+- Definition of Done reviewed item by item ✅
+- No team member withheld approval ✅

@@ -1,0 +1,51 @@
+Oracle Forge MCP Toolbox — Verification Record
+===============================================
+Date verified: 2026-04-11 (Day 4, post-setup)
+Server: deepseek.10academy.org
+MCP endpoint: http://127.0.0.1:5000/mcp
+Health endpoint: http://127.0.0.1:5000/health
+
+Health Check Response
+---------------------
+$ curl http://127.0.0.1:5000/health
+🧰 Oracle Forge MCP Server 🧰
+HTTP 200 OK
+
+Tools List Response (tools/list)
+---------------------------------
+$ curl -s -X POST http://127.0.0.1:5000/mcp \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","id":0,"method":"tools/list","params":{}}'
+
+Response confirmed 6 tools registered:
+  1. query_mongodb    — MongoDB find/aggregate (source: mongo-yelp, ACTIVE)
+  2. query_duckdb     — DuckDB SQL (source: duckdb-yelp, ACTIVE)
+  3. query_postgres   — PostgreSQL SQL (source: pg-dab, PENDING)
+  4. query_sqlite     — SQLite SQL (source: sqlite-dab, PENDING)
+  5. normalize_join_key — Cross-DB key normalization
+  6. diagnose_join      — Join mismatch diagnosis
+
+MongoDB Smoke Test (yelp businessinfo_database)
+------------------------------------------------
+Tool: query_mongodb
+Arguments: {"db_name": "businessinfo_database", "collection": "business", "query_type": "find", "query": "{}"}
+Result: {"success": true, "rows": 100, "data": [{"business_id": "businessid_1", ...}]}
+Status: PASS — 100 businesses returned, businessid_N format confirmed
+
+DuckDB Smoke Test (yelp user_database)
+---------------------------------------
+Tool: query_duckdb
+Arguments: {"db_name": "user_database", "sql": "SELECT count(*) AS n FROM review"}
+Result: {"success": true, "rows": 1, "data": [{"n": 2000}]}
+Status: PASS — 2000 reviews confirmed in DuckDB
+
+Cross-DB Join Key Normalization Test
+--------------------------------------
+Tool: normalize_join_key
+Arguments: {"value": "businessid_42", "target_prefix": "businessref_"}
+Result: {"success": true, "original": "businessid_42", "normalized_int": 42, "result": "businessref_42"}
+Status: PASS — businessid_42 → businessref_42 translation confirmed
+
+Verified by: Birkity Yishak (Driver)
+Mob session review: Day 4, April 11, 2026
+Confirmation: Team confirmed toolbox operational before Construction phase gate

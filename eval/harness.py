@@ -91,6 +91,54 @@ def _ensure_import_paths() -> None:
             sys.path.insert(0, p)
 
 
+def _check_llm_api() -> Optional[str]:
+    """
+    Quick sanity check: verify the LLM API key is usable before running queries.
+    Returns None if OK, or an error string if the key is exhausted / invalid.
+    Reads ANTHROPIC_API_KEY and OPENROUTER_MODEL from environment (or .env).
+    """
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(override=False)
+    except ImportError:
+        pass
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return "ANTHROPIC_API_KEY not set in environment or .env"
+
+    try:
+        import urllib.request as _req
+        import json as _json
+        payload = _json.dumps({
+            "model": os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5"),
+            "messages": [{"role": "user", "content": "ping"}],
+            "max_tokens": 1,
+        }).encode()
+        request = _req.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+            method="POST",
+        )
+        with _req.urlopen(request, timeout=10) as resp:
+            if resp.status == 200:
+                return None
+            body = resp.read().decode()
+            return f"API returned HTTP {resp.status}: {body[:200]}"
+    except Exception as exc:
+        msg = str(exc)
+        if "403" in msg and "limit" in msg.lower():
+            return (
+                "OpenRouter weekly token limit exceeded (HTTP 403). "
+                "Update ANTHROPIC_API_KEY in .env with a fresh key, or wait for the weekly reset. "
+                f"Details: {msg[:200]}"
+            )
+        if "401" in msg:
+            return f"API authentication failed (HTTP 401) — check ANTHROPIC_API_KEY in .env. Details: {msg[:200]}"
+        return f"API health check failed: {msg[:300]}"
+
+
 def discover_query_dirs(dataset_root: Path) -> List[Path]:
     dirs = [p for p in dataset_root.iterdir() if p.is_dir() and re.match(r"^query\d+$", p.name, re.I)]
     dirs.sort(key=lambda p: int(re.match(r"^query(\d+)$", p.name, re.I).group(1)))
@@ -262,6 +310,12 @@ def run_harness(
 
     if not dummy and not agent_module:
         raise ValueError("Provide --agent-module or use --dummy")
+
+    # Fast-fail if the LLM API key is unusable — avoids burning time on all queries
+    if not dummy and agent_module:
+        api_err = _check_llm_api()
+        if api_err:
+            raise RuntimeError(f"LLM API pre-check failed: {api_err}")
 
     mod_name = agent_module or "dummy"
 
