@@ -1,6 +1,6 @@
 # Mob Session — Day 4 (April 11, 2026)
 **Attendees:** Birkity Yishak, Beamlak A, Atnabon Deressa, Yonas Eshete, Zemzem Hibet
-**Duration:** ~60 min
+**Duration:** ~40 min
 
 ## IO Update
 Atnabon merged all KB architecture documents. Working on additional corrections log entries to capture Day 3–4 failures. Yonas committed all three utility modules with tests and updated the project README.

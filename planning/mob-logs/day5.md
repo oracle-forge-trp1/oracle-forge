@@ -1,6 +1,6 @@
 # Mob Session — Day 5 (April 12–13, 2026)
 **Attendees:** Birkity Yishak, Beamlak A, Atnabon Deressa, Yonas Eshete, Zemzem Hibet
-**Duration:** ~60 min
+**Duration:** ~50 min
 
 ## IO Update
 Atnabon updated all CHANGELOGs and documented injection test evidence for all KB architecture documents. Yonas finalized the domain KB and began writing the adversarial probe library from the accumulated failure observations.

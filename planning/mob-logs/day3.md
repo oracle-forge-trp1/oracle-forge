@@ -1,6 +1,6 @@
 # Mob Session — Day 3 (April 10, 2026)
 **Attendees:** Birkity Yishak, Beamlak A, Atnabon Deressa, Yonas Eshete, Zemzem Hibet
-**Duration:** ~60 min
+**Duration:** ~50 min
 
 ## IO Update
 Atnabon read the Claude Code architecture docs and OpenAI data agent writeup; started drafting kb/architecture/ documents. Yonas read MCP Toolbox documentation and began KB v2 domain work.
