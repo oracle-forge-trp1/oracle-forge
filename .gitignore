@@ -41,7 +41,7 @@ node_modules/
 
 # MCP Toolbox binary
 toolbox
-
+utils/tests/
 # Temp
 *.tmp
 *.log

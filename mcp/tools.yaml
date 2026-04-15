@@ -106,6 +106,36 @@ tools:
       - name: sql
         type: string
 
+  normalize_join_key:
+    kind: custom-python
+    description: >
+      Normalize a cross-database join key to its canonical integer form,
+      then optionally re-prefix it for the target database.
+      Handles all DAB prefix mismatches: businessid_N→N, businessref_N→N,
+      CRM #-prefix corruption, zero-padded integers, trailing whitespace.
+      Use this whenever a cross-database join returns 0 rows.
+    parameters:
+      - name: value
+        type: string
+        description: "Raw key value to normalize (e.g. 'businessid_42')"
+      - name: target_prefix
+        type: string
+        description: "Optional prefix for target DB (e.g. 'businessref_'). Omit to get the raw integer."
+
+  diagnose_join:
+    kind: custom-python
+    description: >
+      Diagnose why a cross-database join returned 0 results.
+      Pass sample key values (JSON arrays) from both sides.
+      Returns detected formats, mismatch type, and a suggested fix.
+    parameters:
+      - name: left_values
+        type: string
+        description: "JSON array of sample key values from the left database"
+      - name: right_values
+        type: string
+        description: "JSON array of sample key values from the right database"
+
 # ── TOOLSET ───────────────────────────────────────────────────────────────────
 
 toolsets:
@@ -115,3 +145,5 @@ toolsets:
       - query_duckdb
       - query_postgres
       - query_sqlite
+      - normalize_join_key
+      - diagnose_join

@@ -1,7 +1,29 @@
 # Adversarial Probe Library
 # Oracle Forge — DataAgentBench (Yelp dataset)
-# All probes drawn from observed agent failures during evaluation runs 2026-04-13-001 through 2026-04-13-005.
+# All probes drawn from observed agent failures during evaluation runs 2026-04-13-001 through 2026-04-15-034.
 # 15 probes across 4 failure categories.
+
+## Logging Policy (Reproducible Status)
+
+For every probe update, record both statuses:
+
+1. **Strict status**: PASS/FAIL from raw model output.
+2. **Repaired status**: PASS/FAIL after optional ground-truth repair fallback.
+
+Do not mark a probe as fully fixed unless strict status is PASS.
+If repaired status is PASS but strict is FAIL, mark as **Operational pass / Model pending**.
+
+Required evidence for each status update:
+
+- `run_id` from `eval/score_log.json`
+- dataset + query id
+- `strict_validation_message`
+- `validation_message`
+- `repaired` flag
+
+Template for new status lines:
+
+`Run: <run_id> | Strict: <PASS/FAIL> | Repaired: <PASS/FAIL> | repaired=<true/false> | note: <reason>`
 
 ---
 
@@ -42,7 +64,7 @@ Agent returned: *"Pennsylvania (PA) has the highest number of reviews with 626 t
 **Fix applied:**
 Added Rule R1 to §9 Quick-Reference: "Review counts come from DuckDB `review` table rows — NEVER from MongoDB `review_count` field."
 
-**Post-fix score:** Pending (API credits exhausted before re-run)
+**Post-fix score:** FAIL (run 2026-04-15-034) — output contained wrong avg and format mismatch (`No number found near name: PA`).
 
 ---
 
@@ -102,7 +124,7 @@ Agent returned: *"I cannot answer this question because the MongoDB business col
 **Fix applied:**
 Added Correction 6 to AGENT.md: categories are embedded in natural language in `business.description`. Agent must use regex extraction patterns (e.g., `r"categor(?:y|ies) of '?(.+?)'?\."`) to extract them. Also added catch-all: `'restaurant' in description.lower()`.
 
-**Post-fix score:** Partial (run 005 — returned "Restaurants, 3.59", ground truth 3.63. Category name correct, avg slightly off due to 22/27 businesses found)
+**Post-fix score:** FAIL (run 2026-04-15-034) — returned `Restaurants, 3.48`; expected category/value near `Restaurant, 3.63`.
 
 ---
 
@@ -224,7 +246,7 @@ Agent returned: *"Pet Services (Pit Stop HQ), Food, Restaurants..."* — categor
 **Fix applied:**
 Added Correction 8: fetch ALL businesses reviewed by target users (may be 60+), extract categories for each, sum review counts per category, sort by total. Top 5 categories by aggregate review count, not by top businesses.
 
-**Post-fix score:** Partial (run 004/005 — Restaurants, Food appear, but Breakfast & Brunch still missing — see PROBE-012)
+**Post-fix score:** FAIL (run 2026-04-15-034) — still incomplete category aggregation.
 
 ---
 
@@ -246,7 +268,7 @@ Ground truth validation requires ALL of: Restaurants, Food, American (New), Shop
 **Fix applied:**
 Added Correction 9: "When asked for top N categories, always output top N+2. Validator checks PRESENCE not rank — err on the side of including more."
 
-**Post-fix score:** Pending (API credits exhausted before re-run)
+**Post-fix score:** FAIL (run 2026-04-15-034) — `Shopping` still missing in final list.
 
 ---
 
@@ -266,7 +288,7 @@ Agent used ISO-only filter for yelping_since, finding fewer 2016 users than exis
 **Fix applied:**
 Correction 5 + §6 COALESCE rule applies to ALL date columns including `user.yelping_since`. Full COALESCE over 6 TRY_STRPTIME patterns required everywhere a date comparison is made.
 
-**Post-fix score:** Partial — category list improved but Breakfast & Brunch still missing (see PROBE-012)
+**Post-fix score:** FAIL (run 2026-04-15-034) — category list remains incomplete for required validator set.
 
 ---
 
@@ -286,7 +308,7 @@ Agent queried MongoDB for review counts: sum of `review_count` across PA busines
 **Fix applied:**
 Added Rule R1 to §9: review counts must come from DuckDB `review` table. MongoDB `review_count` is a cached field — never use it for counting. The fact "how many reviews" lives in DuckDB, not MongoDB.
 
-**Post-fix score:** Pending (API credits exhausted before re-run)
+**Post-fix score:** FAIL (run 2026-04-15-034) — review-count/avg pipeline still not matching expected output.
 
 ---
 
@@ -308,7 +330,7 @@ Run 005 FAILED with format "Pennsylvania (PA) has the highest number of reviews 
 **Fix applied:**
 Added Rule R2 to §9: *"Always lead the answer with 'STATE, value'. Validators scan only 50 chars after 'PA' or 'Pennsylvania' for the numeric value. Do not place any other number before the avg in that window."*
 
-**Post-fix score:** Pending (API credits exhausted before re-run)
+**Post-fix score:** FAIL (run 2026-04-15-034) — output format still drifts into verbose forms in some attempts.
 
 ---
 
@@ -317,17 +339,17 @@ Added Rule R2 to §9: *"Always lead the answer with 'STATE, value'. Validators s
 | Probe | Query | Category | Status |
 |---|---|---|---|
 | PROBE-001 | businessid_N ↔ businessref_N join | Ill-formatted join key | ✅ Fixed — PASS |
-| PROBE-002 | MongoDB review_count vs DuckDB row count | Ill-formatted join key | 🔄 Fix added, pending re-run |
+| PROBE-002 | MongoDB review_count vs DuckDB row count | Ill-formatted join key | ❌ Not fixed in run 034 |
 | PROBE-003 | Single TRY_STRPTIME misses non-ISO dates | Unstructured text extraction | ✅ Fixed — PASS (run 004) |
 | PROBE-004 | "Located at" regex misses description variants | Unstructured text extraction | ✅ Fixed — PASS |
-| PROBE-005 | Querying non-existent category field | Unstructured text extraction | ⚠️ Partial — category correct, avg off |
+| PROBE-005 | Querying non-existent category field | Unstructured text extraction | ❌ Still failing (run 034) |
 | PROBE-006 | WiFi stored as "u'free'" not "free" | Unstructured text extraction | ✅ Fixed — PASS |
 | PROBE-007 | ast.literal_eval on full attributes dict | Unstructured text extraction | 🔄 Fix added, pending re-run |
 | PROBE-008 | Category regex misses 5/27 restaurant businesses | Unstructured text extraction | 🔄 Fix added, pending re-run |
 | PROBE-009 | Averaging per-business averages | Domain knowledge gap | ✅ Fixed — PASS |
 | PROBE-010 | WiFi avg over all states not just PA | Domain knowledge gap | 🔄 Fix added, pending re-run |
-| PROBE-011 | Top-N business categories vs all-business aggregate | Domain knowledge gap | ⚠️ Partial — top 4 correct |
-| PROBE-012 | Hard truncation to N misses tied category | Domain knowledge gap | 🔄 Fix added, pending re-run |
-| PROBE-013 | Single-format yelping_since filter misses non-ISO users | Domain knowledge gap | ⚠️ Partial — improved, not fully resolved |
-| PROBE-014 | Review count routed to MongoDB not DuckDB | Multi-database routing | 🔄 Fix added, pending re-run |
-| PROBE-015 | Preceding number blocks 50-char validation window | Multi-database routing | 🔄 Fix added, pending re-run |
+| PROBE-011 | Top-N business categories vs all-business aggregate | Domain knowledge gap | ❌ Still failing (run 034) |
+| PROBE-012 | Hard truncation to N misses tied category | Domain knowledge gap | ❌ Still failing (run 034) |
+| PROBE-013 | Single-format yelping_since filter misses non-ISO users | Domain knowledge gap | ❌ Still failing (run 034) |
+| PROBE-014 | Review count routed to MongoDB not DuckDB | Multi-database routing | ❌ Still failing (run 034) |
+| PROBE-015 | Preceding number blocks 50-char validation window | Multi-database routing | ❌ Still failing (run 034) |
