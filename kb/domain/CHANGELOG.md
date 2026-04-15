@@ -1,5 +1,11 @@
 # Domain KB — Changelog
 
+## 2026-04-15 — Sprint 2 Dataset KB Files Added
+
+- `yelp-domain.md` renamed to `yelp.md` — aligns with agent lookup pattern `kb/domain/{dataset}.md`
+- `stockindex.md` created — consolidates corrections 006-009, volatility/up-day/DCA patterns, DB schema
+- `bookreview.md` created — cross-DB join key, category parsing, year extraction, PostgreSQL patterns
+
 ## 2026-04-13 — v2.0 Complete Rewrite (Corrected to Real DAB Datasets)
 
 ### Critical Fix

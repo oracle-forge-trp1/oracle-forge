@@ -526,11 +526,30 @@ def ensure_postgres_loaded(db_config_path: str) -> None:
             logger.warning("Could not create PostgreSQL DB '%s': %s — skipping.", db_name, exc)
             continue
 
+        # Strip ownership transfer lines — oracle_forge cannot transfer ownership to
+        # other roles (e.g. postgres), so filter them out before loading.
+        # The tables will be owned by oracle_forge, which has full access.
+        import tempfile
+        with open(sql_path, encoding="utf-8") as _f:
+            filtered_sql = "\n".join(
+                line for line in _f
+                if "OWNER TO" not in line and "SET ROLE" not in line
+            )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".sql", delete=False, encoding="utf-8"
+        ) as _tmp:
+            _tmp.write(filtered_sql)
+            tmp_sql_path = _tmp.name
+
         env = os.environ.copy()
         env["PGPASSWORD"] = pg_password
-        cmd = ["psql", "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", db_name, "-f", str(sql_path)]
-        logger.info("Loading PostgreSQL DB '%s' from %s ...", db_name, sql_path)
+        cmd = ["psql", "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", db_name, "-f", tmp_sql_path]
+        logger.info("Loading PostgreSQL DB '%s' from %s (ownership lines stripped) ...", db_name, sql_path)
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        try:
+            os.unlink(tmp_sql_path)
+        except OSError:
+            pass
         if result.returncode == 0:
             logger.info("PostgreSQL load OK for '%s'.", db_name)
         else:
