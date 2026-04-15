@@ -29,6 +29,22 @@
 - **LinkedIn post** — We're building a production data agent
   Link: https://www.linkedin.com/posts/zemzem-hibet_dataagents-contextengineering-aiengineering-activity-7450135555243307008-Up9o?utm_source=share&utm_medium=member_desktop&rcm=ACoAACoQ5tYBk-I7qgTdzeo9LHdyyk2Fl0QNAIMX
 
+## April 15, 2026
+- **Reddit post** — r/LocalLLaMA
+  Thread: "Real failure modes we hit building a multi-database data agent against DataAgentBench (DAB)"
+  Link: https://www.reddit.com/r/LocalLLaMA/comments/1smbt8u/real_failure_modes_we_hit_building_a/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+  
+## April 15, 2026
+- **Reddit post** — own account(Life_Meringue_4343)
+  Thread: "Real failure modes we hit building a multi-database data agent against DataAgentBench (DAB)"
+  Link: https://www.reddit.com/user/Life_Meringue_4343/comments/1smbv6p/real_failure_modes_we_hit_building_a/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+
+## April 15, 2026
+- **Reddit reply** — r/LocalLLaMA
+  Response to comment on agent failure modes post
+  Note: Commenter mentioned routing exploration vs execution — potential intelligence for IOs
+  Link: https://www.reddit.com/r/LocalLLaMA/comments/1smbt8u/comment/ogd77gk/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+
 ### Additional pasted references
 - X (formerly Twitter) Zemzem hibet (@hibet_zemzem) on X
 - @karpathy We're applying this exact pattern as the knowledge layer for a multi-database data agent running against @UCBEPICs DataAgentBench.
