@@ -295,7 +295,9 @@ def _exec_postgres(args: dict) -> dict:
         conn.close()
         return {"success": True, "rows": len(rows), "data": rows}
     except Exception as exc:
-        return {"success": False, "error": str(exc), "rows": 0, "data": []}
+        # Return explicit error payload (without a fake empty data array) so
+        # upstream traces and the LLM can see the true failure reason.
+        return {"success": False, "error": str(exc), "rows": 0}
 
 
 def _exec_normalize_join_key(args: dict) -> dict:
