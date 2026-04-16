@@ -30,7 +30,7 @@
 - All 12 real datasets ranked by unstructured field complexity; per-field extraction approaches
 
 ### Added — yelp-domain.md (Sprint 1)
-- Yelp-specific rules: state/city extraction from description field, attribute serialisation format, date COALESCE pattern, category parsing, cross-DB join key translation, 7 DAB queries with ground truth and solution approaches
+- Yelp-specific rules: state/city extraction from description field, attribute serialisation format, date COALESCE pattern, category parsing, cross-DB join key translation, and query solution approaches
 - 7 injection tests run; 6 pass immediately, 1 fixed after doc revision (domain_terms.md biomedical codes); all 7 PASS confirmed
 
 ## 2026-04-11 — v1.0 Initial Release (SUPERSEDED)

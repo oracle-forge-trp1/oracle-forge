@@ -16,7 +16,7 @@ Documents in this directory provide the agent with working knowledge of:
 - [x] join_keys.md — Real DAB key mismatches (yelp prefix, CRM # corruption, bookreview name mismatch)
 - [x] unstructured_fields.md — All text fields across 12 datasets, ranked by complexity
 - [x] domain_terms.md — CRM, finance, biomedical, patent, software domain terms
-- [x] yelp.md — Yelp-specific domain knowledge with ground truth for all 7 queries (renamed from yelp-domain.md)
+- [x] yelp.md — Yelp-specific domain knowledge: schema quirks, parsing rules, and query strategies
 - [x] stockindex.md — StockIndex-specific patterns: volatility, up-day definition, DCA methodology, answer format
 - [x] bookreview.md — BookReview-specific patterns: cross-DB join, category parsing, year extraction, rating queries
 

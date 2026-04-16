@@ -110,12 +110,12 @@ WHERE review_time >= '2020-01-01'
 
 ---
 
-## Known Query Answers (Cross-Reference)
+## Query Patterns (No Answer Keys)
 
-| Query | Expected Answer | Key Constraint |
-|-------|----------------|----------------|
-| Q1: Decade with highest avg rating (≥10 distinct books) | 2020s (return "2020") | decade computed from details field |
-| Q2: English Literature & Fiction books with perfect 5.0 avg | 15 specific titles (see validate.py) | categories LIKE '%Literature & Fiction%', AVG(rating)=5 |
-| Q3: Children's Books with ≥4.5 avg rating since 2020 | 14 specific titles (see validate.py) | categories LIKE '%Children''s Books%', avg>=4.5, review_time>='2020' |
+| Query | Required computation | Key Constraint |
+|-------|----------------------|----------------|
+| Q1: Decade with highest avg rating (≥10 distinct books) | Extract publication year, derive decade, aggregate avg rating by decade | decade computed from details/subtitle text |
+| Q2: Literature/Fiction books with perfect avg | Filter category, join to review DB, keep groups with AVG(rating)=5 | categories LIKE '%Literature & Fiction%' |
+| Q3: Children's books with ≥4.5 avg since 2020 | Filter category + date, aggregate by purchase/book | categories LIKE '%Children''s Books%', review_time >= '2020' |
 
-Q2 and Q3 validators check for ALL listed book titles — even one missing title fails the query.
+Do not rely on memorized title lists. Always derive outputs from live query results.
