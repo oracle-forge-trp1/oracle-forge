@@ -706,12 +706,26 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
     # Build system prompt: AGENT.md + corrections log + domain KB + live schema + DB description
     system_prompt = _build_system_prompt(db_config_path, db_description, connections)
 
-    # Init LLM client (OpenRouter)
-    client = OpenAI(
-        api_key=os.getenv("ANTHROPIC_API_KEY"),
-        base_url="https://openrouter.ai/api/v1"
-    )
-    model = os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL)
+    # Init LLM client (OpenRouter by default; OpenAI optional for reruns)
+    llm_provider = os.getenv("ORACLE_FORGE_LLM_PROVIDER", "openrouter").strip().lower()
+    if llm_provider in ("openai", "open_ai"):
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        openai_base_url = os.getenv("OPENAI_BASE_URL", "").strip()
+        if openai_base_url:
+            client = OpenAI(api_key=api_key, base_url=openai_base_url)
+        else:
+            client = OpenAI(api_key=api_key)
+        model = openai_model
+        logger.info("LLM provider: openai (model=%s)", model)
+    else:
+        # Backwards-compatible default: OpenRouter using ANTHROPIC_API_KEY env var
+        client = OpenAI(
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            base_url="https://openrouter.ai/api/v1",
+        )
+        model = os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL)
+        logger.info("LLM provider: openrouter (model=%s)", model)
     logger.info("Model: %s", model)
 
     messages = [
