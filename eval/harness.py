@@ -95,7 +95,6 @@ def _check_llm_api() -> Optional[str]:
     """
     Quick sanity check: verify the LLM API key is usable before running queries.
     Returns None if OK, or an error string if the key is exhausted / invalid.
-    Health-checks the selected LLM provider using environment (or .env).
     """
     try:
         from dotenv import load_dotenv
@@ -103,31 +102,20 @@ def _check_llm_api() -> Optional[str]:
     except ImportError:
         pass
 
-    llm_provider = os.getenv("ORACLE_FORGE_LLM_PROVIDER", "openrouter").strip().lower()
-
-    if llm_provider in ("openai", "open_ai"):
-        api_key = os.getenv("OPENAI_API_KEY", "")
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        if not api_key:
-            return "OPENAI_API_KEY not set in environment or .env"
-        url = "https://api.openai.com/v1/chat/completions"
-    else:
-        api_key = os.getenv("ANTHROPIC_API_KEY", "")
-        model = os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5")
-        if not api_key:
-            return "ANTHROPIC_API_KEY not set in environment or .env"
-        url = "https://openrouter.ai/api/v1/chat/completions"
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return "ANTHROPIC_API_KEY not set in environment or .env"
 
     try:
         import urllib.request as _req
         import json as _json
         payload = _json.dumps({
-            "model": model,
+            "model": os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5"),
             "messages": [{"role": "user", "content": "ping"}],
             "max_tokens": 1,
         }).encode()
         request = _req.Request(
-            url,
+            "https://openrouter.ai/api/v1/chat/completions",
             data=payload,
             headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
             method="POST",
@@ -139,20 +127,14 @@ def _check_llm_api() -> Optional[str]:
             return f"API returned HTTP {resp.status}: {body[:200]}"
     except Exception as exc:
         msg = str(exc)
-        if "401" in msg:
-            if llm_provider in ("openai", "open_ai"):
-                return f"OpenAI auth failed (HTTP 401) — check OPENAI_API_KEY in .env. Details: {msg[:200]}"
-            return f"OpenRouter auth failed (HTTP 401) — check ANTHROPIC_API_KEY in .env. Details: {msg[:200]}"
         if "403" in msg and "limit" in msg.lower():
-            if llm_provider in ("openai", "open_ai"):
-                return f"OpenAI access blocked (HTTP 403) — check account/quota. Details: {msg[:200]}"
             return (
                 "OpenRouter weekly token limit exceeded (HTTP 403). "
                 "Update ANTHROPIC_API_KEY in .env with a fresh key, or wait for the weekly reset. "
                 f"Details: {msg[:200]}"
             )
-        if "429" in msg and "limit" in msg.lower():
-            return f"LLM rate limit exceeded (HTTP 429). Details: {msg[:200]}"
+        if "401" in msg:
+            return f"API authentication failed (HTTP 401) — check ANTHROPIC_API_KEY in .env. Details: {msg[:200]}"
         return f"API health check failed: {msg[:300]}"
 
 
