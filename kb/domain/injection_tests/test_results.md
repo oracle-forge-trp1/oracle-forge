@@ -90,8 +90,68 @@ Fresh LLM session with only the document as context. Ask a question it should an
 
 ---
 
+## Test 8: crmarenapro.md (data corruption)
+
+**Question:** "What data corruption issues exist in the crmarenapro dataset and how should you handle them before joining?"
+
+**Expected:** ~25% ID fields have leading `#` prefix, ~20% text fields have trailing whitespace, must strip `#` and `.strip()` before joins, affects Id/AccountId/ContactId/Name/Email/Subject/Status.
+
+**Result:** PASS — LLM identified both corruption types with percentages, normalization code, and all affected fields.
+
+**Date:** 2026-04-17
+
+---
+
+## Test 9: agnews.md (categories)
+
+**Question:** "What are the 4 article categories in the agnews dataset and where is category information stored?"
+
+**Expected:** World, Sports, Business, Science/Technology. Categories determined from title and description content — may require text analysis/classification.
+
+**Result:** PASS — LLM listed all 4 categories and correctly stated they must be determined from article content, not a structured field.
+
+**Date:** 2026-04-17
+
+---
+
+## Test 10: googlelocal.md (join key + timeframe)
+
+**Question:** "What is the join key between the two databases in the googlelocal dataset and what is the data timeframe?"
+
+**Expected:** gmap_id links PostgreSQL business_description to SQLite review, consistent format (no mismatch), data through September 2021.
+
+**Result:** PASS — LLM identified gmap_id, confirmed no prefix mismatch, and stated September 2021 timeframe.
+
+**Date:** 2026-04-17
+
+---
+
+## Test 11: stockmarket.md (scale + performance)
+
+**Question:** "How many securities does the stockmarket dataset contain and what is the key performance concern when querying it?"
+
+**Expected:** 2,754 securities with daily price data, potentially millions of rows, must always filter by ticker and/or date early to avoid full table scans.
+
+**Result:** PASS — LLM stated 2,754 securities, millions of rows, and the need for early filtering with correct GOOD/BAD query examples.
+
+**Date:** 2026-04-17
+
+---
+
+## Test 12: music_brainz_20k.md (entity resolution)
+
+**Question:** "Why can't you just use COUNT(DISTINCT track_id) to count unique tracks in the music_brainz_20k dataset?"
+
+**Expected:** Different track_ids can represent the same real-world track (duplicates from different sources), must perform entity resolution by comparing title+artist, deduplication required before counting.
+
+**Result:** PASS — LLM explained duplicate track_ids, entity resolution requirement, and recommended deduplication by (title, artist).
+
+**Date:** 2026-04-17
+
+---
+
 ## Summary
 
-- **Total tests:** 7
-- **Passed:** 7
+- **Total tests:** 12
+- **Passed:** 12
 - **Failed:** 0

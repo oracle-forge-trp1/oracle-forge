@@ -1,6 +1,27 @@
 # Domain KB — Changelog
 
-## Added — Per-dataset domain documents for remaining 8 datasets
+## 2026-04-17 — Data Leakage Cleanup + Injection Tests for New Docs
+
+### Fixed — Data leakage
+- `stockindex.md`: Removed direct Q2 answer ("IXIC is the only index...") and Q3 answer (top-5 DCA list with symbols and countries). Replaced with methodology-only guidance.
+- `corrections-log.md`: Removed exact ground truth numeric values and specific answer lists from entries 001, 006, 009, 010, 012, 013. Replaced with generic format templates.
+- `dab_benchmark.md`: Removed dataset-specific answer from JSON format example.
+- Verified all 12 per-dataset docs are leakage-safe.
+
+### Added — 5 new injection tests (Tests 8-12)
+- Test 8: crmarenapro.md — PASS
+- Test 9: agnews.md — PASS
+- Test 10: googlelocal.md — PASS
+- Test 11: stockmarket.md — PASS
+- Test 12: music_brainz_20k.md — PASS
+- Total domain injection tests: 12/12 PASS
+
+### Added — Correction Entry 016 (Empty Answer Fallback)
+- Observed: yelp q2 and q4 returned empty strings in run 2026-04-16-001
+- Root cause: agent exhausted iterations without calling return_answer
+- Fix: synthesize best-effort answer from gathered data before iteration limit
+
+## 2026-04-16 — Per-dataset domain documents for remaining 8 datasets
 
 - `crmarenapro.md` — 6 databases (SQLite+DuckDB+PostgreSQL), 27 tables. CRITICAL: ~25% ID corruption (leading #), ~20% text corruption (trailing whitespace). Salesforce ID normalization required.
 - `agnews.md` — MongoDB articles + SQLite article_metadata/authors. 4 article categories (World, Sports, Business, Science/Technology). Category classification from title/description.

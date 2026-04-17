@@ -352,6 +352,31 @@ Verification note:
 
 ---
 
+## Entry 016 — Empty Answer Fallback
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-16-001
+- datasets_seen: yelp (q2, q4)
+- owner: IO
+- expires_after_runs: never
+
+Failure pattern:
+- Agent reaches max iterations or encounters repeated tool failures without ever calling `return_answer`. Final output is an empty string. Validator always fails on empty answers.
+
+Root cause:
+- Complex multi-step queries (especially those requiring cross-DB joins with text extraction) consume many iterations. If the agent gets stuck in a retry loop or pursues a wrong extraction path, it exhausts iterations without synthesizing a final answer from the data it already gathered.
+
+Correct approach:
+- If approaching the iteration limit (e.g., iteration 25 of 30), synthesize a best-effort answer from data gathered so far rather than attempting more tool calls.
+- A partial answer that contains the correct entity name (e.g., state code, category name) is far better than an empty string — validators check for presence of key tokens, not full explanations.
+- When a tool call returns an error or empty result, do not retry the same query more than twice. Switch to an alternative approach or return what you have.
+
+Verification note:
+- Check: is the final answer non-empty? If empty, this correction was not applied.
+
+---
+
 ## Template
 
 Metadata:
