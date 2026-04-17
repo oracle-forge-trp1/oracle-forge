@@ -46,6 +46,20 @@ Categories must be determined from the article `title` and `description` content
 
 ## Query Strategy Playbook
 
+### MongoDB “max/min/longest/shortest” without sampling
+Do **not** `find` and rely on the first 500 docs — use an aggregation pipeline:
+
+```python
+# Longest description among eligible docs
+pipeline = [
+  {"$match": {"description": {"$type": "string", "$ne": ""}}},
+  {"$project": {"title": 1, "description_len": {"$strLenCP": "$description"}}},
+  {"$sort": {"description_len": -1}},
+  {"$limit": 1},
+]
+best = query_mongodb("articles_database", "articles", "aggregate", json.dumps(pipeline))
+```
+
 ### Count articles by category
 ```python
 # Step 1: Fetch all articles from MongoDB
@@ -86,6 +100,7 @@ articles = query_mongodb("articles_database", "articles", "find",
 - Applying region/date filters to Mongo documents instead of SQLite metadata.
 - Ignoring null or empty `title`/`description` during classification.
 - Mixing publication date formats without explicit normalization.
+- Guessing SQLite table/column names — introspect with `sqlite_master` / `PRAGMA table_info` when a query errors.
 
 ---
 

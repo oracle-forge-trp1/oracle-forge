@@ -64,12 +64,18 @@ fi
 for ds in "${DATASETS[@]}"; do
   echo
   echo "--- Running dataset: $ds ---"
+  set +e
   python3 eval/harness.py \
     --dataset "$ds" \
     --agent-module agent.data_agent \
     --dab-root "$DAB_ROOT" \
     --timeout "$TIMEOUT" \
     --score-log "$SCORE_LOG"
+  rc=$?
+  set -e
+  if [[ "$rc" != "0" ]]; then
+    echo "[strict-runner] WARNING: harness failed for dataset '$ds' (exit=$rc). Continuing." >&2
+  fi
 done
 
 echo

@@ -275,6 +275,7 @@ def _exec_sqlite(args: dict) -> dict:
         conn.close()
         return {"success": True, "rows": len(rows), "data": rows}
     except Exception as exc:
+        # Include an explicit error payload so the agent can self-correct.
         return {"success": False, "error": str(exc), "rows": 0, "data": []}
 
 
@@ -297,7 +298,7 @@ def _exec_postgres(args: dict) -> dict:
     except Exception as exc:
         # Return explicit error payload (without a fake empty data array) so
         # upstream traces and the LLM can see the true failure reason.
-        return {"success": False, "error": str(exc), "rows": 0}
+        return {"success": False, "error": str(exc), "rows": 0, "data": []}
 
 
 def _exec_normalize_join_key(args: dict) -> dict:

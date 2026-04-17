@@ -352,6 +352,56 @@ Verification note:
 
 ---
 
+## Entry 016 — MongoDB Extrema Must Use Aggregation
+
+Metadata:
+- confidence: high
+- datasets_seen: agnews, yelp, googlelocal
+- expires_after_runs: 20
+
+Failure pattern:
+- “largest / smallest / longest / shortest / max / min” questions fail or vary run-to-run.
+
+Root cause:
+- Using MongoDB `find` and reasoning over a truncated sample (e.g. first 500 docs) instead of the full eligible set.
+
+Correct approach:
+- Use `query_mongodb` with `query_type='aggregate'`:
+  - `$match` to restrict to the eligible subset
+  - `$project` a deterministic numeric key (e.g. text length via `$strLenCP`)
+  - `$sort` descending/ascending
+  - `$limit: 1`
+- Only return the single winning document/field needed for the answer.
+
+Verification note:
+- Confirm the pipeline returns exactly 1 row and that the projected key is non-null.
+
+---
+
+## Entry 017 — Cross-DB Joins: Compute Locally, Don’t Fake SQL
+
+Metadata:
+- confidence: high
+- datasets_seen: bookreview, deps_dev_v1, crmarenapro
+- expires_after_runs: 20
+
+Failure pattern:
+- Agent attempts `JOIN` across different physical databases (e.g., PostgreSQL table joined to a SQLite table) and gets “relation does not exist” or empty results.
+
+Root cause:
+- Cross-database joins are not supported by the underlying DB engines; they require multi-step retrieval then merging.
+
+Correct approach:
+- Query each database separately for the minimal fields required.
+- Normalize join keys (often by numeric suffix extraction).
+- Merge in-memory (conceptually: hash join on normalized key).
+- Only then compute group-bys / top-1 / filters.
+
+Verification note:
+- Log matched/unmatched join counts and ensure the join is non-empty before final aggregation.
+
+---
+
 ## Template
 
 Metadata:

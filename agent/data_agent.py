@@ -223,6 +223,56 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "normalize_join_key",
+            "description": (
+                "Normalize a cross-database join key to its canonical integer form, "
+                "then optionally re-prefix it for the target database. "
+                "Use when a cross-DB join returns 0 rows due to prefix/format mismatch."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "description": "Raw key value to normalize (e.g. 'bookid_42', '#001Wt000...')",
+                    },
+                    "target_prefix": {
+                        "type": "string",
+                        "description": "Optional prefix for target DB (e.g. 'purchaseid_'). If omitted, returns integer N.",
+                    },
+                },
+                "required": ["value"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "diagnose_join",
+            "description": (
+                "Diagnose why a cross-database join returned 0 results. "
+                "Provide sample key values from both sides as JSON arrays. "
+                "Returns detected formats and a suggested normalization strategy."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "left_values": {
+                        "type": "string",
+                        "description": "JSON array of sample key values from the left side",
+                    },
+                    "right_values": {
+                        "type": "string",
+                        "description": "JSON array of sample key values from the right side",
+                    },
+                },
+                "required": ["left_values", "right_values"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "return_answer",
             "description": "Return the final verified answer. Call this exactly once when you have the answer.",
             "parameters": {
@@ -372,7 +422,14 @@ def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
     if tool_name == "return_answer":
         return {"success": True, "answer": tool_args.get("answer", "")}
 
-    if tool_name in ("query_mongodb", "query_duckdb", "query_sqlite", "query_postgres"):
+    if tool_name in (
+        "query_mongodb",
+        "query_duckdb",
+        "query_sqlite",
+        "query_postgres",
+        "normalize_join_key",
+        "diagnose_join",
+    ):
         if not _probe_mcp():
             return {"success": False, "error": "MCP server is not available — harness should have started it"}
         result = _call_mcp(tool_name, tool_args)
@@ -496,24 +553,43 @@ def _build_system_prompt(
       5. DB description     — passed in from harness (human-written schema + hints)
     """
     parts: list[str] = []
+    strict_no_leakage = os.getenv("ORACLE_FORGE_STRICT_NO_LEAKAGE", "").strip().lower() in {"1", "true", "yes", "on"}
 
     # 1. Generic agent protocol
     if AGENT_MD_PATH.exists():
         parts.append(AGENT_MD_PATH.read_text())
 
-    # 2. Corrections log — always inject (critical: prevents repeat failures)
-    if CORRECTIONS_LOG.exists():
-        parts.append("---\n\n## CORRECTIONS LOG\n\n" + CORRECTIONS_LOG.read_text())
-    else:
-        logger.warning("Corrections log not found: %s", CORRECTIONS_LOG)
+    # 2. Core methodology KB (leakage-safe, dataset-agnostic)
+    core_kb_files = [
+        KB_ROOT / "domain" / "dab_schemas.md",
+        KB_ROOT / "domain" / "query_patterns.md",
+        KB_ROOT / "domain" / "join_keys.md",
+        KB_ROOT / "domain" / "unstructured_fields.md",
+        KB_ROOT / "domain" / "domain_terms.md",
+    ]
+    core_chunks: list[str] = []
+    for p in core_kb_files:
+        if p.exists():
+            core_chunks.append(p.read_text(encoding="utf-8"))
+    if core_chunks:
+        parts.append("---\n\n## CORE KB (METHODOLOGY)\n\n" + "\n\n---\n\n".join(core_chunks))
 
-    # 3. Dataset-specific domain knowledge
+    # 3. Corrections log — omit in strict no-leakage mode
+    if not strict_no_leakage:
+        if CORRECTIONS_LOG.exists():
+            parts.append("---\n\n## CORRECTIONS LOG\n\n" + CORRECTIONS_LOG.read_text())
+        else:
+            logger.warning("Corrections log not found: %s", CORRECTIONS_LOG)
+    else:
+        parts.append("---\n\n## STRICT MODE\n\nCorrections-log and dataset KB are disabled (no-leakage).")
+
+    # 4. Dataset-specific domain knowledge — omit in strict no-leakage mode
     dataset_name = Path(db_config_path).parent.name.replace("query_", "")
     domain_file  = KB_ROOT / "domain" / f"{dataset_name}.md"
-    if domain_file.exists():
+    if (not strict_no_leakage) and domain_file.exists():
         parts.append(f"---\n\n## DOMAIN KNOWLEDGE ({dataset_name})\n\n" + domain_file.read_text())
 
-    # 4. Live schema — introspect each connected DB and format as markdown
+    # 5. Live schema — introspect each connected DB and format as markdown
     if _SCHEMA_INTROSPECTOR is not None and connections:
         schema_sections: list[str] = []
 
@@ -570,7 +646,7 @@ def _build_system_prompt(
         if schema_sections:
             parts.append("---\n\n## LIVE SCHEMA\n\n" + "\n\n".join(schema_sections))
 
-    # 5. Current dataset schema / DB description (human-written, always present)
+    # 6. Current dataset schema / DB description (human-written, always present)
     parts.append("---\n\n## DATABASE DESCRIPTION\n\n" + db_description)
 
     return "\n\n".join(parts).strip()
@@ -787,7 +863,7 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
             if result.get("success") is False and result.get("error"):
                 preview_obj = result.get("error")
             else:
-                preview_obj = result.get("data", result.get("error", ""))
+                preview_obj = result.get("data") if "data" in result else result.get("error", result)
             query_trace.append({
                 "tool":    tool_name,
                 "args":    tool_args,

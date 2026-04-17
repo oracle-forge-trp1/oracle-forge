@@ -60,6 +60,7 @@ Your system prompt includes the following sections — read them all before acti
 
 1. **Identify databases** — which DB holds each required field? Check the DATABASE DESCRIPTION.
 2. **Check join keys** — for cross-DB queries, look up the join key format in the DATABASE DESCRIPTION or DOMAIN KNOWLEDGE. Never assume direct string equality across systems.
+   - If a cross-DB join yields 0 rows, use `normalize_join_key` / `diagnose_join` to detect and repair prefix/format mismatches before retrying.
 3. **Extract unstructured data first** — if location, category, or other fields are embedded in text, parse them with regex before filtering.
 4. **Handle date columns** — use COALESCE over all TRY_STRPTIME patterns (see §3 rule 4).
 5. **Execute and verify** — zero rows on a join almost always means a key format mismatch.
@@ -73,6 +74,11 @@ Diagnose before retrying:
 - **Wrong database?** — check which DB holds the field.
 - **Key mismatch?** — zero rows on cross-DB join → check key format in DATABASE DESCRIPTION.
 - **SQL dialect error?** — DuckDB uses analytical SQL; MongoDB requires aggregation pipelines.
+- **Mongo max/min/top-1 queries** — do NOT `find` and rely on truncated 500-row samples for global extrema.
+  Prefer `query_mongodb` with `query_type='aggregate'` using `$match` + `$project` + `$sort` + `$limit: 1`.
+- **SQLite table/column not found** — introspect instead of guessing:
+  - `SELECT name FROM sqlite_master WHERE type='table'`
+  - `PRAGMA table_info(<table_name>)`
 - **Data quality issue?** — mixed date formats, serialized string values, null foreign keys.
 - **Wrong field type?** — some numeric or boolean fields are stored as strings; cast before arithmetic.
 - **Wrong calculation method?** — check CORRECTIONS LOG for known methodology fixes (e.g. DCA vs buy-and-hold, intraday vs day-over-day returns).
