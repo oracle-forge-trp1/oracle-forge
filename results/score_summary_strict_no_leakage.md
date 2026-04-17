@@ -2,7 +2,7 @@
 
 ## Source
 
-Generated from `/shared/oracle-forge/eval/score_log_strict_no_leakage.json` only.
+Generated from `eval/score_log_strict_no_leakage.json` only.
 This summary is isolated from historical mixed-mode runs.
 
 ## Latest Snapshot (Most Recent Run Per Dataset)

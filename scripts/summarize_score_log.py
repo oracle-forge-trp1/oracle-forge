@@ -5,13 +5,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 
 def _read_log(path: Path) -> list[dict]:
     if not path.exists() or path.stat().st_size == 0:
         return []
-    data = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(
+            f"Warning: could not parse score log as JSON: {path} ({exc})",
+            file=sys.stderr,
+        )
+        return []
     if isinstance(data, list):
         return [r for r in data if isinstance(r, dict)]
     if isinstance(data, dict):
@@ -38,7 +46,7 @@ def _fmt_ratio(passed: int, total: int) -> str:
     return f"{passed}/{total} ({passed/total:.4f})"
 
 
-def build_summary(rows: list[dict], source_path: Path) -> str:
+def build_summary(rows: list[dict], source_label: str) -> str:
     latest = _latest_per_dataset(rows)
     total_passed = sum(int(r.get("passed", 0)) for r in latest)
     total_total = sum(int(r.get("total_queries", 0)) for r in latest)
@@ -50,7 +58,7 @@ def build_summary(rows: list[dict], source_path: Path) -> str:
     lines.append("")
     lines.append("## Source")
     lines.append("")
-    lines.append(f"Generated from `{source_path}` only.")
+    lines.append(f"Generated from `{source_label}` only.")
     lines.append("This summary is isolated from historical mixed-mode runs.")
     lines.append("")
     lines.append("## Latest Snapshot (Most Recent Run Per Dataset)")
@@ -84,7 +92,7 @@ def main() -> int:
     out = Path(args.out).resolve()
 
     rows = _read_log(score_log)
-    md = build_summary(rows, score_log)
+    md = build_summary(rows, args.score_log)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md + "\n", encoding="utf-8")
     print(f"Wrote summary: {out}")

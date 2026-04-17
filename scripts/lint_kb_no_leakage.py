@@ -14,14 +14,19 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Only lint files that can affect runtime prompts in non-strict mode.
-TARGETS = [
-    REPO_ROOT / "kb" / "domain" / "stockindex.md",
-    REPO_ROOT / "kb" / "domain" / "bookreview.md",
-    REPO_ROOT / "kb" / "domain" / "yelp.md",
-    REPO_ROOT / "kb" / "corrections" / "corrections-log.md",
-    REPO_ROOT / "probes" / "probes.md",
-]
+CORE_DOMAIN_DOCS = {
+    "dab_schemas.md",
+    "query_patterns.md",
+    "join_keys.md",
+    "unstructured_fields.md",
+    "domain_terms.md",
+}
+
+NON_RUNTIME_DOMAIN_DOCS = {
+    "README.md",
+    "CHANGELOG.md",
+    "dab_dataset_risk_matrix.md",
+}
 
 PATTERNS = {
     "query_label": re.compile(r"\bQ\d+\s*:", re.IGNORECASE),
@@ -48,13 +53,29 @@ def lint_file(path: Path) -> list[str]:
     return findings
 
 
+def build_targets() -> list[Path]:
+    targets: list[Path] = []
+    domain_dir = REPO_ROOT / "kb" / "domain"
+    for p in sorted(domain_dir.glob("*.md")):
+        if p.name in CORE_DOMAIN_DOCS or p.name in NON_RUNTIME_DOMAIN_DOCS:
+            continue
+        targets.append(p)
+    targets.extend(
+        [
+            REPO_ROOT / "kb" / "corrections" / "corrections-log.md",
+            REPO_ROOT / "probes" / "probes.md",
+        ]
+    )
+    return targets
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Leakage lint for runtime KB files")
     parser.add_argument("--strict", action="store_true", help="exit non-zero on findings")
     args = parser.parse_args()
 
     all_findings: list[str] = []
-    for target in TARGETS:
+    for target in build_targets():
         if target.exists():
             all_findings.extend(lint_file(target))
 

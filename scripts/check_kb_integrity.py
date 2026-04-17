@@ -6,11 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 KB_DOMAIN = REPO_ROOT / "kb" / "domain"
-DAB_ROOT = REPO_ROOT / "DataAgentBench"
+DEFAULT_DAB_ROOT = REPO_ROOT / "DataAgentBench"
 
 CORE_DOCS = [
     "dab_schemas.md",
@@ -21,12 +22,15 @@ CORE_DOCS = [
 ]
 
 RUNTIME_DOCS = [
-    KB_DOMAIN / "stockindex.md",
-    KB_DOMAIN / "bookreview.md",
-    KB_DOMAIN / "yelp.md",
     REPO_ROOT / "kb" / "corrections" / "corrections-log.md",
     REPO_ROOT / "probes" / "probes.md",
 ]
+
+NON_RUNTIME_DOMAIN_DOCS = {
+    "README.md",
+    "CHANGELOG.md",
+    "dab_dataset_risk_matrix.md",
+}
 
 BLOCKED_PATTERNS = {
     "query_label": re.compile(r"\bQ\d+\s*:", re.IGNORECASE),
@@ -63,20 +67,54 @@ def lint_runtime_file(path: Path) -> list[str]:
     return findings
 
 
-def check_dataset_docs() -> tuple[list[str], dict[str, str]]:
+def runtime_domain_docs() -> list[Path]:
+    docs: list[Path] = []
+    for p in sorted(KB_DOMAIN.glob("*.md")):
+        if p.name in NON_RUNTIME_DOMAIN_DOCS:
+            continue
+        if p.name in CORE_DOCS:
+            continue
+        docs.append(p)
+    return docs
+
+
+def resolve_dab_root(cli_value: str | None) -> Path:
+    if cli_value:
+        return Path(cli_value)
+    env_path = os.getenv("DAB_ROOT") or os.getenv("DATAAGENTBENCH_ROOT")
+    if env_path:
+        return Path(env_path)
+    return DEFAULT_DAB_ROOT
+
+
+def resolve_dataset_kb_doc(dataset_key: str) -> tuple[str, Path | None]:
+    candidates = [f"{dataset_key}.md", f"{dataset_key.lower()}.md"]
+    seen: set[str] = set()
+    for name in candidates:
+        if name in seen:
+            continue
+        seen.add(name)
+        p = KB_DOMAIN / name
+        if p.exists():
+            return name, p
+    return candidates[-1], None
+
+
+def check_dataset_docs(dab_root: Path) -> tuple[list[str], dict[str, str]]:
     issues: list[str] = []
     mapping: dict[str, str] = {}
-    if not DAB_ROOT.exists():
+    if not dab_root.exists():
         return ["DataAgentBench directory not found"], mapping
 
-    for ds in sorted(p for p in DAB_ROOT.glob("query_*") if p.is_dir()):
+    for ds in sorted(p for p in dab_root.glob("query_*") if p.is_dir()):
         dataset_key = ds.name.replace("query_", "")
-        # agent normalizes to lowercase in strict resolution path for kb filename
-        doc_name = f"{dataset_key.lower()}.md"
-        doc_path = KB_DOMAIN / doc_name
+        doc_name, doc_path = resolve_dataset_kb_doc(dataset_key)
         mapping[dataset_key] = doc_name
-        if not doc_path.exists():
-            issues.append(f"missing dataset KB doc for {dataset_key}: kb/domain/{doc_name}")
+        if doc_path is None:
+            issues.append(
+                f"missing dataset KB doc for {dataset_key}: "
+                f"tried kb/domain/{dataset_key}.md and kb/domain/{dataset_key.lower()}.md"
+            )
     return issues, mapping
 
 
@@ -84,17 +122,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="KB integrity/discoverability checks")
     parser.add_argument("--json", action="store_true", help="print JSON report")
     parser.add_argument("--strict", action="store_true", help="exit non-zero on issues")
+    parser.add_argument("--dab-root", default=None, help="Path to DataAgentBench root")
     args = parser.parse_args()
+    dab_root = resolve_dab_root(args.dab_root)
 
     issues: list[str] = []
 
     for name in CORE_DOCS:
         issues.extend(check_markdown_heading(KB_DOMAIN / name))
 
-    dataset_issues, dataset_map = check_dataset_docs()
+    dataset_issues, dataset_map = check_dataset_docs(dab_root)
     issues.extend(dataset_issues)
 
-    for p in RUNTIME_DOCS:
+    for p in [*runtime_domain_docs(), *RUNTIME_DOCS]:
         issues.extend(check_markdown_heading(p))
         issues.extend(lint_runtime_file(p))
 
@@ -102,6 +142,7 @@ def main() -> int:
         "issues": issues,
         "core_docs_checked": CORE_DOCS,
         "dataset_kb_map": dataset_map,
+        "dab_root": str(dab_root),
         "status": "PASS" if not issues else "FAIL",
     }
 
