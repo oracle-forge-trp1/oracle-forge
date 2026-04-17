@@ -104,6 +104,36 @@ Evidence required for each update:
 - Symptom: max-iteration or timeout before final answer.
 - Expected robust behavior: compact fallback answer synthesis from gathered evidence.
 
+### PROBE-011: Required-ID Output Contract
+- Category: Output Shape Compatibility
+- Symptom: final response omits required identifier token.
+- Expected robust behavior: include at least one valid ID-shaped token when query intent asks for identifier output.
+
+### PROBE-012: Exhaustive List Completeness
+- Category: Aggregation Correctness
+- Symptom: one or more qualifying items missing from output list.
+- Expected robust behavior: full eligible set built before rendering list; deterministic ordering and dedup applied.
+
+### PROBE-013: Violation Decision Consistency
+- Category: Output Shape Compatibility
+- Symptom: response claims no violation while extracted evidence indicates violation.
+- Expected robust behavior: binary decision must be consistent with evidence rows; include supporting reference ID when evidence exists.
+
+### PROBE-014: Numeric Tolerance Compliance
+- Category: Aggregation Correctness
+- Symptom: near-correct value fails validator due to rounding/format token mismatch.
+- Expected robust behavior: full-precision compute path, single canonical numeric token at final render.
+
+### PROBE-015: Taxonomy Label Lock
+- Category: Output Shape Compatibility
+- Symptom: semantically plausible but non-canonical class label.
+- Expected robust behavior: final label belongs to allowed taxonomy set exactly.
+
+### PROBE-016: Temporal Token Render
+- Category: Date Parsing Robustness
+- Symptom: computed period correct but required month/temporal token missing in output text.
+- Expected robust behavior: render layer enforces required temporal token format.
+
 ---
 
 ## Update Template
