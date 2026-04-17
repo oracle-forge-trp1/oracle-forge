@@ -80,6 +80,10 @@ All date fields (`publication_date`, `filing_date`, `grant_date`, `priority_date
 ### CPC Hierarchy
 CPC codes are hierarchical. A query about a category may require matching at a parent level, not just exact symbol match. Use `level` and `parents` fields in `cpc_definition` to navigate up the hierarchy.
 
+### CPC symbol emission
+
+When the final answer must name a CPC code, emit the **exact** `symbol` string from `cpc_definition` or from parsed `publicationinfo.cpc` entries (same characters and punctuation as stored). Join to `cpc_definition` when you need the canonical form.
+
 ### Patent Key Identifiers
 `Patents_info` is a natural language field — application number, publication number, assignee, and country code are embedded in the text, not separate columns. Use regex to extract them when needed.
 

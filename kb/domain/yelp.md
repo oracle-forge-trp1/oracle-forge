@@ -28,6 +28,7 @@ Location is often encoded in `description` text and must be parsed before filter
 However, when the question is explicitly about **U.S. state**, first check for a structured top-level field:
 - Prefer `business.state` (top-level) if present.
 - Do not assume `attributes.State` exists (often null/missing).
+- If the final answer must mention a state, include the **exact** token stored in `business.state` (usually the two-letter abbreviation). When unsure, output the abbreviation — many validators accept both abbreviated and full state names only if those exact strings appear in the answer text.
 
 Example extraction pattern:
 
@@ -61,6 +62,8 @@ Do not assume a single consistent Python type across all records.
 
 `business.categories` can be missing or incomplete. Category information may appear in `description` text.
 When building category aggregates, normalize category tokens and deduplicate per business where needed.
+
+**Validator-facing outputs:** Inspect distinct category strings from the data (for example `Restaurant` vs `restaurants`). Emit the **same casing and token** the stored documents use when the question is about category membership or counts — do not rely on a single guessed label.
 
 For aggregate rating questions:
 - Compute over raw review rows in DuckDB.

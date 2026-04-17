@@ -8,6 +8,16 @@ This document is injected into the agent's Domain Knowledge context layer before
 
 Two active databases. Package metadata lives in SQLite, project information and package-to-project mappings live in DuckDB.
 
+### Tool connection names (read before any query)
+
+- `query_duckdb` / `query_sqlite` take **`db_name` values exactly as declared** in `db_config.yaml` / DATABASE DESCRIPTION (e.g. `project_database`, `package_database`).
+- **Never** pass a SQL **table name** (such as `project_packageversion`) or a bare file name as `db_name` — the toolbox only knows logical connection labels. Tables are queried **inside** the chosen connection: `SELECT … FROM project_packageversion …` with `db_name='project_database'`.
+- If a tool error lists “Available: [ … ]”, you **must** choose one of those strings.
+
+### “Latest” / “most recent” version per package
+
+- Filter to release-like rows using `VersionInfo` / version ordering as appropriate, then pick the **maximum version per `(System, Name)`** with a window or grouped subquery — do not `GROUP BY` with stray projected columns that DuckDB rejects; use `arg_max`-style patterns or subqueries.
+
 | Database | Format | What it contains |
 |----------|--------|-----------------|
 | `package_database` | SQLite | Software package metadata — licenses, versions, dependencies, advisories |

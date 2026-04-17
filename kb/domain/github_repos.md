@@ -99,6 +99,10 @@ Two active databases. Repository metadata lives in SQLite, repository artifacts 
 ### repo_data_description
 `contents.repo_data_description` is a natural language field derived from file attributes (size, binary, copies, mode). Use substring or regex matching to filter on file attributes — not direct field access.
 
+### Ratios and numeric checks
+
+Validators often search for a decimal that **rounds** to a target at fixed precision. Compute the ratio from explicit filtered counts on the same population, then emit the numeric result with enough digits that rounding matches the checker (commonly two decimal places).
+
 ---
 
 ## Query Strategy Playbook

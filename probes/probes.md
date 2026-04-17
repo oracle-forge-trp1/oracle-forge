@@ -134,6 +134,16 @@ Evidence required for each update:
 - Symptom: computed period correct but required month/temporal token missing in output text.
 - Expected robust behavior: render layer enforces required temporal token format.
 
+### PROBE-017: Strict Mode Context Layers
+- Category: Runtime Reliability
+- Symptom: stakeholders cannot tell whether CORE KB, corrections log, and domain files load under `ORACLE_FORGE_STRICT_NO_LEAKAGE=1`.
+- Expected robust behavior: `python scripts/verify_agent_context.py --dataset <key> --strict` reports OK for those sections unless `ORACLE_FORGE_STRICT_OMIT_KB=1`.
+
+### PROBE-018: Validator helper imports
+- Category: Runtime Reliability
+- Symptom: harness fails loading `validate.py` with `ModuleNotFoundError: common_scaffold`.
+- Expected robust behavior: DataAgentBench checkout includes top-level `common_scaffold/`; harness `--dab-root` points at that repo; optional fast-fail error names missing folder.
+
 ---
 
 ## Update Template

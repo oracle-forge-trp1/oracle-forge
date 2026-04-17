@@ -402,6 +402,137 @@ Verification note:
 
 ---
 
+## Entry 018 — Tool `db_name` vs SQL table name (DuckDB / SQLite)
+
+Metadata:
+- confidence: high
+- datasets_seen: DEPS_DEV_V1, stockmarket, github_repos
+- expires_after_runs: 20
+
+Failure pattern:
+- Tool calls fail with “Unknown DuckDB db_name …” or query the wrong file because `db_name` was set to a **table** or **file stem** instead of the configured logical database name.
+
+Root cause:
+- MCP / toolbox maps one connection string per logical `db_name` from `db_config.yaml`. Tables live *inside* that connection — they are not separate `db_name` values.
+
+Correct approach:
+- Read logical names from DATABASE DESCRIPTION / `db_config.yaml`.
+- Use `query_duckdb(db_name="<logical>", sql="SELECT … FROM <table> …")` — never pass a table name as `db_name`.
+
+Verification note:
+- If the tool errors with “Available: […]”, pick only names from that list.
+
+---
+
+## Entry 019 — Validator imports (`common_scaffold`)
+
+Metadata:
+- confidence: high
+- datasets_seen: GITHUB_REPOS, stockmarket, PATENTS, PANCANCER_ATLAS
+- expires_after_runs: 20
+
+Failure pattern:
+- Harness raises `ModuleNotFoundError: common_scaffold` when loading `validate.py`.
+
+Root cause:
+- DataAgentBench validators import shared helpers from the `common_scaffold` package at the **repository root** of the DAB checkout. A partial copy of DAB or a wrong `--dab-root` breaks imports.
+
+Correct approach:
+- Keep a full `git clone` of `ucbepic/DataAgentBench` next to oracle-forge.
+- Point `--dab-root` / `DATAAGENTBENCH_ROOT` at that directory (must contain `common_scaffold/`).
+
+Verification note:
+- `test -d "$DAB_ROOT/common_scaffold"` on the server before long benchmark runs.
+
+---
+
+## Entry 020 — Classification / taxonomy tokens must match storage
+
+Metadata:
+- confidence: high
+- datasets_seen: yelp, agnews, patents
+- expires_after_runs: 20
+
+Failure pattern:
+- Validator looks for a label token (category code, CPC symbol, histology code) that never appears in the answer.
+
+Root cause:
+- Free-form paraphrase or guessed label instead of the exact token shape present in the source row or reference table.
+
+Correct approach:
+- After computing the winning row(s), copy identifiers **verbatim** from query output (trim only outer whitespace).
+- For hierarchical codes (e.g. CPC), join to the definition table and emit the same `symbol` string the schema stores.
+
+Verification note:
+- Grep the final answer for the identifier substring returned by the last successful query.
+
+---
+
+## Entry 021 — List / multi-entity answers: completeness vs truncation
+
+Metadata:
+- confidence: high
+- datasets_seen: bookreview, yelp, stockmarket
+- expires_after_runs: 20
+
+Failure pattern:
+- Validator reports a missing list item or title though the approach was directionally correct.
+
+Root cause:
+- Final answer finalized before merging the full eligible set, or LLM context truncation dropped rows needed to enumerate every item.
+
+Correct approach:
+- Compute the full result set in SQL/aggregation, then emit **all** required strings in one `return_answer`.
+- If intermediate results are large, aggregate in the database first; avoid pasting huge raw dumps — but do not drop required entities from the final list.
+
+Verification note:
+- Count distinct required entities in the result set vs tokens in the final answer.
+
+---
+
+## Entry 022 — Ratio / fraction validators
+
+Metadata:
+- confidence: medium
+- datasets_seen: GITHUB_REPOS, agnews
+- expires_after_runs: 20
+
+Failure pattern:
+- “No value rounds to …” despite intermediate work.
+
+Root cause:
+- Wrong population for numerator/denominator, or rounding too early so no printed decimal matches the checker.
+
+Correct approach:
+- Define the counted sets explicitly, then divide; emit a decimal that matches the validator’s rounding rule (often two decimal places).
+
+Verification note:
+- Recompute ratio in one expression and print the same float you validated.
+
+---
+
+## Entry 023 — Geography-constrained single winner (indices / exchanges)
+
+Metadata:
+- confidence: medium
+- datasets_seen: stockindex
+- expires_after_runs: 20
+
+Failure pattern:
+- Winner fails with “forbidden value” or “missing target” when prompts narrow geography (e.g. region name).
+
+Root cause:
+- Ranking across **all** symbols without filtering metadata to the region implied by the question.
+
+Correct approach:
+- Restrict candidates using `index_info` (exchange, currency, other metadata) **before** `ORDER BY` on the trade table.
+- For single-winner prompts, return only one symbol after the filter.
+
+Verification note:
+- Confirm every candidate symbol passes the geographic filter row in metadata.
+
+---
+
 ## Template
 
 Metadata:

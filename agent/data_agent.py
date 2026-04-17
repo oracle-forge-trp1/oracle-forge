@@ -668,6 +668,15 @@ def _build_system_prompt(
     parts.append("---\n\n## DATABASE DESCRIPTION\n\n" + _truncate("db_description", db_description, _MAX_DB_DESC_CHARS))
 
     full = "\n\n".join(parts).strip()
+    if os.getenv("ORACLE_FORGE_LOG_CONTEXT_LAYERS", "").strip().lower() in {"1", "true", "yes", "on"}:
+        markers = [m for m in ("CORE KB (METHODOLOGY)", "CORRECTIONS LOG", "DOMAIN KNOWLEDGE", "STRICT MODE", "LIVE SCHEMA", "DATABASE DESCRIPTION") if m in full]
+        logger.info(
+            "system_prompt layers: chars=%s strict_no_leakage=%s omit_kb_in_strict=%s markers=%s",
+            len(full),
+            strict_no_leakage,
+            omit_kb_in_strict,
+            markers,
+        )
     return _truncate("system_prompt_total", full, _MAX_SYSTEM_PROMPT_CHARS)
 
 

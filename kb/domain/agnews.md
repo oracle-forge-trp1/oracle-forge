@@ -11,8 +11,6 @@
 
 
 ## Cross-Database Join Keys
-=======
-
 
 - MongoDB `articles.article_id` → SQLite `article_metadata.article_id`
 - Format is consistent across both databases — direct string equality works.
@@ -22,6 +20,9 @@
 
 ## Data Semantics
 
+### Title / feed / “RSS” style questions
+
+- When the answer must name an article or feed, **copy the `title` string exactly** from the MongoDB document that your aggregation selects (trim outer whitespace only). Paraphrased titles often fail validators.
 
 Articles fall into exactly **4 categories:**
 

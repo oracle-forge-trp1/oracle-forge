@@ -128,6 +128,14 @@ Always use multi-pattern `COALESCE(TRY_STRPTIME(...))` and filter out null parse
 
 ---
 
+## Geography and exchange filters
+
+- Questions may name a **region** (for example North America, Asia). **Do not** rank symbols from exchanges outside that region.
+- Always join or filter using `index_info` (exchange names, currency, and related metadata) to build the **eligible symbol set** before computing extrema on `index_trade`.
+- A symbol that appears in price data but whose primary listing exchange is outside the filtered region must be excluded from the winner set for that question.
+
+---
+
 ## Common Pitfalls
 
 - Applying a single date parser to mixed-format `Date` values.

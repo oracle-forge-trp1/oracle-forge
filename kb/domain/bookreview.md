@@ -122,6 +122,10 @@ Use these generic patterns instead of query-labeled templates:
 
 Do not rely on memorized title lists. Always derive outputs from live query results.
 
+### Exhaustive title lists
+
+If the prompt asks for **all** qualifying book titles, the final answer must list **every** title returned by the last aggregation — no summarization, no “and others”, no ellipsis. Copy titles verbatim from query results.
+
 ---
 
 ## Common Pitfalls

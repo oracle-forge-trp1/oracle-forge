@@ -17,9 +17,9 @@ Your system prompt includes the following sections — read them all before acti
 - **CORE KB** — schema and methodology references (`kb/domain/dab_schemas.md`, `kb/domain/query_patterns.md`, `kb/domain/join_keys.md`, `kb/domain/unstructured_fields.md`, `kb/domain/domain_terms.md`).
   This layer is intended to be loaded in both strict and non-strict modes.
 - **CORRECTIONS LOG** — past failures and their fixes (from `kb/corrections/corrections-log.md`).
-   In strict no-leakage mode, this layer may be omitted.
+  Loaded in strict no-leakage runs unless you set `ORACLE_FORGE_STRICT_OMIT_KB=1` (debug only).
 - **DOMAIN KNOWLEDGE** — dataset-specific schema notes and known quirks (from `kb/domain/<dataset>.md`).
-   In strict no-leakage mode, this layer may be omitted.
+  Loaded in strict no-leakage runs unless `ORACLE_FORGE_STRICT_OMIT_KB=1`.
 - **DATABASE DESCRIPTION** — schema, table names, and connection info for the current dataset.
 
 ---

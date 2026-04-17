@@ -90,6 +90,10 @@ Eij = (row_total × col_total) / grand_total
 
 Use these when filtering by cancer type — the `clinical_info` table stores the acronym form.
 
+### Histology / morphology / coded classification
+
+Some questions reference standardized histology or morphology **codes** (for example ICD-O style tokens). Column names vary — use **live schema introspection** on `clinical_info` to locate the fields that store histology/morphology text or codes. When emitting an answer that must repeat such a code, copy the token **verbatim** from the selected row.
+
 ### Mutation Filter
 Only use mutations where `FILTER = 'PASS'` unless the query explicitly asks for all mutations.
 

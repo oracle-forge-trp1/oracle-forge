@@ -185,9 +185,16 @@ def load_validate_fn(validate_py: Path, *, dab_root: Path) -> Callable[..., Any]
     mod_name = f"dab_validate_{validate_py.parent.name}"
     # DAB validators often import helpers like `common_scaffold.*`.
     # Ensure the DataAgentBench checkout is importable.
-    dab_root_str = str(dab_root.resolve())
+    dab_root = dab_root.resolve()
+    dab_root_str = str(dab_root)
     if dab_root_str not in sys.path:
         sys.path.insert(0, dab_root_str)
+    cs = dab_root / "common_scaffold"
+    if not cs.is_dir():
+        raise ImportError(
+            f"DataAgentBench root {dab_root} is missing the `common_scaffold/` package. "
+            "Use a full clone of ucbepic/DataAgentBench (not a partial copy) or set --dab-root / DATAAGENTBENCH_ROOT correctly."
+        )
     spec = importlib.util.spec_from_file_location(mod_name, validate_py)
     if spec is None or spec.loader is None:
         raise ImportError(f"Cannot load spec for {validate_py}")
