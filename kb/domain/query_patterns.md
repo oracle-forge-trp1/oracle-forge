@@ -181,3 +181,117 @@ GROUP BY ticker;
 
 -- Avoid SELECT * on large tables
 ```
+
+## Pattern 11: Deterministic Top-N Ranking
+Ranking outputs can drift across runs when ties are unresolved.
+
+```sql
+-- Prefer deterministic ordering with tie-breakers
+ORDER BY metric DESC, entity_id ASC
+```
+
+Use stable tie-breakers before LIMIT to avoid non-deterministic winners.
+
+## Pattern 12: Pagination Under Result Caps
+Tool responses are capped for context safety. Design queries to avoid silent truncation bias.
+
+```sql
+-- Prefer bounded projections and iterative windows
+SELECT id, metric
+FROM big_table
+WHERE <filters>
+ORDER BY id
+LIMIT 500 OFFSET 0;
+```
+
+When full coverage is required, iterate over pages and aggregate in application layer.
+
+## Pattern 13: Join Cardinality Audit
+Cross-DB joins should include a cardinality check before final aggregation.
+
+```
+1. Count left-side keys
+2. Count right-side keys
+3. Count matched keys after normalization
+4. If match rate is unexpectedly low, diagnose key format/type mismatch
+```
+
+This prevents silent zero/low-match failures.
+
+## Pattern 14: Runtime Health-Gated Execution
+Before expensive multi-step plans, run a quick health query per required tool/database.
+
+```
+1. Probe tool availability
+2. Execute a lightweight COUNT or LIMIT 1 query
+3. Abort early with explicit trace note on connectivity/auth failures
+```
+
+This reduces wasted iterations under MCP/API instability.
+
+## Pattern 15: Final Answer Contract Checks
+Before returning final text, enforce query-intent-specific output contracts.
+
+```
+1. Infer expected output type (single id, label, list, numeric, pair)
+2. Run format checks for that type
+3. If check fails, revise final response once before return
+```
+
+Typical checks:
+- Identifier queries: at least one ID token present
+- Single-winner queries: one entity only
+- Pair queries: required values adjacent
+- Numeric queries: one canonical numeric token
+
+## Pattern 16: Evidence-Decision Consistency Guard
+Classification and policy answers should not contradict extracted evidence.
+
+```
+if evidence_count > 0 and decision == "no_violation":
+  decision = "violation"
+```
+
+General rule: final decision must be mechanically consistent with evidence table outputs.
+
+## Pattern 17: Exhaustive List Rendering
+When validator expects complete sets/lists, avoid partial outputs.
+
+```
+1. Build full eligible set
+2. Deduplicate
+3. Deterministically sort
+4. Render all required items in compact format
+```
+
+Do not finalize from sampled intermediate rows.
+
+## Pattern 18: Precision-Then-Round Numeric Output
+Maintain precision through computation and round only at render time.
+
+```
+value = compute_full_precision()
+final = round(value, required_decimals)
+```
+
+Emit one canonical numeric value in the final answer to reduce parser ambiguity.
+
+## Pattern 19: Taxonomy-Constrained Labels
+For stage/category/class outputs, emit canonical labels only from allowed set.
+
+```
+if predicted_label not in allowed_labels:
+  predicted_label = map_to_nearest_allowed(predicted_label)
+```
+
+Avoid free-form synonyms in final output when strict validators are used.
+
+## Pattern 20: Compute/Render Date Separation
+Date parsing for computation and date wording for output should be separate steps.
+
+```
+dt = parse_any_supported_format(raw_date)
+render = format_required_token(dt)  # e.g., month-name token
+```
+
+This prevents correct computation with validator-incompatible final text.

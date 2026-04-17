@@ -11,14 +11,14 @@ Data covers US-only Google Maps businesses and reviews through September 2021.
 
 ---
 
-## Cross-DB Join Key
+## Cross-Database Join Keys
 
 - PostgreSQL `business_description.gmap_id` → SQLite `review.gmap_id`
 - Format is consistent — direct string equality works. **No prefix mismatch.**
 
 ---
 
-## Business Description Field
+## Schema Reference
 
 `business_description.description` is a **text field** containing business metadata:
 - Business type/category
@@ -34,7 +34,7 @@ WHERE description ILIKE '%restaurant%'
 
 ---
 
-## Review Text Field
+## Data Semantics
 
 `review.text` is free-form review text from Google Maps users. For queries requiring sentiment or topic analysis:
 - Simple: `WHERE text LIKE '%keyword%'`
@@ -42,7 +42,7 @@ WHERE description ILIKE '%restaurant%'
 
 ---
 
-## Key Query Patterns
+## Query Strategy Playbook
 
 ### Business + review aggregation
 ```python
@@ -71,3 +71,31 @@ ORDER BY avg_rating DESC
 
 ## Data Timeframe
 Data goes through September 2021. "Recent" in queries means late 2021, not current date.
+
+---
+
+## Common Pitfalls
+
+- Filtering location/business type only in one DB when the signal is split across both.
+- Using inner joins too early and dropping businesses with sparse review coverage.
+- Treating `description` as normalized taxonomy instead of noisy free text.
+- Averaging per-business averages when query intent requires review-level aggregates.
+- Ignoring timeframe boundaries and interpreting "recent" as current-year data.
+
+---
+
+## Validation Checklist
+
+- Join coverage: `%` of filtered businesses with at least one review row.
+- Text filter quality: sample false-positive/false-negative matches for key terms.
+- Aggregate definition: verify denominator (reviews vs businesses) matches query intent.
+- Outlier control: inspect businesses with extreme ratings at low review counts.
+- Time sanity: min/max timestamps align with dataset cutoff (through Sep 2021).
+
+---
+
+## Leakage-Safe Policy
+
+- No fixed expected winners, benchmark counts, or query-by-query outputs.
+- Preserve only durable methods: join sequencing, text filtering, and aggregate validation.
+- Examples must stay procedural and non-answer-bearing.

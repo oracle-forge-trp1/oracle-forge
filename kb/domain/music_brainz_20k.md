@@ -9,7 +9,7 @@
 
 ---
 
-## Cross-DB Join Key
+## Cross-Database Join Keys
 
 - SQLite `tracks.track_id` → DuckDB `sales.track_id`
 - Format is consistent — direct integer/string match. **No prefix mismatch.**
@@ -47,7 +47,7 @@ HAVING COUNT(*) > 1
 
 ---
 
-## Sales Data
+## Schema Reference
 
 Sales span 5 countries and 5 stores:
 
@@ -72,7 +72,7 @@ LIMIT 10
 
 ---
 
-## Source Fields
+## Data Semantics
 
 - `source_id` — identifies the catalog source (MusicBrainz, external)
 - `source_track_id` — ID from the originating catalog
@@ -80,7 +80,7 @@ LIMIT 10
 
 ---
 
-## Key Query Patterns
+## Query Strategy Playbook
 
 ### Cross-DB: Track info + sales
 ```python
@@ -101,3 +101,31 @@ For queries asking about "unique tracks" or "distinct songs":
 2. Deduplicate by (title, artist) — case-insensitive
 3. Map deduplicated tracks to all their track_ids
 4. Aggregate sales across all track_ids for each real-world track
+
+---
+
+## Common Pitfalls
+
+- Treating `track_id` as one-to-one with real-world songs.
+- Deduplicating by title only and merging different artists' tracks.
+- Aggregating sales before entity resolution, which inflates duplicates.
+- Mixing language/year normalization rules inconsistently across grouping steps.
+- Assuming one source catalog; `source_id` fragmentation can hide duplicate entities.
+
+---
+
+## Validation Checklist
+
+- Duplicate audit: count candidate duplicate groups by normalized `(title, artist)`.
+- Merge quality: sample merged groups for false merges/splits.
+- Sales conservation: verify total revenue/units preserved pre/post dedup rollup.
+- Join coverage: percentage of deduped tracks with matching sales rows.
+- Country/store sanity: confirm expected domain values before final ranking.
+
+---
+
+## Leakage-Safe Policy
+
+- Do not include expected top tracks, fixed ranking outputs, or target numeric answers.
+- Keep guidance focused on entity resolution mechanics and aggregation correctness.
+- Historical notes must describe failure modes, not benchmark-specific outcomes.

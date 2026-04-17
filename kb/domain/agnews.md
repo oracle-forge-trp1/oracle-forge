@@ -9,14 +9,19 @@
 
 ---
 
-## Cross-DB Join Key
+
+## Cross-Database Join Keys
+=======
+
 
 - MongoDB `articles.article_id` → SQLite `article_metadata.article_id`
 - Format is consistent across both databases — direct string equality works.
 
 ---
 
-## Article Categories
+
+## Data Semantics
+
 
 Articles fall into exactly **4 categories:**
 
@@ -31,7 +36,7 @@ Categories must be determined from the article `title` and `description` content
 
 ---
 
-## Key Data Locations
+## Schema Reference
 
 - **Article content:** MongoDB `articles` collection — `title` and `description` fields
 - **Publication metadata:** SQLite `article_metadata` — region, date, author linkage
@@ -39,7 +44,7 @@ Categories must be determined from the article `title` and `description` content
 
 ---
 
-## Key Query Patterns
+## Query Strategy Playbook
 
 ### Count articles by category
 ```python
@@ -71,3 +76,31 @@ articles = query_mongodb("articles_database", "articles", "find",
 # Step 3: Get metadata from SQLite (region, date)
 # Step 4: Filter and count
 ```
+
+---
+
+## Common Pitfalls
+
+- Assuming category is a single normalized column when it may require text-based classification.
+- Joining Mongo and SQLite before deduplicating `article_id`, causing over-counting.
+- Applying region/date filters to Mongo documents instead of SQLite metadata.
+- Ignoring null or empty `title`/`description` during classification.
+- Mixing publication date formats without explicit normalization.
+
+---
+
+## Validation Checklist
+
+- Join integrity: `%` of Mongo articles with matching SQLite metadata.
+- De-duplication: distinct `article_id` count before and after joins.
+- Classification coverage: share of rows assigned one of the 4 categories.
+- Temporal sanity: min/max normalized publication dates are plausible.
+- Spot-checks: manually inspect a sample of classified rows for label drift.
+
+---
+
+## Leakage-Safe Policy
+
+- Never store expected per-query counts, labels, or final benchmark outputs.
+- Keep only reusable category-classification and cross-source-join methodology.
+- If adding examples, keep them procedural and dataset-structural, not answer-bearing.

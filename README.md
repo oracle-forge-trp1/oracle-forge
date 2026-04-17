@@ -93,6 +93,13 @@ cp .env.example .env
 python eval/harness.py --dataset yelp --agent-module agent.data_agent --dab-root /shared/oracle-forge/DataAgentBench
 python eval/harness.py --dataset stockindex --agent-module agent.data_agent --dab-root /shared/oracle-forge/DataAgentBench
 python eval/harness.py --dataset bookreview --agent-module agent.data_agent --dab-root /shared/oracle-forge/DataAgentBench
+
+# Strict no-leakage full benchmark (all 12 datasets, isolated score log)
+./scripts/run_full_benchmark_strict.sh
+
+# Optional preflight checks (KB discoverability + leakage lint)
+python scripts/check_kb_integrity.py --strict
+python scripts/lint_kb_no_leakage.py --strict
 ```
 
 Non-obvious dependency:
@@ -239,6 +246,17 @@ python eval/run_benchmark.py --dataset bookreview --trials 1 --dab-root /shared/
 python results/build_results_json.py --dab-root /shared/oracle-forge/DataAgentBench
 ```
 
+For final submission quality runs (all datasets, strict no-leakage mode, trace + value storage in isolated score log):
+
+```bash
+cd /shared/oracle-forge
+./scripts/run_full_benchmark_strict.sh
+```
+
+Outputs:
+- `eval/score_log_strict_no_leakage.json` (query-level traces + answers)
+- `results/score_summary_strict_no_leakage.md` (latest strict summary)
+
 ### Benchmark Submission
 
 ```bash
@@ -282,6 +300,11 @@ git push origin main
 | Karpathy LLM Knowledge Bases | academy.dair.ai/blog/llm-knowledge-bases-karpathy |
 | AWS AI-DLC framework | aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/ |
 | Cloudflare Workers free tier | workers.cloudflare.com |
+
+## Notes
+
+- `agent/data_agent.py` requires MCP server availability during execution. The harness starts and stops MCP automatically for each run.
+- Strict no-leakage mode is enabled by default via `ORACLE_FORGE_STRICT_NO_LEAKAGE=1`.
 
 ---
 

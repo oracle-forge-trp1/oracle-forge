@@ -4,7 +4,7 @@ This document is injected into the agent's Domain Knowledge context layer before
 
 ---
 
-## Dataset Structure
+## Dataset Overview
 
 Two active databases. Clinical data lives in PostgreSQL, molecular profiling data lives in SQLite.
 
@@ -59,7 +59,7 @@ Two active databases. Clinical data lives in PostgreSQL, molecular profiling dat
 
 ---
 
-## Join Key
+## Cross-Database Join Keys
 
 `clinical_info.Patient_description` ↔ `Mutation_Data.ParticipantBarcode` ↔ `RNASeq_Expression.ParticipantBarcode`
 
@@ -67,7 +67,7 @@ All three refer to the same patient. Match directly by value.
 
 ---
 
-## Domain Rules
+## Data Semantics
 
 ### Gene Expression — Log Transform
 Average log10-transformed expression is computed as:
@@ -92,3 +92,50 @@ Use these when filtering by cancer type — the `clinical_info` table stores the
 
 ### Mutation Filter
 Only use mutations where `FILTER = 'PASS'` unless the query explicitly asks for all mutations.
+
+---
+
+## Query Strategy Playbook
+
+### 1) Clinical ↔ molecular cohort joins
+1. Start with a patient cohort in `clinical_info`.
+2. Join to `Mutation_Data` and/or `RNASeq_Expression` by `ParticipantBarcode`.
+3. Use distinct patient counts when combining mutation and expression tables to avoid duplicate inflation.
+
+### 2) Gene-level association queries
+1. Normalize gene symbol comparisons (`UPPER(TRIM(...))`).
+2. For mutation-based analyses, filter `FILTER = 'PASS'` by default.
+3. Separate mutation presence (binary) from mutation burden (count) depending on question intent.
+
+### 3) Expression summaries by subgroup
+1. Build subgroup definitions from clinical variables first.
+2. Compute per-patient expression summaries before group aggregates when multiple samples exist.
+3. Use `mean(log10(normalized_count + 1))` consistently for transformed comparisons.
+
+---
+
+## Common Pitfalls
+
+- Joining mutation and expression tables directly without patient-level de-duplication.
+- Mixing tumor-level and patient-level units in one statistic.
+- Forgetting `+1` before log transform on zero-valued expression.
+- Comparing cancer types using free-text assumptions instead of acronym values stored in clinical data.
+- Ignoring quality filter (`FILTER`) in mutation analyses.
+
+---
+
+## Validation Checklist
+
+- Cohort integrity: patient count before and after joins.
+- Duplicate control: verify distinct patient vs distinct sample totals.
+- Symbol sanity: check `%` of rows with null/empty gene symbols.
+- Transform sanity: confirm no invalid log inputs and no NaN aggregates.
+- Cross-check directionality: sample a few patient records to confirm subgroup assignment and joined molecular values.
+
+---
+
+## Leakage-Safe Policy
+
+- No benchmark answer keys, no target numbers, no query-by-query outcomes.
+- Retain only reusable biological-data handling patterns and quality controls.
+- Any historical notes must be phrased as general failure-mode prevention, not expected-result hints.

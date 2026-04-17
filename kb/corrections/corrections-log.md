@@ -13,9 +13,21 @@ Format:
 - Correct approach
 - Verification note
 
+Entry metadata (recommended for every new entry):
+- `confidence`: low | medium | high
+- `last_verified_run_id`: run id from score log where rule was last validated
+- `datasets_seen`: list of datasets where the pattern was observed
+- `owner`: person responsible for maintenance
+- `expires_after_runs`: review threshold for freshness
+
 ---
 
 ## Entry 001 — Cross-DB Key Normalization
+
+Metadata:
+- confidence: high
+- datasets_seen: yelp, bookreview, crmarenapro
+- expires_after_runs: 20
 
 Failure pattern:
 - Cross-database joins return zero rows even though related entities exist.
@@ -34,6 +46,11 @@ Verification note:
 
 ## Entry 002 — Mixed Datetime Formats
 
+Metadata:
+- confidence: high
+- datasets_seen: yelp, stockindex, stockmarket
+- expires_after_runs: 20
+
 Failure pattern:
 - Time-filtered counts/aggregates are unexpectedly low.
 
@@ -50,6 +67,11 @@ Verification note:
 ---
 
 ## Entry 003 — Unstructured Location Fields
+
+Metadata:
+- confidence: medium
+- datasets_seen: yelp, googlelocal
+- expires_after_runs: 20
 
 Failure pattern:
 - City/state filters produce empty or partial results.
@@ -68,6 +90,11 @@ Verification note:
 
 ## Entry 004 — String-Typed Numeric/Boolean Fields
 
+Metadata:
+- confidence: high
+- datasets_seen: yelp, crmarenapro
+- expires_after_runs: 20
+
 Failure pattern:
 - Numeric comparisons or boolean logic behave incorrectly.
 
@@ -84,6 +111,11 @@ Verification note:
 ---
 
 ## Entry 005 — Serialized Nested Attributes
+
+Metadata:
+- confidence: high
+- datasets_seen: yelp
+- expires_after_runs: 20
 
 Failure pattern:
 - Attribute-based filters miss valid entities.
@@ -103,6 +135,11 @@ Verification note:
 
 ## Entry 006 — Avoid Average-of-Averages
 
+Metadata:
+- confidence: high
+- datasets_seen: yelp, stockmarket, bookreview
+- expires_after_runs: 20
+
 Failure pattern:
 - Final averages are biased high/low.
 
@@ -118,6 +155,11 @@ Verification note:
 ---
 
 ## Entry 007 — Output Formatting Compatibility
+
+Metadata:
+- confidence: high
+- datasets_seen: stockindex, yelp, bookreview
+- expires_after_runs: 20
 
 Failure pattern:
 - Semantically correct answer fails validation.
@@ -136,6 +178,11 @@ Verification note:
 
 ## Entry 008 — Single-Winner Query Discipline
 
+Metadata:
+- confidence: medium
+- datasets_seen: stockindex, stockmarket
+- expires_after_runs: 20
+
 Failure pattern:
 - Correct winner is present but response still fails.
 
@@ -153,6 +200,11 @@ Verification note:
 
 ## Entry 009 — Top-N Aggregation Completeness
 
+Metadata:
+- confidence: high
+- datasets_seen: yelp, github_repos, music_brainz_20k
+- expires_after_runs: 20
+
 Failure pattern:
 - Top categories/entities are incomplete or misordered.
 
@@ -168,7 +220,146 @@ Verification note:
 
 ---
 
+## Entry 010 — Required Identifier Emission
+
+Metadata:
+- confidence: high
+- datasets_seen: crmarenapro, patents
+- expires_after_runs: 20
+
+Failure pattern:
+- Validator rejects output due to missing required ID token (for example issue/article/record identifiers).
+
+Root cause:
+- Final answer is returned as narrative summary without explicitly emitting the identifier field.
+
+Correct approach:
+- Add an answer-contract check before finalize: if prompt intent asks for an identifier, output must include at least one ID-shaped token.
+- Prefer explicit prefix style in final answer (for example `ID: <value>`), then optional explanation.
+
+Verification note:
+- Run regex assertion for required ID family before finalizing.
+
+---
+
+## Entry 011 — Exhaustive Set/List Coverage
+
+Metadata:
+- confidence: high
+- datasets_seen: bookreview, yelp, agnews
+- expires_after_runs: 20
+
+Failure pattern:
+- Output includes partial set/list where validator expects all qualifying items.
+
+Root cause:
+- Early truncation, premature finalize, or missing completeness check on grouped outputs.
+
+Correct approach:
+- Materialize full eligible set first, then render final list.
+- Apply deterministic ordering and deduplicate before emitting values.
+
+Verification note:
+- Compare item_count in final output vs item_count from final aggregation table.
+
+---
+
+## Entry 012 — Policy Violation Contradiction Guard
+
+Metadata:
+- confidence: medium
+- datasets_seen: crmarenapro
+- expires_after_runs: 20
+
+Failure pattern:
+- Output states “no violation” while evidence rows indicate a violation class and related reference item.
+
+Root cause:
+- Decision statement not cross-checked against extracted evidence.
+
+Correct approach:
+- Force binary decision consistency check: if violation evidence rows are non-empty, final decision cannot be "no violation".
+- Emit the supporting reference ID when violation evidence exists.
+
+Verification note:
+- Add pre-final invariant: `violation_detected == (evidence_count > 0)`.
+
+---
+
+## Entry 013 — Numeric Tolerance and Precision Discipline
+
+Metadata:
+- confidence: high
+- datasets_seen: DEPS_DEV_V1, stockindex, yelp
+- expires_after_runs: 20
+
+Failure pattern:
+- Numeric outputs fail validator tolerance checks despite near-correct intermediate calculations.
+
+Root cause:
+- Inconsistent rounding/formatting or omission of final numeric token.
+
+Correct approach:
+- Keep full precision internally; round only at final render according to prompt/validator expectation.
+- Emit a single canonical numeric token in final answer.
+
+Verification note:
+- Run final numeric regex check and tolerance sanity check before response emission.
+
+---
+
+## Entry 014 — Taxonomy-Locked Classification Output
+
+Metadata:
+- confidence: medium
+- datasets_seen: crmarenapro, agnews
+- expires_after_runs: 20
+
+Failure pattern:
+- Classification label is semantically close but not one of accepted taxonomy labels.
+
+Root cause:
+- Free-form wording used instead of constrained label set.
+
+Correct approach:
+- Map evidence to a predefined allowed label set and emit exact canonical label text.
+- Reject out-of-taxonomy labels in finalization step.
+
+Verification note:
+- Validate output label membership against allowed taxonomy list.
+
+---
+
+## Entry 015 — Temporal Token Compliance
+
+Metadata:
+- confidence: medium
+- datasets_seen: agnews, stockmarket, googlelocal
+- expires_after_runs: 20
+
+Failure pattern:
+- Time-related answer fails because required temporal token format is missing (for example month-name form).
+
+Root cause:
+- Date normalized for computation but rendered in non-required textual format.
+
+Correct approach:
+- Separate compute format from render format.
+- When prompt implies month-level wording, render explicit month-name token in final output.
+
+Verification note:
+- Run date-render regex check (month-name presence) before finalize.
+
+---
+
 ## Template
+
+Metadata:
+- confidence:
+- last_verified_run_id:
+- datasets_seen:
+- owner:
+- expires_after_runs:
 
 Failure pattern:
 - 
@@ -181,3 +372,9 @@ Correct approach:
 
 Verification note:
 - 
+
+Promotion checklist (before marking a new rule as trusted):
+- Rule validated in at least 2 independent runs.
+- Rule improves strict pass behavior, not only repaired behavior.
+- Rule is phrased as reusable method, not query-specific hint.
+- Rule passes leakage lint checks.

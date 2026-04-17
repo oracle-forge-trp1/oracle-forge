@@ -1,6 +1,8 @@
 # CRM Arena Pro Domain Knowledge
 
-## Dataset Overview — 6 Databases, 27 Tables
+## Dataset Overview
+
+This dataset spans 6 databases and 27 tables.
 
 This is the **largest DAB dataset** (13 queries). Salesforce-style CRM data spread across 3 DB types.
 
@@ -44,7 +46,14 @@ Corrupted: "Company Name   "
 
 ---
 
-## Cross-DB Join Keys
+## Schema Reference
+
+The dataset overview table defines database-to-table coverage across all six stores.
+Use that table as the primary schema anchor, then introspect live columns at runtime before writing final joins.
+
+---
+
+## Cross-Database Join Keys
 
 All 6 databases use Salesforce-style IDs (18-char alphanumeric). The same ID format is used across databases, but corruption (`#` prefix, whitespace) breaks direct equality.
 
@@ -64,7 +73,7 @@ def clean_crm_id(val):
 
 ---
 
-## CRM Term Definitions
+## Data Semantics
 
 | Term | Definition |
 |---|---|
@@ -79,7 +88,7 @@ def clean_crm_id(val):
 
 ---
 
-## Key Query Patterns
+## Query Strategy Playbook
 
 ### Multi-DB routing (most queries span 3+ databases)
 ```python
@@ -111,3 +120,31 @@ SELECT OwnerId,
 FROM Opportunity
 GROUP BY OwnerId
 ```
+
+---
+
+## Common Pitfalls
+
+- Joining IDs without first removing leading `#` and surrounding whitespace.
+- Mixing cleaned and uncleaned IDs across intermediate query steps.
+- Assuming support-table casing is uniform; PostgreSQL identifiers may need quoting.
+- Counting opportunities/orders after many-to-many joins without deduplication keys.
+- Computing SLA/resolution metrics from raw text timestamps without normalization.
+
+---
+
+## Validation Checklist
+
+- ID hygiene: percentage of keys changed by normalization (`lstrip('#').strip()`).
+- Join diagnostics: matched vs unmatched counts for each cross-DB join edge.
+- Cardinality guard: compare distinct business entities before/after joins.
+- Timestamp sanity: null/parse-failure rates for created/closed fields.
+- Metric consistency: verify at least one sampled owner/account trace end-to-end across DBs.
+
+---
+
+## Leakage-Safe Policy
+
+- Keep only reusable CRM data-handling guidance (normalization, joins, QA checks).
+- Do not include query-specific expected outputs, top-entity lists, or benchmark target values.
+- Any historical lessons must remain generic and process-oriented.

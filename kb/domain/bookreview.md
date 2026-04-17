@@ -11,7 +11,7 @@ Two databases for this dataset:
 
 ---
 
-## Join Key: book_id ↔ purchase_id
+## Cross-Database Join Keys
 
 **CRITICAL:** The two databases use different key field names AND different prefixes.
 
@@ -42,7 +42,7 @@ If the agent has Python access, merge the two result sets on the numeric suffix 
 
 ---
 
-## Category Field Format
+## Schema Reference
 
 The `categories` field is stored as a **JSON array string**, e.g.:
 ```
@@ -101,7 +101,7 @@ WHERE review_time >= '2020-01-01'
 
 ---
 
-## Rating Field
+## Data Semantics
 
 - `review.rating` is stored as INTEGER (1–5), NOT float.
 - `AVG(rating)` returns a float; compare with `= 5.0` or `= 5` for perfect rating.
@@ -110,12 +110,42 @@ WHERE review_time >= '2020-01-01'
 
 ---
 
-## Query Patterns (No Answer Keys)
+## Query Strategy Playbook
 
-| Query | Required computation | Key Constraint |
-|-------|----------------------|----------------|
-| Q1: Decade with highest avg rating (≥10 distinct books) | Extract publication year, derive decade, aggregate avg rating by decade | decade computed from details/subtitle text |
-| Q2: Literature/Fiction books with perfect avg | Filter category, join to review DB, keep groups with AVG(rating)=5 | categories LIKE '%Literature & Fiction%' |
-| Q3: Children's books with ≥4.5 avg since 2020 | Filter category + date, aggregate by purchase/book | categories LIKE '%Children''s Books%', review_time >= '2020' |
+Use these generic patterns instead of query-labeled templates:
+
+| Pattern | Required computation | Key Constraint |
+|---------|----------------------|----------------|
+| Decade-level rating analysis | Extract publication year, derive decade, aggregate ratings | decade must be parsed from text fields (details/subtitle) |
+| Category-constrained rating quality | Filter by category in PostgreSQL, join to SQLite reviews, apply HAVING threshold | categories stored as JSON-array string, use LIKE/ILIKE |
+| Time-windowed high-rating selection | Filter reviews by date window, aggregate by purchase/book id | review_time filter must be applied before final aggregation |
 
 Do not rely on memorized title lists. Always derive outputs from live query results.
+
+---
+
+## Common Pitfalls
+
+- Joining `book_id` and `purchase_id` without suffix normalization (`bookid_N` vs `purchaseid_N`).
+- Treating `categories` JSON-array text as exact scalar categories.
+- Extracting year from only one source field and silently dropping rows.
+- Applying time filters after aggregation instead of before.
+- Comparing integer ratings without considering aggregate float behavior.
+
+---
+
+## Validation Checklist
+
+- Key mapping: verify `bookid_N -> purchaseid_N` conversion coverage.
+- Join quality: matched vs unmatched IDs after suffix-based join logic.
+- Year extraction quality: parse-success rate from `details`/`subtitle`.
+- Category filter sanity: sample matches for false positives from `LIKE` on JSON-array text.
+- Rating consistency: confirm integer `rating` source and float aggregate behavior.
+
+---
+
+## Leakage-Safe Policy
+
+- Do not include expected title lists, hardcoded ranked outputs, or final benchmark values.
+- Keep only reusable parsing/join/aggregation methods and quality checks.
+- Examples should remain procedural and recomputable from current tool outputs.

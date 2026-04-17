@@ -4,7 +4,7 @@ This document is injected into the agent's Domain Knowledge context layer before
 
 ---
 
-## Dataset Structure
+## Dataset Overview
 
 Two active databases. Patent publication records live in SQLite, CPC classification definitions live in PostgreSQL.
 
@@ -64,7 +64,7 @@ Two active databases. Patent publication records live in SQLite, CPC classificat
 
 ---
 
-## Join Key
+## Cross-Database Join Keys
 
 `publicationinfo.cpc` contains CPC code strings. Match against `cpc_definition.symbol` to get the full title via `titleFull`.
 
@@ -72,7 +72,7 @@ The `cpc` field is a JSON-like string — parse it to extract individual code va
 
 ---
 
-## Domain Rules
+## Data Semantics
 
 ### Dates — Always Natural Language
 All date fields (`publication_date`, `filing_date`, `grant_date`, `priority_date`) are stored as natural language strings e.g. `"March 15th, 2020"`. Use regex or string parsing — do not expect ISO date format.
@@ -85,3 +85,52 @@ CPC codes are hierarchical. A query about a category may require matching at a p
 
 ### Citation Format
 `citation` is a string list of cited works — both patent and non-patent literature. Parse as a list before counting or filtering.
+
+---
+
+## Query Strategy Playbook
+
+### 1) CPC-focused analysis (category or technology theme)
+1. Parse `publicationinfo.cpc` into normalized CPC symbols (trim whitespace and punctuation noise).
+2. Left-join parsed symbols to `cpc_definition.symbol`.
+3. Prefer `titleFull` for semantic grouping; use `level` to control granularity.
+4. Keep unmatched symbols in diagnostics output to detect definition-table gaps.
+
+### 2) Time-window analysis (filing/publication/grant)
+1. Normalize date strings with deterministic parsing (month-name + ordinal support).
+2. Build a canonical date column in a CTE before filtering or grouping.
+3. Apply date predicates only after successful parse checks.
+4. Report parse-failure count to avoid silent row loss.
+
+### 3) Assignee / identifier extraction
+1. Extract candidate fields from `Patents_info` via regex (application, publication, assignee, country).
+2. Materialize extraction results as temporary structured columns.
+3. Validate extraction coverage before computing aggregates.
+
+---
+
+## Common Pitfalls
+
+- Treating `cpc` as a scalar string instead of a list of symbols.
+- Joining on CPC title text instead of canonical symbol.
+- Mixing `filing_date`, `publication_date`, and `grant_date` in one metric without explicit definition.
+- Using strict inner joins to CPC definitions and unintentionally dropping patents with unknown/deleted symbols.
+- Counting raw citation string length rather than parsed citation entries.
+
+---
+
+## Validation Checklist
+
+- Date quality: parse success rate and null-rate after normalization.
+- CPC coverage: percentage of parsed symbols matched to `cpc_definition`.
+- Join inflation: compare distinct patent count pre/post CPC explode+join.
+- Metric consistency: verify denominator (patents vs CPC assignments vs citations).
+- Spot-check: manually inspect a few rows with extreme values (top cited, oldest, newest).
+
+---
+
+## Leakage-Safe Policy
+
+- Do not store or encode benchmark expected outputs, constants, or final numeric answers.
+- Keep this KB methodology-first: schema semantics, parsing rules, joins, and validation only.
+- If prior run outcomes are referenced, they must remain generic process lessons (no query-specific targets).

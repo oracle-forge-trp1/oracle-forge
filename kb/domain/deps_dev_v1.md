@@ -4,7 +4,7 @@ This document is injected into the agent's Domain Knowledge context layer before
 
 ---
 
-## Dataset Structure
+## Dataset Overview
 
 Two active databases. Package metadata lives in SQLite, project information and package-to-project mappings live in DuckDB.
 
@@ -62,7 +62,7 @@ Two active databases. Package metadata lives in SQLite, project information and 
 
 ---
 
-## Join Pattern — Three-Table Chain
+## Cross-Database Join Keys
 
 Queries require joining across all three tables in order:
 
@@ -83,7 +83,7 @@ Do not skip steps — there is no direct link between `packageinfo` and `project
 
 ---
 
-## Domain Rules
+## Data Semantics
 
 ### GitHub Stars and Fork Count
 Stars and fork count are embedded inside `project_info.Project_Information` as natural language text — they are not separate columns. Use regex to extract numeric values.
@@ -96,3 +96,51 @@ Stars and fork count are embedded inside `project_info.Project_Information` as n
 
 ### Security Advisories
 `Advisories` field contains security advisory records. A package with an empty or null `Advisories` field has no known vulnerabilities.
+
+---
+
+## Query Strategy Playbook
+
+### 1) Package-to-project attribution
+1. Normalize `(System, Name, Version)` in both sources (trim/case policy).
+2. Join `packageinfo` to `project_packageversion` on all three fields.
+3. Join resulting `ProjectName` to `project_info`.
+4. Track unmatched package versions separately.
+
+### 2) Security and license analysis
+1. Parse JSON-like `Advisories` and `Licenses` fields into arrays.
+2. Distinguish null, empty array, and malformed payloads.
+3. Aggregate at package-version level before rolling up to project level.
+
+### 3) Freshness/time-window analysis
+1. Convert `UpstreamPublishedAt` from milliseconds to timestamp.
+2. Validate converted year range to catch unit mistakes.
+3. Use publication windows only after conversion checks pass.
+
+---
+
+## Common Pitfalls
+
+- Joining by `Name` only and ignoring `System` (ecosystem collisions).
+- Dropping `Version` in joins and creating false many-to-many matches.
+- Treating JSON-like text fields as plain strings for exact equality filters.
+- Forgetting ms→s conversion for `UpstreamPublishedAt`.
+- Aggregating project metrics without first deduplicating package-version rows.
+
+---
+
+## Validation Checklist
+
+- Key completeness: null-rate for `System`, `Name`, `Version` in both joined tables.
+- Join quality: matched vs unmatched package-version counts.
+- Timestamp sanity: min/max converted dates are plausible.
+- Advisory parsing: malformed JSON-like row count reported.
+- Rollup sanity: verify project-level totals against sampled package-version detail.
+
+---
+
+## Leakage-Safe Policy
+
+- Keep only schema/join/parsing methodology and quality checks.
+- Do not encode expected leaderboard outcomes, per-query final numbers, or canned answers.
+- Prefer robust procedural guidance over benchmark-specific heuristics.

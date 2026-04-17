@@ -11,14 +11,14 @@
 
 ---
 
-## Cross-DB Join Key
+## Cross-Database Join Keys
 
 - SQLite `stock_info.ticker` → DuckDB `stock_trade.ticker`
 - Format is consistent — direct string match. **No prefix mismatch.**
 
 ---
 
-## Stock Info — Code Definitions
+## Data Semantics
 
 ### Listing Exchanges
 | Code | Exchange |
@@ -66,7 +66,7 @@ SELECT * FROM stock_trade ORDER BY date
 
 ---
 
-## Key Query Patterns
+## Query Strategy Playbook
 
 ### Price analysis
 ```sql
@@ -104,7 +104,7 @@ ORDER BY avg_volatility DESC
 
 ---
 
-## Description Field
+## Schema Reference
 
 `stock_info.description` contains brief company descriptions. Use for text-based queries:
 ```sql
@@ -112,3 +112,31 @@ ORDER BY avg_volatility DESC
 SELECT ticker, description FROM stock_info
 WHERE description LIKE '%technology%'
 ```
+
+---
+
+## Common Pitfalls
+
+- Querying `stock_trade` without early ticker/date filters on large scans.
+- Confusing exchange code semantics with market category tiers.
+- Mixing adjusted and unadjusted close values without documenting intent.
+- Joining info/trade tables after aggregation and losing required group keys.
+- Treating text `description` matches as precise industry labels.
+
+---
+
+## Validation Checklist
+
+- Filter effectiveness: rows scanned before vs after ticker/date constraints.
+- Join completeness: `%` of selected tickers with both metadata and trade rows.
+- Metric consistency: compare outputs using `close` vs `adj_close` where relevant.
+- Outlier sanity: inspect top/bottom volatility or return names manually.
+- Time-window correctness: verify boundaries include intended trading days only.
+
+---
+
+## Leakage-Safe Policy
+
+- No pre-filled winners, expected tickers, or fixed benchmark outputs.
+- Keep only robust financial-data query strategy and verification guidance.
+- Any examples must remain procedural and recomputable from live data.

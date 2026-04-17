@@ -7,7 +7,7 @@ Do not include query-by-query answer keys, expected output strings, fixed winner
 
 ---
 
-## Dataset Structure
+## Dataset Overview
 
 Two active databases are used:
 
@@ -20,7 +20,7 @@ Most questions require combining both systems.
 
 ---
 
-## Location Extraction
+## Schema Reference
 
 MongoDB `business` does not expose normalized `city`/`state` columns in many records.
 Location is often encoded in `description` text and must be parsed before filtering/grouping.
@@ -70,7 +70,7 @@ WHERE business_ref IN (...)
 
 ---
 
-## Type Normalization
+## Data Semantics
 
 Some MongoDB fields are string-typed even when semantically numeric/boolean.
 Cast/normalize before comparison or arithmetic.
@@ -110,8 +110,36 @@ Split before counting/filtering event instances.
 
 ---
 
-## Output Policy
+## Query Strategy Playbook
 
 - Compute answers from live tool outputs.
 - Do not use memorized expected values.
 - Keep final outputs compact and plain text for validator compatibility.
+
+---
+
+## Leakage-Safe Policy
+
+- Keep content methodological and runtime-derivable.
+- Do not store fixed benchmark outputs or precomputed winners.
+- Favor reusable parsing/join/validation guidance over query-specific shortcuts.
+
+---
+
+## Common Pitfalls
+
+- Joining Mongo and DuckDB IDs without canonical normalization.
+- Assuming structured city/state fields always exist in business records.
+- Aggregating per-business averages when question requires review-level aggregation.
+- Failing to parse multi-value check-in strings before event counts.
+- Treating mixed-type attribute values as uniformly typed booleans/numbers.
+
+---
+
+## Validation Checklist
+
+- ID join quality: matched/unmatched counts after normalization.
+- Location extraction quality: sample precision/recall from description parsing.
+- Aggregate denominator check: reviews vs businesses vs users clearly separated.
+- Type normalization audit: count rows requiring cast/fallback per key field.
+- Temporal parsing audit: parse-success rate across mixed date formats.
