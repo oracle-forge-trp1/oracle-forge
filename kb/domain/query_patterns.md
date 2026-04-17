@@ -303,3 +303,15 @@ render = format_required_token(dt)  # e.g., month-name token
 ```
 
 This prevents correct computation with validator-incompatible final text.
+
+## Pattern 21: Two-stage rank-then-restrict
+Many prompts implicitly chain two objectives: (A) find the group or entity that **maximizes a count or coverage**, then (B) compute a **different statistic** for that winner only.
+
+```
+1. On the full eligible population, compute the ranking metric for each group (state, category bucket, etc.).
+2. Identify the single winning group (break ties with a stable secondary key).
+3. Restrict all data for step (B) to rows/documents belonging to that winning group only.
+4. Emit the step (B) result — do not mix in global aggregates.
+```
+
+Skipping step 3 is a common source of plausible but wrong numeric answers.

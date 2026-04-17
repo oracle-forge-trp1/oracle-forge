@@ -5,6 +5,11 @@ DataAgentBench evaluation harness.
 Example:
   python eval/harness.py --dataset yelp --agent-module agent.data_agent
   python eval/harness.py --dataset yelp --dummy
+
+Env:
+  ORACLE_FORGE_HARNESS_REUSE_MCP — if set to 1/true, reuse an MCP server already
+ listening on MCP_URL (default http://127.0.0.1:5000/mcp). Otherwise the harness
+  starts a dedicated MCP on a free port and passes MCP_URL to each agent child (avoids wrong db_config/registry from another process on :5000).
 """
 from __future__ import annotations
 
@@ -13,6 +18,7 @@ import importlib.util
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -32,48 +38,82 @@ MCP_SERVER_SCRIPT = REPO_ROOT / "mcp" / "toolbox_server.py"
 MCP_HEALTH_URL = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp").replace("/mcp", "/health")
 
 
-def _mcp_is_up() -> bool:
+def _find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def _mcp_is_up_at(health_url: str) -> bool:
     try:
-        with urllib.request.urlopen(MCP_HEALTH_URL, timeout=2) as r:
+        with urllib.request.urlopen(health_url, timeout=2) as r:
             return r.status == 200
     except Exception:
         return False
 
 
-def _start_mcp_server(db_config_path: Optional[str] = None) -> Optional[subprocess.Popen]:
-    """
-    Start the MCP server as a background subprocess if it is not already running.
-    Returns the Popen handle so the caller can stop it, or None if it was already up.
-    Logs a warning and returns None if startup fails — agent falls back to direct drivers.
+def _mcp_is_up() -> bool:
+    return _mcp_is_up_at(MCP_HEALTH_URL)
 
-    When db_config_path is set, passes ORACLE_FORGE_REGISTER_ONLY_DB_CONFIG so the MCP
-    server registers only that dataset's logical DB names. Otherwise many datasets
-    share keys like metadata_database and the last-registered file wins (wrong tables).
-    """
-    if _mcp_is_up():
-        print("[harness] MCP server already running.", flush=True)
-        return None
 
+def _start_mcp_server(db_config_path: Optional[str] = None) -> tuple[Optional[subprocess.Popen], Optional[str]]:
+    """
+    Start the MCP server and return (proc, mcp_rpc_url).
+
+    mcp_rpc_url is the JSON-RPC endpoint (e.g. http://127.0.0.1:PORT/mcp) for the agent
+    child. It is None when reusing an existing server on the default MCP_URL (see
+    ORACLE_FORGE_HARNESS_REUSE_MCP).
+
+    By default the harness binds an ephemeral port so a stale toolbox on :5000 cannot
+    serve the wrong db_config/registry for this dataset.
+    """
     if not MCP_SERVER_SCRIPT.is_file():
         raise RuntimeError(f"MCP server script not found at {MCP_SERVER_SCRIPT}")
 
-    print("[harness] Starting MCP server ...", flush=True)
+    reuse = os.getenv("ORACLE_FORGE_HARNESS_REUSE_MCP", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+    if reuse and _mcp_is_up():
+        print("[harness] MCP server already running (ORACLE_FORGE_HARNESS_REUSE_MCP).", flush=True)
+        return None, None
+
     env = os.environ.copy()
     if db_config_path:
         env["ORACLE_FORGE_REGISTER_ONLY_DB_CONFIG"] = str(Path(db_config_path).resolve())
-    proc = subprocess.Popen(
-        [sys.executable, str(MCP_SERVER_SCRIPT)],
-        cwd=str(REPO_ROOT),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=env,
-    )
+
+    if reuse:
+        print("[harness] Starting MCP server on default MCP_PORT ...", flush=True)
+        proc = subprocess.Popen(
+            [sys.executable, str(MCP_SERVER_SCRIPT)],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+        )
+        rpc_url = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp").rstrip("/")
+        if not rpc_url.endswith("/mcp"):
+            rpc_url = rpc_url + "/mcp"
+        health_url = rpc_url.replace("/mcp", "/health")
+    else:
+        port = _find_free_port()
+        env["MCP_PORT"] = str(port)
+        print(f"[harness] Starting dedicated MCP server on port {port} ...", flush=True)
+        proc = subprocess.Popen(
+            [sys.executable, str(MCP_SERVER_SCRIPT)],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+        )
+        rpc_url = f"http://127.0.0.1:{port}/mcp"
+        health_url = f"http://127.0.0.1:{port}/health"
 
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
-        if _mcp_is_up():
-            print(f"[harness] MCP server ready (pid {proc.pid}).", flush=True)
-            return proc
+        if _mcp_is_up_at(health_url):
+            print(f"[harness] MCP server ready at {rpc_url} (pid {proc.pid}).", flush=True)
+            return proc, rpc_url
         if proc.poll() is not None:
             raise RuntimeError("MCP server exited immediately on startup — check mcp/toolbox_server.py logs")
         time.sleep(0.25)
@@ -232,6 +272,7 @@ def invoke_agent_subprocess(
     db_description: str,
     dummy: bool,
     timeout_sec: float,
+    mcp_url: Optional[str] = None,
 ) -> Tuple[str, list, Optional[str]]:
     payload = {
         "repo_root": str(REPO_ROOT),
@@ -241,7 +282,11 @@ def invoke_agent_subprocess(
         "db_config_path": db_config_path,
         "db_description": db_description,
         "dummy": dummy,
+        "mcp_url": mcp_url,
     }
+    child_env = os.environ.copy()
+    if mcp_url:
+        child_env["MCP_URL"] = mcp_url
     try:
         proc = subprocess.run(
             [sys.executable, str(CHILD_SCRIPT)],
@@ -250,6 +295,7 @@ def invoke_agent_subprocess(
             capture_output=True,
             timeout=timeout_sec,
             cwd=str(REPO_ROOT),
+            env=child_env,
             check=False,
         )
     except subprocess.TimeoutExpired:
@@ -389,7 +435,10 @@ def run_harness(
     results: List[Dict[str, Any]] = []
     passed_n = 0
 
-    mcp_proc = _start_mcp_server(db_config_path) if not dummy else None
+    mcp_proc: Optional[subprocess.Popen] = None
+    mcp_rpc_url: Optional[str] = None
+    if not dummy:
+        mcp_proc, mcp_rpc_url = _start_mcp_server(db_config_path)
     try:
         for qdir in query_dirs:
             qid = qdir.name
@@ -429,6 +478,7 @@ def run_harness(
                 db_description=db_description,
                 dummy=dummy,
                 timeout_sec=timeout_sec,
+                mcp_url=mcp_rpc_url,
             )
             t1 = datetime.now(timezone.utc)
             row["execution_time_sec"] = round((t1 - t0).total_seconds(), 3)

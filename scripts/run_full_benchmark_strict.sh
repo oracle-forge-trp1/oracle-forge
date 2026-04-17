@@ -7,8 +7,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 DAB_ROOT="${DAB_ROOT:-$REPO_ROOT/DataAgentBench}"
+# Stronger models improve planning (FM2) without any answer leakage. Example:
+#   MODEL=openai/gpt-4o ./scripts/run_full_benchmark_strict.sh
 MODEL="${MODEL:-openai/gpt-4o-mini}"
 TIMEOUT="${TIMEOUT:-240}"
+# Optional agent tuning (see agent/data_agent.py): ORACLE_FORGE_MAX_ITERATIONS, ORACLE_FORGE_TOOL_PREVIEW_ROWS
 SCORE_LOG="${SCORE_LOG:-$REPO_ROOT/eval/score_log_strict_no_leakage.json}"
 SUMMARY_MD="${SUMMARY_MD:-$REPO_ROOT/results/score_summary_strict_no_leakage.md}"
 RESET_LOG="${RESET_LOG:-1}"

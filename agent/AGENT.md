@@ -130,3 +130,21 @@ Build the **eligible symbol set** from metadata (`index_info` / exchange) **befo
 ## 11. Operational harness note (MCP)
 
 Benchmark runs should start the MCP server with **one** dataset’s `db_config.yaml` registered so logical names like `metadata_database` map to the correct files. If you see “Available: […]” listing wrong tables or `no such table` errors for tables that exist in the dataset docs, assume the MCP registry was misconfigured — prefer introspection (`sqlite_master`, `information_schema`) on the connection you actually have.
+
+---
+
+## 12. Ranking & aggregation discipline (incorrect-plan guardrails)
+
+These rules prevent “right data, wrong algorithm” failures:
+
+1. **Two-stage questions** — If the prompt first asks which entity/region/group has the **most** of something (count, cardinality, coverage) and then asks for a **second metric** “there” or “for that winner”, you must compute the second metric **only** over the population that matches the winning key from stage one. Do not compute the second metric globally and then pick the winner from the first stage as decoration.
+
+2. **Top-N categories, tags, or labels** — When the question asks for the top categories (or similar) **across all** qualifying entities, aggregate from the **full** eligible set of entities. Do not rank categories using only the top few entities by an unrelated statistic (that biases the category distribution).
+
+3. **Row-level vs entity-level averages** — If the metric is defined over observations (e.g. reviews, trades, events), average **those rows** inside the filtered set. If you instead average pre-aggregated per-entity means, you re-weight entities unequally unless the question explicitly asks for that. When unsure, prefer row-level aggregation and compare mentally to a grouped average as a sanity check (CORRECTIONS LOG Entry 006).
+
+4. **Counts from fact tables** — Prefer counting rows in a **fact** table (reviews, check-ins, events) over using denormalized “cached” count fields on a parent document when the question is about **actual** activity in a time window or after filters. Cached fields can be stale or defined differently.
+
+5. **MongoDB global extrema** — For “highest/lowest/max/min across the whole collection”, use an **aggregation** with `$sort` and `$limit` (and correct `$match`). Do not use `find` and assume a capped tool preview reflects the global optimum.
+
+6. **Completeness before `return_answer`** — If the expected output is a **set or list** of all qualifying items, ensure your last query materialized the **full** set (count rows in tool output vs expected cardinality). Partial lists from early `LIMIT` or from scanning only a sample of businesses fail validators (see CORRECTIONS LOG Entry 011).

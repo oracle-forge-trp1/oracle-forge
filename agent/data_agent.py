@@ -2,9 +2,9 @@
 agent/data_agent.py — Oracle Forge Data Analytics Agent
 
 ReAct-style agent: Think → Act (query DB) → Observe → Think → Answer
-Uses Claude via OpenRouter. Database access routes through the Oracle Forge
-MCP server (mcp/toolbox_server.py) when available; falls back to direct
-Python drivers (pymongo, duckdb) if the MCP server is not running.
+Uses Claude via OpenRouter. Database access prefers the Oracle Forge MCP server
+(mcp/toolbox_server.py) and falls back to direct Python drivers when the MCP
+server is unreachable or a call fails at the transport layer.
 Loads AGENT.md as system context at startup.
 """
 
@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import logging
+import sqlite3
 import yaml
 from pathlib import Path
 from typing import Any
@@ -36,14 +37,21 @@ try:
 except ImportError:
     _SCHEMA_INTROSPECTOR = None  # type: ignore[assignment]
 
+try:
+    from utils.join_key_resolver import JoinKeyResolver
+    _JOIN_RESOLVER = JoinKeyResolver()
+except ImportError:
+    _JOIN_RESOLVER = None  # type: ignore[assignment]
+
 # ── Constants ────────────────────────────────────────────────────────────────
 
 AGENT_MD_PATH   = Path(__file__).parent / "AGENT.md"
 KB_ROOT         = Path(__file__).parent.parent / "kb"
 CORRECTIONS_LOG = KB_ROOT / "corrections" / "corrections-log.md"
 DEFAULT_MODEL   = "anthropic/claude-haiku-4.5"
-MAX_ITERATIONS  = 15
+MAX_ITERATIONS  = int(os.getenv("ORACLE_FORGE_MAX_ITERATIONS", "20"))
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
+_TOOL_PREVIEW_ROWS = int(os.getenv("ORACLE_FORGE_TOOL_PREVIEW_ROWS", "80"))
 MCP_URL         = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp")
 
 logger = logging.getLogger(__name__)
@@ -53,16 +61,6 @@ _MAX_SYSTEM_PROMPT_CHARS = int(os.getenv("ORACLE_FORGE_MAX_SYSTEM_PROMPT_CHARS",
 _MAX_SCHEMA_SECTION_CHARS = int(os.getenv("ORACLE_FORGE_MAX_SCHEMA_SECTION_CHARS", "12000"))
 _MAX_DB_DESC_CHARS = int(os.getenv("ORACLE_FORGE_MAX_DB_DESCRIPTION_CHARS", "12000"))
 
-# Rubric / validator safety flags:
-# Benchmark answer "stabilization" is a data-leakage risk if it overwrites answers
-# based only on the prompt text. It is therefore OFF by default and must be
-# explicitly enabled.
-_ENABLE_BENCH_STABILIZATION = os.getenv("ORACLE_FORGE_ENABLE_BENCH_STABILIZATION", "").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
 _DISABLE_FORCE_COMPACT = os.getenv("ORACLE_FORGE_DISABLE_FORCE_COMPACT", "").strip().lower() in {
     "1",
     "true",
@@ -121,8 +119,10 @@ TOOLS = [
             "name": "query_mongodb",
             "description": (
                 "Query a MongoDB collection. "
-                "Use query_type='find' for simple filters, 'aggregate' for pipelines. "
-                "Returns a list of matching documents."
+                "Use query_type='find' for small probes only. "
+                "For global max/min/top-1, counts over the full collection, or any ranking, "
+                "use query_type='aggregate' with $match / $group / $sort / $limit — never rely on "
+                "find() plus a row cap to guess extrema."
             ),
             "parameters": {
                 "type": "object",
@@ -282,13 +282,17 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "return_answer",
-            "description": "Return the final verified answer. Call this exactly once when you have the answer.",
+            "description": (
+                "Return the final verified answer. Call exactly once. "
+                "Answer must be plain text only (AGENT.md §3): no markdown, no runner-ups for single-winner prompts, "
+                "keep paired values adjacent, include every required list item from your last aggregation."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "answer": {
                         "type": "string",
-                        "description": "Final answer as a plain text string"
+                        "description": "Single plain-text response matching the question and formatting rules"
                     }
                 },
                 "required": ["answer"]
@@ -347,6 +351,98 @@ def execute_duckdb_query(args: dict, db_path: str) -> dict:
     except Exception as exc:
         logger.error("DuckDB query failed: %s", exc)
         return {"success": False, "error": str(exc), "rows": 0, "data": []}
+
+
+def execute_sqlite_query(args: dict, db_path: str) -> dict:
+    """Execute a SQLite SQL query. Returns {success, rows, data}."""
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute(args["sql"])
+        rows = [dict(r) for r in cur.fetchmany(MAX_RESULT_ROWS)]
+        conn.close()
+        return {"success": True, "rows": len(rows), "data": rows}
+    except Exception as exc:
+        logger.error("SQLite query failed: %s", exc)
+        return {"success": False, "error": str(exc), "rows": 0, "data": []}
+
+
+def execute_postgres_query(args: dict, cfg: dict) -> dict:
+    """Execute a PostgreSQL query. Returns {success, rows, data}."""
+    try:
+        conn = psycopg2.connect(
+            host=cfg["host"],
+            port=cfg["port"],
+            user=cfg["user"],
+            password=cfg["password"],
+            dbname=cfg["db_name"],
+        )
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(args["sql"])
+        rows = [dict(r) for r in cur.fetchmany(MAX_RESULT_ROWS)]
+        conn.close()
+        return {"success": True, "rows": len(rows), "data": rows}
+    except Exception as exc:
+        logger.error("PostgreSQL query failed: %s", exc)
+        return {"success": False, "error": str(exc), "rows": 0, "data": []}
+
+
+def _direct_normalize_join(tool_args: dict) -> dict:
+    if _JOIN_RESOLVER is None:
+        return {"success": False, "error": "JoinKeyResolver not available"}
+    raw = tool_args.get("value")
+    if raw is None:
+        return {"success": False, "error": "Missing required parameter: value"}
+    target_prefix = tool_args.get("target_prefix")
+    try:
+        normalized_int = _JOIN_RESOLVER.normalize(raw, target_type="integer")
+        if target_prefix is not None:
+            result = f"{target_prefix}{normalized_int}"
+        else:
+            result = normalized_int
+        detected = _JOIN_RESOLVER.detect_format([raw])
+        return {
+            "success": True,
+            "original": raw,
+            "normalized_int": normalized_int,
+            "result": result,
+            "detected_format": detected,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+
+def _direct_diagnose_join(tool_args: dict) -> dict:
+    if _JOIN_RESOLVER is None:
+        return {"success": False, "error": "JoinKeyResolver not available"}
+    try:
+        left_vals = json.loads(tool_args["left_values"])
+        right_vals = json.loads(tool_args["right_values"])
+    except (KeyError, json.JSONDecodeError) as exc:
+        return {"success": False, "error": f"Invalid JSON input: {exc}"}
+    try:
+        left_format = _JOIN_RESOLVER.detect_format(left_vals)
+        right_format = _JOIN_RESOLVER.detect_format(right_vals)
+        left_norm = _JOIN_RESOLVER.normalize_batch(left_vals)
+        right_norm = _JOIN_RESOLVER.normalize_batch(right_vals)
+        overlap = set(left_norm) & set(right_norm)
+        return {
+            "success": True,
+            "left_format": left_format,
+            "right_format": right_format,
+            "left_samples_normalized": left_norm[:5],
+            "right_samples_normalized": right_norm[:5],
+            "normalized_overlap_count": len(overlap),
+            "suggestion": (
+                "Normalize both sides to integer before joining. "
+                f"Left prefix: '{left_format.get('prefix')}', "
+                f"Right prefix: '{right_format.get('prefix')}'."
+            )
+            if left_format.get("prefix") != right_format.get("prefix")
+            else "Key formats appear compatible after normalization.",
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
 # ── MongoDB restore ───────────────────────────────────────────────────────────
 
@@ -426,24 +522,67 @@ def load_db_config(db_config_path: str) -> dict:
 # ── Tool dispatcher ───────────────────────────────────────────────────────────
 
 def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
-    """Route a tool call through the MCP server (required)."""
+    """Route a tool call through MCP when possible; otherwise use direct drivers / local join utils."""
     if tool_name == "return_answer":
         return {"success": True, "answer": tool_args.get("answer", "")}
 
-    if tool_name in (
-        "query_mongodb",
-        "query_duckdb",
-        "query_sqlite",
-        "query_postgres",
-        "normalize_join_key",
-        "diagnose_join",
-    ):
-        if not _probe_mcp():
-            return {"success": False, "error": "MCP server is not available — harness should have started it"}
-        result = _call_mcp(tool_name, tool_args)
-        if result is None:
-            return {"success": False, "error": f"MCP call to {tool_name} failed"}
-        return result
+    if tool_name in ("normalize_join_key", "diagnose_join"):
+        if _probe_mcp():
+            result = _call_mcp(tool_name, tool_args)
+            if result is not None:
+                return result
+            logger.warning("MCP failed for %s; using local JoinKeyResolver", tool_name)
+        if tool_name == "normalize_join_key":
+            return _direct_normalize_join(tool_args)
+        return _direct_diagnose_join(tool_args)
+
+    if tool_name == "query_mongodb":
+        logical = tool_args.get("db_name", "")
+        mongo_cfg = connections.get("mongo", {}).get(logical)
+        if _probe_mcp():
+            result = _call_mcp(tool_name, tool_args)
+            if result is not None:
+                return result
+            logger.warning("MCP failed for query_mongodb; using pymongo")
+        if not mongo_cfg:
+            return {"success": False, "error": f"Unknown MongoDB db_name '{logical}' (direct fallback)"}
+        return execute_mongodb_query(tool_args, mongo_cfg["uri"], mongo_cfg["db_name"])
+
+    if tool_name == "query_duckdb":
+        logical = tool_args.get("db_name", "")
+        path = connections.get("duckdb", {}).get(logical)
+        if _probe_mcp():
+            result = _call_mcp(tool_name, tool_args)
+            if result is not None:
+                return result
+            logger.warning("MCP failed for query_duckdb; using duckdb driver")
+        if not path:
+            return {"success": False, "error": f"Unknown DuckDB db_name '{logical}' (direct fallback)"}
+        return execute_duckdb_query(tool_args, path)
+
+    if tool_name == "query_sqlite":
+        logical = tool_args.get("db_name", "")
+        path = connections.get("sqlite", {}).get(logical)
+        if _probe_mcp():
+            result = _call_mcp(tool_name, tool_args)
+            if result is not None:
+                return result
+            logger.warning("MCP failed for query_sqlite; using sqlite3")
+        if not path:
+            return {"success": False, "error": f"Unknown SQLite db_name '{logical}' (direct fallback)"}
+        return execute_sqlite_query(tool_args, path)
+
+    if tool_name == "query_postgres":
+        logical = tool_args.get("db_name", "")
+        cfg = connections.get("postgres", {}).get(logical)
+        if _probe_mcp():
+            result = _call_mcp(tool_name, tool_args)
+            if result is not None:
+                return result
+            logger.warning("MCP failed for query_postgres; using psycopg2")
+        if not cfg:
+            return {"success": False, "error": f"Unknown PostgreSQL db_name '{logical}' (direct fallback)"}
+        return execute_postgres_query(tool_args, cfg)
 
     return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
@@ -471,81 +610,23 @@ def _force_compact_final_answer(
             "role": "user",
             "content": (
                 "Stop calling tools. Based only on the tool results above, return the final answer now. "
-                "Output plain text only, no markdown, no explanation, no query trace."
+                "Output plain text only, no markdown, no explanation, no query trace. "
+                "If the question requires a complete list, include every item from the aggregated result, not a partial sample. "
+                "For single-winner questions, output only the winner."
             ),
         }]
         resp = client.chat.completions.create(
             model=model,
             messages=synth_messages,
             temperature=0,
-            max_tokens=256,
-            timeout=60,
+            max_tokens=512,
+            timeout=90,
         )
         text = (resp.choices[0].message.content or "").strip()
         return text or fallback
     except Exception:  # noqa: BLE001
         return fallback
 
-
-def _stabilize_benchmark_answer(query: str, answer: str) -> str:
-    """
-    Last-mile answer stabilization for strict benchmark validators.
-    Keeps outputs compact and deterministic for known high-risk prompts.
-    """
-    q = (query or "").strip().lower()
-    a = (answer or "").strip()
-
-    # Always collapse markdown-style verbosity to first non-empty line.
-    if "\n" in a:
-        first = next((ln.strip() for ln in a.splitlines() if ln.strip()), "")
-        if first:
-            a = first
-
-    # Yelp Q2 — enforce compact state,value pair.
-    if "highest number of reviews" in q and "u.s. state" in q:
-        return "PA, 3.699395770392749"
-
-    # Yelp Q4 — enforce winning category + avg format.
-    if "largest number of businesses that accept credit card payments" in q:
-        return "Restaurant, 3.633676092544987"
-
-    # Yelp Q7 — enforce required top categories and inclusion of Shopping.
-    if "registered on yelp in 2016" in q and "5 business categories" in q:
-        return "Restaurants, Food, American (New), Shopping, Breakfast & Brunch"
-
-    # Yelp Q3 — parking count in 2018.
-    if "during 2018" in q and "business parking or bike parking" in q:
-        return "35"
-
-    # Yelp Q5 — WiFi top state + avg rating.
-    if "highest number of businesses that offer wifi" in q and "u.s. state" in q:
-        return "PA, 3.48"
-
-    # Stockindex (up/down-days, North American indices) — expected winner list.
-    if "north american stock indices" in q and "more up days than down days" in q:
-        return "IXIC"
-
-    # Stockindex (single-winner volatility) — forbid runner-up contamination.
-    if "highest average intraday volatility since 2020" in q and "asia region" in q:
-        return "399001.SZ"
-
-    # Stockindex Q3 — enforce all required index-country pairs.
-    if "regular monthly investments in all indices since 2000" in q and "what countries do they belong to" in q:
-        return "399001.SZ, China\nNSEI, India\nIXIC, United States\n000001.SS, China\nNYA, United States"
-
-    # Bookreview Q3 — ensure required Children's Books title coverage.
-    if "children's books" in q and "average rating of at least 4.5" in q and "2020 onwards" in q:
-        return (
-            "Around the World Mazes, Behind the Wheel (Choose Your Own Adventure #35)(Paperback/Revised), "
-            "Benny Goes To The Moon: The great new book from Top Children's entertainer Gerry Ogilvie (1), "
-            "Cheer Up, Ben Franklin! (Young Historians), Clark the Shark: Tooth Trouble, No. 1, "
-            "Cleo Porter and the Body Electric, Egypt (Enchantment of the World), "
-            "Favorite Thorton W. Burgess Stories: 6 Books, LunaLu the Llamacorn, "
-            "Monstrous Stories #4: The Day the Mice Stood Still, Pokémon: Sun & Moon, Vol. 8 (8), "
-            "The Library Book, The Old Man and the Pirate Princess, Trouble in the CTC!: The Terra Prime Adventures Book 2"
-        )
-
-    return a
 
 # ── System prompt builder ─────────────────────────────────────────────────────
 
@@ -573,7 +654,7 @@ def _build_system_prompt(
 
     # 1. Generic agent protocol
     if AGENT_MD_PATH.exists():
-        parts.append(_truncate("AGENT.md", AGENT_MD_PATH.read_text(encoding="utf-8"), 12000))
+        parts.append(_truncate("AGENT.md", AGENT_MD_PATH.read_text(encoding="utf-8"), 18000))
 
     # 2. Core methodology KB (leakage-safe, dataset-agnostic)
     if not (strict_no_leakage and omit_kb_in_strict):
@@ -594,7 +675,13 @@ def _build_system_prompt(
 
     # 3. Corrections log — allowed (leakage-linted), but can be omitted in strict if requested.
     if strict_no_leakage:
-        parts.append("---\n\n## STRICT MODE\n\nNo answer stabilization. Knowledge layers must remain leakage-safe.")
+        parts.append(
+            "---\n\n## STRICT MODE\n\n"
+            "Final answers must follow only from tool results and reasoning — no post-hoc rewriting "
+            "to match benchmark rubrics. Knowledge layers must remain leakage-safe.\n\n"
+            "Before `return_answer`, re-check AGENT.md §3 (format), §12 (aggregation/ranking), and DOMAIN KNOWLEDGE "
+            "for the active dataset."
+        )
     if not (strict_no_leakage and omit_kb_in_strict):
         if CORRECTIONS_LOG.exists():
             parts.append("---\n\n## CORRECTIONS LOG\n\n" + _truncate("corrections-log", CORRECTIONS_LOG.read_text(encoding="utf-8"), 12000))
@@ -850,10 +937,11 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
         out = {k: result.get(k) for k in ("success", "rows", "error") if k in result}
         data = result.get("data")
         if isinstance(data, list):
-            # Keep only a small sample; the full dataset is not needed in-context.
-            out["data"] = data[:50]
-            if len(data) > 50:
-                out["data_truncated"] = {"kept": 50, "original_len": len(data)}
+            # Bounded sample for context; size tunable via ORACLE_FORGE_TOOL_PREVIEW_ROWS.
+            keep = max(1, _TOOL_PREVIEW_ROWS)
+            out["data"] = data[:keep]
+            if len(data) > keep:
+                out["data_truncated"] = {"kept": keep, "original_len": len(data)}
         elif isinstance(data, (str, int, float, bool)) or data is None:
             out["data"] = data
         else:
@@ -946,10 +1034,6 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
         else:
             final_answer = _force_compact_final_answer(client, model, messages, fallback="")
 
-    if _ENABLE_BENCH_STABILIZATION:
-        final_answer = _stabilize_benchmark_answer(query, final_answer)
-    else:
-        logger.info("Benchmark answer stabilization OFF (default).")
     logger.info("Query trace (%d steps):\n%s", len(query_trace), json.dumps(query_trace, indent=2))
     return {"answer": final_answer, "query_trace": query_trace}
 

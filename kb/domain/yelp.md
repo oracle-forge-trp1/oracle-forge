@@ -124,6 +124,13 @@ Split before counting/filtering event instances.
 - Do not use memorized expected values.
 - Keep final outputs compact and plain text for validator compatibility.
 
+### Methodology disambiguation (no memorized targets)
+
+- **State / region rankings:** If the question ties a numeric result to “the state with the most …”, first identify that state using counts on the full filtered business (or event) population, then compute the numeric metric **only** for businesses in that state (AGENT.md §12.1).
+- **Attribute-based rankings:** For “most businesses with attribute X”, count businesses meeting X per group, find the winning group, then any follow-up average must use **only** rows/businesses in that group—not a global average of X across all groups.
+- **Category lists:** For “top categories” across businesses matching a date or other filter, explode/normalize categories from **all** matching businesses before ranking—not from a handful of top businesses by review count or stars.
+- **Review-linked metrics:** Star averages and similar measures should come from **review** rows in DuckDB joined to the relevant business keys after normalization—not from Mongo-only shortcuts when the question is about review behavior.
+
 ---
 
 ## Leakage-Safe Policy
