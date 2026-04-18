@@ -66,6 +66,10 @@ When building category aggregates, normalize category tokens and deduplicate per
 
 **Validator-facing outputs:** Inspect distinct category strings from the data (for example `Restaurant` vs `restaurants`). Emit the **same casing and token** the stored documents use when the question is about category membership or counts — do not rely on a single guessed label.
 
+Leakage-safe retrieval rule:
+- When the question asks “what category does it belong to?”, fetch the business with a projection that includes `categories` (do not omit it), and take the category token(s) from that field when present.
+- Use `description` only as a fallback when `categories` is missing/null, and then quote exact tokens from the text rather than inventing a normalized label.
+
 For aggregate rating questions:
 - Compute over raw review rows in DuckDB.
 - Avoid averaging a set of per-business averages.

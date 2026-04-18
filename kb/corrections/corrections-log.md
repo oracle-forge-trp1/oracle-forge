@@ -714,6 +714,31 @@ Verification note:
 
 ---
 
+## Entry 032 — Category/name outputs must come from canonical fields (not inferred from descriptions)
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-012
+- datasets_seen: yelp, googlelocal
+- expires_after_runs: 20
+
+Failure pattern:
+- Validator says “Missing category: …” or “Missing name: …” even though the answer contains a plausible category/name.
+
+Root cause:
+- The agent inferred categories from free-text `description` (or omitted the `categories` field in projections) and returned an incomplete or non-canonical label.
+
+Correct approach:
+- When a question asks for a business/category label, **read it from the canonical field**:
+  - Use the dataset’s `categories` (or equivalent taxonomy/list field) when available.
+  - Always include that field in MongoDB projections (`{"name": 1, "categories": 1, ...}`).
+- Only fall back to description-based inference if the canonical field is missing/null, and then return the closest exact token found in source text.
+
+Verification note:
+- The returned category/name string is a direct substring/value from the retrieved row/document (trim whitespace only).
+
+---
+
 ## Template
 
 Metadata:
