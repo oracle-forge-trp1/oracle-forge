@@ -69,6 +69,7 @@ When building category aggregates, normalize category tokens and deduplicate per
 Leakage-safe retrieval rule:
 - When the question asks “what category does it belong to?”, fetch the business with a projection that includes `categories` (do not omit it), and take the category token(s) from that field when present.
 - Use `description` only as a fallback when `categories` is missing/null, and then quote exact tokens from the text rather than inventing a normalized label.
+- Do not “clean up” final category tokens for readability (no singularization, no case normalization, no punctuation stripping). Tokens like `American (New)` and `Restaurants` must be emitted exactly as stored.
 
 For aggregate rating questions:
 - Compute over raw review rows in DuckDB.

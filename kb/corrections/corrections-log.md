@@ -739,6 +739,31 @@ Verification note:
 
 ---
 
+## Entry 033 — Category token fidelity (parentheses/plurals/case are semantic)
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-012
+- datasets_seen: yelp, googlelocal
+- expires_after_runs: 20
+
+Failure pattern:
+- Validator reports missing category tokens such as `restaurants` or `american (new)` despite a semantically similar output.
+
+Root cause:
+- Final answer normalizes or paraphrases category labels (title-casing, singularization, punctuation stripping) instead of preserving canonical tokens.
+
+Correct approach:
+- Emit category labels exactly as stored in source category fields:
+  - Preserve parentheses, ampersands, slashes, and punctuation.
+  - Preserve stored casing and pluralization.
+- If multiple category tokens are required, split/normalize only for counting, then render the exact canonical tokens for output.
+
+Verification note:
+- Every output category token can be matched directly to a token extracted from source `categories` values.
+
+---
+
 ## Template
 
 Metadata:
