@@ -1,186 +1,226 @@
-# Yelp Dataset — Domain Knowledge
+# Yelp Domain Knowledge (Leakage-Safe)
 
-This document is injected into the agent's Domain Knowledge context layer before any Yelp query is answered. All facts here are specific to this dataset — do not assume they apply to other DAB datasets.
+## Scope
 
----
-
-## Dataset Structure
-
-Two active databases. Every Yelp query spans both — business metadata lives in MongoDB, user activity lives in DuckDB.
-
-| Database | What it contains |
-|----------|-----------------|
-| MongoDB `yelp_db` | Business profiles, check-in records |
-| DuckDB `yelp_user.db` | Reviews, tips, user profiles |
+This file contains data-shape and methodology guidance only.
+Do not include query-by-query answer keys, expected output strings, fixed winners, or ground-truth values.
 
 ---
 
-## Location — Critical Rule
+## Dataset Overview
 
-MongoDB `business` has **no `city`, `state`, or `address` fields**. Location is embedded in the `description` field as natural language text:
+Two active databases are used:
 
-```
-"Located at 6901 Phelps Rd in Goleta, CA, this facility..."
-```
+| Database | Type | Logical Name | Key Contents |
+|----------|------|-------------|-------------|
+| MongoDB `yelp_db` | MongoDB | — | `business` (metadata, attributes), `checkin` (dates) |
+| DuckDB `yelp_user.db` | DuckDB | yelp_user_database | `review` (ratings), `tip`, `user` |
 
-To answer any location-based question, extract state and city using this regex **before** filtering:
-
-```python
-import re
-pattern = r"Located at .+? in (.+?),\s*([A-Z]{2})"
-match = re.search(pattern, description)
-city  = match.group(1)  # e.g. "Indianapolis"
-state = match.group(2)  # e.g. "IN"
-```
-
-In MongoDB aggregation, use `$regexFind` on the `description` field. Do not query for `city` or `state` directly — those fields do not exist.
+Most questions require combining both systems.
 
 ---
 
-## Attributes Field — Parsing Rules
+## CRITICAL: Rating Source — Never Use MongoDB `business.stars`
 
-MongoDB `business.attributes` is a **serialised dict string**, not a structured object. It contains amenity data needed for queries about WiFi, parking, and credit cards.
+**`business.stars` in MongoDB is a pre-computed, stale cached value.**
+It does NOT match `AVG(review.rating)` computed over actual reviews.
+Using `business.stars` for "average rating" questions yields wrong answers (typically ~0.5–1.0 too high).
 
-Key patterns to extract:
-
-| Attribute | What to look for in the string |
-|-----------|-------------------------------|
-| WiFi | `'WiFi': 'free'` or `'WiFi': 'paid'` — both count as offering WiFi |
-| Credit cards | `'BusinessAcceptsCreditCards': 'True'` |
-| Business parking | `'BusinessParking': ...` contains `'parking': True` or `'lot': True` |
-| Bike parking | `'BikeParking': 'True'` |
-
-Parse using Python `ast.literal_eval()` after stripping the outer string, or use regex matching on the raw string for each attribute.
-
----
-
-## Categories Field
-
-**CRITICAL:** `business.categories` is **NULL for most businesses** in this dataset. Do NOT rely on it.
-
-Categories are embedded in the **`description` text field**, appended at the end:
-
-```
-"Located at 123 Main St in City, PA, this establishment provides services in
-Restaurants, Pizza, Italian."
-```
-
-To extract categories from description:
-```python
-# Python-side extraction
-desc = doc["description"]
-# Last sentence often contains categories
-last_part = desc.rsplit(". ", 1)[-1].rstrip(".")
-categories = [c.strip() for c in last_part.split(", ")]
-```
-
-For MongoDB aggregation, extract via `$split` on the description string or fetch descriptions and process in Python. Never query `business.categories` directly.
-
-**IMPORTANT for average-of-group queries:**
-When computing average rating for a group of businesses (e.g. all credit-card-accepting businesses), get ALL individual review ratings and compute AVG once:
+**Rule**: For any question that asks for an average rating, ALWAYS compute from DuckDB:
 ```sql
--- CORRECT: single AVG across all reviews
 SELECT AVG(rating) FROM review WHERE business_ref IN (...)
--- WRONG: average of per-business averages (gives wrong result)
-SELECT AVG(per_biz_avg) FROM (SELECT AVG(rating) per_biz_avg FROM review GROUP BY business_ref)
+```
+Never use `business.stars` from MongoDB for the final numeric answer.
+
+---
+
+## CRITICAL: Cross-Database Join Keys
+
+The business identifier uses **different prefixes** in each system:
+- MongoDB `business`: `business_id` field → format `businessid_N` (e.g. `businessid_49`)
+- DuckDB `review`: `business_ref` field → format `businessref_N` (e.g. `businessref_49`)
+
+**The numeric suffix N is shared** — use it to join:
+```python
+# businessid_49 in MongoDB corresponds to businessref_49 in DuckDB
+# Normalize: strip prefix, match on numeric part
 ```
 
----
+**Pattern for state-level rating queries:**
+1. Query MongoDB: `db.business.find({}, {"business_id": 1, "state": 1})` → get (businessid_N, state) pairs
+2. Map: `businessid_N` → `businessref_N`
+3. Query DuckDB: `SELECT business_ref, AVG(rating) FROM review WHERE business_ref IN (...) GROUP BY business_ref`
+4. Join in Python: merge on normalized numeric key
 
-## String-Typed Fields — Always Cast
-
-These MongoDB fields are stored as strings despite containing numeric or boolean values:
-
-| Field | Stored as | Cast to |
-|-------|-----------|---------|
-| `review_count` | `"42"` | `int(review_count)` |
-| `is_open` | `"1"` or `"0"` | `== "1"` for open, `== "0"` for closed |
+Never return raw `businessref_XX` or `businessid_XX` values in the final answer — always resolve to the human-readable name or state label.
 
 ---
 
-## Date Formats — DuckDB
+## CRITICAL: Business Name Lookup
 
-`review.date`, `tip.date`, and `user.yelping_since` contain **three mixed formats in the same column**:
+After aggregating in DuckDB (e.g., finding the top-rated `business_ref`), you MUST look up the human-readable name from MongoDB:
+1. Convert `businessref_N` → `businessid_N` (same N)
+2. Query MongoDB: `db.business.find_one({"business_id": "businessid_N"}, {"name": 1})`
+3. Use `name` field as the final answer
 
-| Format | Example |
-|--------|---------|
-| `YYYY-MM-DD HH:MM:SS` | `2013-12-04 02:46:01` |
-| `Month DD, YYYY at HH:MM AM/PM` | `August 01, 2016 at 03:44 AM` |
-| `DD Mon YYYY, HH:MM` | `29 May 2013, 23:01` |
+The validator checks for the business name, not the internal ID.
 
-Never use `STRPTIME` with a single format — it silently drops non-matching rows.
+---
 
-For year-only filters (e.g. "registered in 2016", "reviews in 2018"):
+## Schema Reference
 
+### MongoDB `business` collection fields
+- `business_id`: string, format `businessid_N`
+- `name`: business name (use this for answers requiring business name)
+- `state`: two-letter state code (e.g. `"PA"`) — present as top-level field in most documents
+- `review_count`: integer (cast before arithmetic)
+- `is_open`: string `"1"` or `"0"` (not boolean)
+- `attributes`: nested dict-like structure (see Attributes section below)
+- `description`: free text containing address, categories, and other info
+- **`categories`**: Field may be absent or null. Use `description` text parsing as the primary source for category data.
+
+### DuckDB `review` table columns
+- `review_id`, `user_id`, `business_ref` (e.g. `businessref_49`), `rating` (integer 1–5), `useful`, `funny`, `cool`, `text`, `date`
+
+### DuckDB `user` table
+- `user_id`, `name`, `yelping_since` (year-only filter: `yelping_since LIKE '2016%'`)
+
+---
+
+## Attributes Parsing
+
+`business.attributes` is a dict embedded in MongoDB. Common fields:
+
+### WiFi
+Stored as Python string repr with possible `u` prefix:
+- `"u'free'"`, `"'free'"` → WiFi is free
+- `"u'paid'"`, `"'paid'"` → WiFi is paid
+- `"u'no'"`, `"'no'"`, `None` → no WiFi
+
+**Match robustly** (do not use exact equality):
+```python
+# In MongoDB aggregation:
+{"$match": {"attributes.WiFi": {"$regex": "free|paid", "$options": "i"}}}
+# For WiFi=yes (free or paid): match anything NOT containing "no" and not null
+```
+
+### Credit Card Acceptance
+`attributes.BusinessAcceptsCreditCards` — stored as string `"True"` or `"False"`.
+```python
+{"$match": {"attributes.BusinessAcceptsCreditCards": "True"}}
+```
+
+### Parking
+`attributes.BusinessParking` — stored as a serialized dict string, e.g.:
+`"{'garage': False, 'street': False, 'validated': False, 'lot': True, 'valet': False}"`
+
+To detect business parking (any type except none):
+```python
+# Match if any parking type is True (use regex on the stringified dict)
+{"$match": {"attributes.BusinessParking": {"$regex": "True"}}}
+```
+
+For bike parking, check for `attributes.BikeParking` = `"True"`.
+
+---
+
+## Categories Extraction
+
+`business.categories` field is **frequently absent** from documents. The primary source for category data is the `description` text field.
+
+Parse categories from `description` using regex or text matching. Emit tokens **exactly as they appear** in the stored data — do NOT normalize case, singularize, or paraphrase.
+
+Common category tokens include: `Restaurants`, `Food`, `Nightlife`, `Bars`, `Coffee & Tea`, `American (New)`, `Breakfast & Brunch`, `Shopping`, `Beauty & Spas`, etc.
+
+**For category aggregate queries:**
+- Extract categories from ALL qualifying businesses before ranking
+- Use `$unwind` if categories are an array, or parse from description text
+- Never rank categories using only a subset of businesses
+
+---
+
+## State Queries
+
+`business.state` is a top-level MongoDB field containing the two-letter state code.
+
+For "which state has the most X" patterns:
+```python
+# MongoDB aggregation for state-level review counts:
+pipeline = [
+    {"$lookup": or cross-DB join from DuckDB review counts back to MongoDB state},
+    ...
+]
+# Or: get (business_ref → state) mapping from MongoDB, then aggregate in DuckDB
+```
+
+**State token in final answer**: Always emit the exact two-letter abbreviation from `business.state` (e.g. `PA`). The validator accepts both `PA` and `Pennsylvania`.
+
+---
+
+## Date Parsing
+
+DuckDB `review.date` can include multiple formats. Use `COALESCE(TRY_STRPTIME(...))` with at least 3 patterns:
 ```sql
-WHERE regexp_extract(date, '\d{4}') = '2016'
+COALESCE(
+    TRY_STRPTIME(date, '%Y-%m-%d %H:%M:%S'),
+    TRY_STRPTIME(date, '%B %d, %Y at %I:%M %p'),
+    TRY_STRPTIME(date, '%Y-%m-%d')
+) AS parsed_date
 ```
-
-For full date range filters use `TRY_STRPTIME` across all three formats.
+For year-only filters, regex year extraction is the safest approach:
+```sql
+WHERE regexp_extract(date, '\d{4}') = '2018'
+```
 
 ---
 
-## Cross-Database Join Key
+## Check-in Field Shape
 
-MongoDB `business.business_id` and DuckDB `review.business_ref` / `tip.business_ref` refer to the same entity with different prefixes:
-
-```
-MongoDB:  "businessid_34"
-DuckDB:   "businessref_34"
-```
-
-Strip both prefixes and match on the integer. Direct string equality always returns 0 rows.
+`checkin.date` may be a single comma-separated string containing multiple timestamps.
+Split before counting/filtering event instances.
 
 ---
 
-## Check-in Date Field
+## Methodology Rules
 
-MongoDB `checkin.date` is a **single comma-separated string** of datetime values, not an array:
+### Row-level aggregation (avg ratings)
+Compute `AVG(review.rating)` over review rows directly. Never average a set of per-business means.
 
-```
-"2011-03-18 21:32:32, 2011-07-03 19:19:32, ..."
-```
+### Two-stage state/category queries
+1. First find the winning state/category using counts on the full eligible population
+2. Then compute the secondary metric (avg rating) ONLY for that winning group
 
-To count or filter check-ins, split on `", "` first.
-
----
-
-## The 7 DAB Yelp Queries — What Each Requires
-
-| Query | Key challenge | Ground truth |
-| ----- | ------------ | ------------ |
-| Q1: Avg rating of businesses in Indianapolis IN | Location extraction from `description` → cross-DB join → avg `rating` | `3.547008547008547` |
-| Q2: State with highest reviews + avg rating | Extract state from all 100 `description` fields → group by state → join reviews | `PA, 3.699395770392749` |
-| Q3: 2018 businesses with parking | Parse `attributes` for parking → year filter on `review.date` using regex | `35` |
-| Q4: Category with most credit-card businesses + avg rating | Parse `attributes` for credit cards → split `categories` string | `Restaurant, 3.633676092544987` |
-| Q5: State with most WiFi businesses + avg rating | Parse `attributes` for WiFi → location extraction → avg `rating` | `PA, 3.48` |
-| Q6: Highest avg rating Jan–Jun 2016, min 5 reviews | Date range filter with mixed formats → min review count → cross-DB join | `Coffee House Too Cafe, Restaurants, Breakfast & Brunch, American (New), Cafes` |
-| Q7: Top 5 categories for users registered in 2016 | Filter `user.yelping_since` by year → join reviews → split `categories` | `Restaurants, Food, American (New), Shopping, Breakfast & Brunch` |
-
-Use ground truth values to self-check computed answers before returning. A mismatch means a pipeline error — recheck key translation, location extraction, or date parsing.
+### Category completeness
+For "top-N categories" queries, aggregate from ALL businesses matching the filter — not just the top few by review count.
 
 ---
 
-## High-Risk Query Rules (Run 2026-04-15-034)
+## Common Pitfalls
 
-### Q2 — State with highest review count + avg rating
+- Using `business.stars` instead of `AVG(review.rating)` → wrong average (too high). → **Entry 050**
+- Returning `businessref_XX` or `businessid_XX` IDs in final answer instead of business names. → **Entry 051**
+- Joining on exact string match across MongoDB/DuckDB ID columns without prefix normalization. → **Entry 001**
+- WiFi attribute exact-string matching failing due to `u'...'` Python repr format. → **Entry 052**
+- Assuming `business.categories` field exists (often absent — parse from description). → **Entry 053**
+- Aggregating per-business averages when question requires review-level aggregation. → **Entry 006**
+- State token missing or null in final output despite correct numeric part. → **Entry 042**
+- Category tokens paraphrased instead of copied verbatim. → **Entry 043**
 
-- Review counts must come from DuckDB `review` row counts, not MongoDB `review_count`.
-- Build state -> businesses mapping from MongoDB `description`, then join into DuckDB reviews.
-- Compute average over all review rows for businesses in the winning state only.
-- Output must be compact: `PA, <value>` with no extra numbers before `<value>`.
+---
 
-### Q4 — Top credit-card category + avg rating
+## Validation Checklist
 
-- Filter only businesses with `attributes.BusinessAcceptsCreditCards == 'True'`.
-- Extract categories from `description` (do not rely on `categories` field).
-- Pick category with highest business count (ground truth: `Restaurant`).
-- Average must be computed on review rows for businesses in that winning category.
-- Self-check target is approximately `3.633676092544987`.
+- ID join quality: matched/unmatched counts after normalization.
+- Rating source: confirmed using DuckDB `review.rating`, NOT MongoDB `business.stars`.
+- Business name: resolved from MongoDB `business.name`, not emitting internal IDs.
+- State token: explicit two-letter abbreviation from `business.state`.
+- Category tokens: verbatim from data, full set included, not paraphrased.
+- Aggregate denominator: reviews vs businesses vs users clearly separated.
 
-### Q7 — Top categories for 2016 users
+---
 
-- Do not aggregate categories from only top K businesses.
-- First compute review counts for all reviewed businesses by users registered in 2016.
-- Then map each business to extracted categories and sum review counts per category.
-- Rank categories by weighted totals and ensure `Shopping` is considered before finalizing output.
+## Leakage-Safe Policy
+
+- Keep content methodological and runtime-derivable.
+- Do not store fixed benchmark outputs or precomputed winners.
+- Favor reusable parsing/join/validation guidance over query-specific shortcuts.

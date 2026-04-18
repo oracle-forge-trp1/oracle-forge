@@ -51,7 +51,7 @@ Three: (1) Anthropic Claude API access — the agent calls Claude for NL-to-quer
 
 **Decision 3 — Starting dataset**  
 **Chosen:** Yelp (MongoDB + DuckDB, already loaded on the server)  
-**Rationale:** The practitioner manual explicitly recommends Yelp as the starting point; it is already loaded on our server (MongoDB `yelp_db` + DuckDB `yelp_user.db`), has 7 benchmark queries with known ground-truth answers, and covers all four DAB hard requirements (cross-DB joins, ill-formatted keys, unstructured text, domain knowledge) in a contained form — making it the right dataset to validate the full agent architecture before extending to other datasets in Sprint 2.
+**Rationale:** The practitioner manual explicitly recommends Yelp as the starting point; it is already loaded on our server (MongoDB `yelp_db` + DuckDB `yelp_user.db`), includes a compact multi-query set, and covers all four DAB hard requirements (cross-DB joins, ill-formatted keys, unstructured text, domain knowledge) in a contained form — making it the right dataset to validate the full agent architecture before extending to other datasets in Sprint 2.
 
 ---
 
@@ -61,11 +61,11 @@ Sprint 1 is complete when all of the following are verifiably true. "I think it 
 
 1. **MCP Toolbox is running and MongoDB + DuckDB connections verified:** `curl http://localhost:5000/v1/tools` returns tool definitions for both `mongo-dab` and `sqlite-dab` sources. Screenshot saved to `docs/toolbox-verified.png`.
 
-2. **Yelp data is directly queryable and cross-DB join works:** A Python script manually executes: (a) MongoDB aggregation returning businesses in "Indianapolis" from description text, (b) DuckDB query returning average `rating` for the translated `business_ref` values, (c) combined result matching ground truth 3.547 ± 0.001. Script and output saved to `docs/yelp-join-verified.json`.
+2. **Yelp data is directly queryable and cross-DB join works:** A Python script manually executes: (a) MongoDB aggregation returning a target city subset from description text, (b) DuckDB query returning aggregate `rating` for translated `business_ref` values, (c) combined result validated by harness logic within configured tolerance. Script and output saved to `docs/yelp-join-verified.json`.
 
-3. **Agent answers DAB Yelp query 1 with correct answer and query trace:** The agent returns the correct answer to the question *"What is the average rating of all businesses located in Indianapolis, Indiana?"* (ground truth: `3.547008547008547`) within 60 seconds. Response includes `query_trace` showing both the MongoDB and DuckDB queries executed. Output saved to `docs/yelp-query1-agent.json`.
+3. **Agent answers a Yelp benchmark query with full query trace:** The agent returns a validator-accepted answer for a cross-DB Yelp query within 60 seconds. Response includes `query_trace` showing both the MongoDB and DuckDB queries executed. Output saved to `docs/yelp-query1-agent.json`.
 
-4. **All three context layers are loaded and injection-tested:** `AGENT.md` is committed to `agent/` and loads schema context at session start. At least two documents in `kb/architecture/` and one in `kb/domain/` have passed their injection test (test query + expected answer documented in the respective `CHANGELOG.md`).
+4. **All three context layers are loaded and injection-tested:** `AGENT.md` is committed to `agent/` and loads schema context at session start. At least two documents in `kb/architecture/` and one in `kb/domain/` have passed their injection test (test prompt + validation evidence documented in the respective `CHANGELOG.md`).
 
 5. **Evaluation harness produces a baseline score:** Running the harness against the held-out Yelp query set returns a pass@1 score (any number, including 0%). Score and run metadata are committed to `eval/score_log.md` as Run #1.
 

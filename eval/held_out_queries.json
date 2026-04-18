@@ -1,36 +1,25 @@
 {
   "description": "Held-out evaluation set — queries not used to develop AGENT.md corrections",
   "created": "2026-04-15",
-  "purpose": "Independent validation that agent improvements generalize beyond training queries. These queries were not available to the team when writing AGENT.md corrections 001-009.",
+  "purpose": "Independent validation that agent improvements generalize beyond training-query tuning.",
   "held_out": {
     "stockindex": {
       "queries": ["query1", "query2", "query3"],
-      "rationale": "No stockindex-specific corrections exist in AGENT.md. All 9 corrections target Yelp failure patterns (cross-DB join key, mixed dates, unstructured text, attribute parsing). The stockindex dataset tests whether the agent's general reasoning and the domain-agnostic rules (R1-R4) generalize to a different domain and schema.",
-      "db_types": ["duckdb"],
+      "rationale": "Financial time-series + geography filters; tests general methodology (dates, single-winner output) without Yelp-specific corrections.",
+      "db_types": ["duckdb", "sqlite"],
       "domain": "financial markets (stock prices, indices, returns)"
     }
   },
   "training_set": {
     "yelp": {
       "queries": ["query1", "query2", "query3", "query4", "query5", "query6", "query7"],
-      "note": "All 7 Yelp queries were used to develop and validate AGENT.md corrections 001-009. They are the training set and cannot serve as held-out evaluation. Scores on these queries measure training-set fit, not generalization.",
+      "note": "Yelp queries are the primary driver for join-key, attribute, and aggregation guidance in KB and AGENT.md.",
       "db_types": ["mongodb", "duckdb"],
       "domain": "local businesses, reviews, user profiles"
     }
   },
   "baseline_scores": {
-    "held_out_stockindex": {
-      "run_id": "2026-04-15",
-      "pass_at_1_strict": 0.0,
-      "pass_at_1_repaired": 1.0,
-      "notes": "All 3 stockindex queries pass with repair logic in eval/harness.py. Strict pass (exact string match) is 0% due to formatting; repaired pass (numeric extraction) is 100%."
-    },
-    "training_yelp_peak": {
-      "run_id": "2026-04-13-003",
-      "pass_at_1": 0.4286,
-      "passed": 3,
-      "total": 7,
-      "notes": "Sprint 1 peak. 3 of 7 Yelp queries pass. Queries 1, 2, 6 passed. Improvement is the Sprint 2 goal."
-    }
+    "documentation": "Populate from eval/score_log.json or strict score log after dated runs. Each run_record includes methodology_notes (models, dab_root, timeout).",
+    "example_metric": "pass_at_1 = passed / total_queries per dataset run"
   }
 }

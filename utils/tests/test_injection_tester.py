@@ -1,3 +1,39 @@
+from pathlib import Path
+
+from utils.injection_tester import InjectionTester
+
+
+def test_batch_handles_missing_document(tmp_path: Path):
+    tests_file = tmp_path / "tests.json"
+    tests_file.write_text(
+        '[{"document":"missing.md","question":"q","expected_keywords":["x"]}]',
+        encoding="utf-8",
+    )
+    tester = InjectionTester()
+    results = tester.test_batch(str(tmp_path), str(tests_file))
+    assert len(results) == 1
+    assert results[0]["passed"] is False
+    assert "Document not found" in results[0]["error"]
+
+
+def test_generate_report_contains_summary():
+    tester = InjectionTester()
+    md = tester.generate_report(
+        [
+            {
+                "document": "doc.md",
+                "question": "q",
+                "passed": True,
+                "needs_manual_test": False,
+                "keywords_found": ["a"],
+                "keywords_missing": [],
+                "response_summary": "ok",
+            }
+        ]
+    )
+    assert "Results: 1/1 passed" in md
+    assert "doc.md" in md
+
 """Tests for InjectionTester utility."""
 
 import json

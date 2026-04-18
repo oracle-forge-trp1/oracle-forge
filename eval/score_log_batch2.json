@@ -1,0 +1,1577 @@
+[
+  {
+    "run_id": "2026-04-18-001",
+    "dataset": "agnews",
+    "date": "2026-04-18",
+    "total_queries": 4,
+    "passed": 0,
+    "failed": 4,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What is the title of the sports article whose description has the greatest number of characters?",
+        "agent_answer": "THECHAT",
+        "query_trace": [
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "query": "[{\"$match\": {\"description\": {\"$type\": \"string\", \"$ne\": \"\"}}},{\"$project\": {\"title\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}},{\"$sort\": {\"description_len\": -1}},{\"$limit\": 500}]",
+              "query_type": "aggregate",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb0a0f9139b6c4e08446', 'title': 'Making RSS Scale', 'description_len': 985}, {'_id': '69e3cb0b0f9139b6c4e1b0ef', 'title': 'The top 20 IT mistakes to avoid', 'description_len': 974}, {'_id': '69e3cb0b0f9139b6c4e1d446', 'title': 'IBM to market Sybase Linux database', 'description_len': 971}, {'_id': '69e3cb0b0f9139b6c4e1ef9b', 'title': 'Life in the IT fun house', 'description_len': 970"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT article_id FROM article_metadata WHERE region = 'US'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT article_id FROM article_metadata WHERE publication_date LIKE '%2004%'"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'article_id': 1}, {'article_id': 39}, {'article_id': 77}, {'article_id': 82}, {'article_id': 85}, {'article_id': 109}, {'article_id': 166}, {'article_id': 173}, {'article_id': 174}, {'article_id': 177}, {'article_id': 178}, {'article_id': 226}, {'article_id': 236}, {'article_id': 293}, {'article_id': 304}, {'article_id': 305}, {'article_id': 318}, {'article_id': 331}, {'article_id': 342}, {'arti"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "projection": "{\"title\": 1, \"description\": 1, \"article_id\": 1, \"_id\": 0}",
+              "db_name": "articles_database",
+              "query": "{\"$and\": [{\"$or\": [{\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}, {\"article_id\": {\"$in\": [1, 39, 77, 82, 85, 109, 166, 173, 174, 177, 178, 226, 236, 293, 304, 305, 318, 331, 342, 347, 353, 390, 396, 410, 425, 432, 450, 454, 462, 470, 476, 479, 492, 496, 505, 517, 524, 533, 547, 556, 575, 581, 618, 709, 734, 748, 772, 784, 787, 791, 797, 803, 813, 822, 824, 848, 870, 880, 887, 894, 898, 904, 922, 954, 958, 986, 1000, 1062, 1066, 1071, 1072, 1076, 1079, 1090, 1115, 1141, 1147, 1154, 1155, 1166, 1189, 1217, 1221, 1226, 1227, 1237, 1239, 1281, 1285, 1291, 1306, 1345, 1350, 1376, 1405, 1409, 1432, 1438, 1449, 1454, 1464, 1484, 1490, 1504, 1506, 1524, 1584, 1608, 1613, 1620, 1626, 1633, 1638, 1661, 1668, 1687, 1700, 1704, 1721, 1745]}}]}}",
+              "collection": "articles",
+              "query_type": "find"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "Extra data: line 1 column 803 (char 802)"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "{\"$and\": [{\"$or\": [{\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}, {\"article_id\": {\"$in\": [1, 39, 77, 82, 85, 109, 166, 173, 174, 177, 178, 226, 236, 293, 304, 305, 318, 331, 342, 347, 353, 390, 396, 410, 425, 432, 450, 454, 462, 470, 476, 479, 492, 496, 505, 517, 524, 533, 547, 556, 575, 581, 618, 709, 734, 748, 772, 784, 787, 791, 797, 803, 813, 822, 824, 848, 870, 880, 887, 894, 898, 904, 922, 954, 958, 986, 1000, 1062, 1066, 1071, 1072, 1076, 1079, 1090, 1115, 1141, 1147, 1154, 1155, 1166, 1189, 1217, 1221, 1226, 1227, 1237, 1239, 1281, 1285, 1291, 1306, 1345, 1350, 1376, 1405, 1409, 1432, 1438, 1449, 1454, 1464, 1484, 1490, 1504, 1506, 1524, 1584, 1608, 1613, 1620, 1626, 1633, 1638, 1661, 1668, 1687, 1700, 1704, 1721, 1745]}]}}",
+              "db_name": "articles_database",
+              "query_type": "find",
+              "collection": "articles",
+              "projection": "{\"title\": 1, \"description\": 1, \"article_id\": 1, \"_id\": 0}"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "Expecting ',' delimiter: line 1 column 800 (char 799)"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "[{\"$match\": {\"$or\": [{\"$text\": {\"$search\": \"Sports\"}}, {\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]",
+              "query_type": "aggregate",
+              "collection": "articles",
+              "db_name": "articles_database"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "text index required for $text query, full error: {'ok': 0.0, 'errmsg': 'text index required for $text query', 'code': 27, 'codeName': 'IndexNotFound'}"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "[{\"$match\": {\"$or\": [{\"$text\": {\"$search\": \"Sports\"}}, {\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]",
+              "collection": "articles",
+              "query_type": "aggregate",
+              "db_name": "articles_database"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "text index required for $text query, full error: {'ok': 0.0, 'errmsg': 'text index required for $text query', 'code': 27, 'codeName': 'IndexNotFound'}"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "aggregate",
+              "collection": "articles",
+              "db_name": "articles_database",
+              "query": "[{\"$match\": {\"$or\": [{\"$text\": {\"$search\": \"Sports\"}}, {\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "text index required for $text query, full error: {'ok': 0.0, 'errmsg': 'text index required for $text query', 'code': 27, 'codeName': 'IndexNotFound'}"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "query_type": "aggregate",
+              "collection": "articles",
+              "query": "[{\"$match\": {\"$or\": [{\"$text\": {\"$search\": \"Sports\"}}, {\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "text index required for $text query, full error: {'ok': 0.0, 'errmsg': 'text index required for $text query', 'code': 27, 'codeName': 'IndexNotFound'}"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "aggregate",
+              "db_name": "articles_database",
+              "collection": "articles",
+              "query": "[{\"$match\": {\"$or\": [{\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'_id': '69e3cb0a0f9139b6c4e0523e', 'title': 'THECHAT', 'description': '&lt;em&gt; Dean Cain has spent much of his life in a uniform. He\\'s done time as an all-American safety at Princeton (where he established a since-broken single-season Division I-AA record for interceptions), an undrafted free agent with the Buffalo Bills (before a preseason knee injury ended his football career), a sportsman"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "query": "[{\"$match\": {\"$or\": [{\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]",
+              "query_type": "aggregate",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'_id': '69e3cb0a0f9139b6c4e0523e', 'title': 'THECHAT', 'description': '&lt;em&gt; Dean Cain has spent much of his life in a uniform. He\\'s done time as an all-American safety at Princeton (where he established a since-broken single-season Division I-AA record for interceptions), an undrafted free agent with the Buffalo Bills (before a preseason knee injury ended his football career), a sportsman"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "aggregate",
+              "collection": "articles",
+              "db_name": "articles_database",
+              "query": "[{\"$match\": {\"$or\": [{\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'_id': '69e3cb0a0f9139b6c4e0523e', 'title': 'THECHAT', 'description': '&lt;em&gt; Dean Cain has spent much of his life in a uniform. He\\'s done time as an all-American safety at Princeton (where he established a since-broken single-season Division I-AA record for interceptions), an undrafted free agent with the Buffalo Bills (before a preseason knee injury ended his football career), a sportsman"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "[{\"$match\": {\"$or\": [{\"title\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"Sports\", \"$options\": \"i\"}}]}}, {\"$project\": {\"title\": 1, \"description\": 1, \"description_len\": {\"$strLenCP\": \"$description\"}}}, {\"$sort\": {\"description_len\": -1}}, {\"$limit\": 1}]",
+              "collection": "articles",
+              "db_name": "articles_database",
+              "query_type": "aggregate"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'_id': '69e3cb0a0f9139b6c4e0523e', 'title': 'THECHAT', 'description': '&lt;em&gt; Dean Cain has spent much of his life in a uniform. He\\'s done time as an all-American safety at Princeton (where he established a since-broken single-season Division I-AA record for interceptions), an undrafted free agent with the Buffalo Bills (before a preseason knee injury ended his football career), a sportsman"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 38.022,
+        "validation_message": "Ground truth 'The Rundown' not found in LLM output: THECHAT",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query2",
+        "question": "What fraction of all articles authored by Amy Jones belong to the Science/Technology category?",
+        "agent_answer": "",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT author_id FROM authors WHERE name = 'Amy Jones'",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'author_id': 218}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT article_id FROM article_metadata WHERE author_id = 218"
+            },
+            "success": true,
+            "rows": 111,
+            "preview": "[{'article_id': 192}, {'article_id': 2161}, {'article_id': 2844}, {'article_id': 2987}, {'article_id': 3451}, {'article_id': 3970}, {'article_id': 4447}, {'article_id': 5354}, {'article_id': 6705}, {'article_id': 6869}, {'article_id': 8962}, {'article_id': 9677}, {'article_id': 9858}, {'article_id': 14861}, {'article_id': 15100}, {'article_id': 15473}, {'article_id': 17491}, {'article_id': 19469},"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "find",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1, \"_id\": 0}",
+              "query": "{\"article_id\": {\"$in\": [192, 2161, 2844, 2987, 3451, 3970, 4447, 5354, 6705, 6869, 8962, 9677, 9858, 14861, 15100, 15473, 17491, 19469, 20362, 21238, 22354, 23914, 24495, 25960, 26535, 27429, 28079, 29164, 29297, 33489, 35408, 35882, 36182, 36483, 37042, 38608, 39117, 39623, 40545, 41616, 46531, 47439, 48635, 48833, 49035, 52459, 54906, 57510, 57860, 57918, 62404, 62754, 64102, 66827, 68509, 68958, 69262, 69393, 70498, 70608, 72525, 73025, 73684, 78200, 80578, 80853, 81851, 82526, 82668, 83273, 88553, 88911, 89666, 91286, 91822, 92992, 93287, 93804, 94618, 96641, 96986, 99699, 100613, 101514, 103003, 103591, 103695, 104123, 104996, 104998, 105804, 106908, 107036, 108586, 109601, 110096, 111422, 112063, 112770, 113058, 116698, 119651, 119920, 120129, 120765, 122137, 123747, 124509, 126412, 126655, 126966]}",
+              "db_name": "articles_database",
+              "collection": "articles"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "Expecting ',' delimiter: line 1 column 817 (char 816)"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "find",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1, \"_id\": 0}",
+              "collection": "articles",
+              "db_name": "articles_database",
+              "query": "{\"article_id\": {\"$in\": [192, 2161, 2844, 2987, 3451, 3970, 4447, 5354, 6705, 6869, 8962, 9677, 9858, 14861, 15100, 15473, 17491, 19469, 20362, 21238, 22354, 23914, 24495, 25960, 26535, 27429, 28079, 29164, 29297, 33489, 35408, 35882, 36182, 36483, 37042, 38608, 39117, 39623, 40545, 41616, 46531, 47439, 48635, 48833, 49035, 52459, 54906, 57510, 57860, 57918, 62404, 62754, 64102, 66827, 68509, 68958, 69262, 69393, 70498, 70608, 72525, 73025, 73684, 78200, 80578, 80853, 81851, 82526, 82668, 83273, 88553, 88911, 89666, 91286, 91822, 92992, 93287, 93804, 94618, 96641, 96986, 99699, 100613, 101514, 103003, 103591, 103695, 104123, 104996, 104998, 105804, 106908, 107036, 108586, 109601, 110096, 111422, 112063, 112770, 113058, 116698, 119651, 119920, 120129, 120765, 122137, 123747, 124509, 126412, 126655, 126966]}"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "Expecting ',' delimiter: line 1 column 817 (char 816)"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "049"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 049', 'source': 'corrections-log.md', 'content': '## Entry 049 — Schema Column Assumptions Cause Silent Failures\\n\\nMetadata:\\n- confidence: high\\n- last_verified_run_id: 2026-04-18-003\\n- datasets_seen: pancancer_atlas, crmarenapro, bookreview\\n\\nFailure pattern:\\n- Agent uses assumed column names (`gender`, `sex`, `user_id`, `ParticipantBarcode`) in WHERE clause"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1, \"_id\": 0}",
+              "query": "{\"article_id\": {\"$in\": [192, 2161, 2844, 2987, 3451, 3970, 4447, 5354, 6705, 6869, 8962, 9677, 9858, 14861, 15100, 15473, 17491, 19469, 20362, 21238, 22354, 23914, 24495, 25960, 26535, 27429, 28079, 29164, 29297, 33489, 35408, 35882, 36182, 36483, 37042, 38608, 39117, 39623, 40545, 41616, 46531, 47439, 48635, 48833, 49035, 52459, 54906, 57510, 57860, 57918, 62404, 62754, 64102, 66827, 68509, 68958, 69262, 69393, 70498, 70608, 72525, 73025, 73684, 78200, 80578, 80853, 81851, 82526, 82668, 83273, 88553, 88911, 89666, 91286, 91822, 92992, 93287, 93804, 94618, 96641, 96986, 99699, 100613, 101514, 103003, 103591, 103695, 104123, 104996, 104998, 105804, 106908, 107036, 108586, 109601, 110096, 111422, 112063, 112770, 113058, 116698, 119651, 119920, 120129, 120765, 122137, 123747, 124509, 126412, 126655, 126966]} }",
+              "query_type": "find",
+              "db_name": "articles_database",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 111,
+            "preview": "[{'article_id': 192, 'title': 'GameBoy mini-games win prize', 'description': 'A set of GameBoy micro-games is named as the most innovative game of the year at a festival in Scotland.'}, {'article_id': 2161, 'title': 'Bailey Tries WR', 'description': \"Pro Bowl cornerback Champ Bailey practiced with the offense at wide reciever during the Denver Broncos' practice on Tuesday.\"}, {'article_id': 2844, "
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 71.311,
+        "validation_message": "Ground truth '0.14414414414414414' (tol=0.0001) not found in LLM output: ",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query3",
+        "question": "What is the average number of business articles published per year in Europe from 2010 to 2020, inclusive?",
+        "agent_answer": "1345.818",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT article_id, publication_date FROM article_metadata WHERE region = 'Europe' AND publication_date LIKE '201%'"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'article_id': 9, 'publication_date': '2016-05-24'}, {'article_id': 13, 'publication_date': '2015-10-17'}, {'article_id': 14, 'publication_date': '2017-09-08'}, {'article_id': 27, 'publication_date': '2013-09-07'}, {'article_id': 43, 'publication_date': '2010-03-12'}, {'article_id': 60, 'publication_date': '2017-04-30'}, {'article_id': 62, 'publication_date': '2018-09-12'}, {'article_id': 63, 'pu"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "collection": "articles",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1}",
+              "query": "{}",
+              "query_type": "find"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb777605750662e7a632', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb777605750662e7a633', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT DISTINCT STRFTIME('%Y', publication_date) AS publication_year FROM article_metadata WHERE region = 'Europe' AND publication_date LIKE '201%'"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'publication_year': '2016'}, {'publication_year': '2015'}, {'publication_year': '2017'}, {'publication_year': '2013'}, {'publication_year': '2010'}, {'publication_year': '2018'}, {'publication_year': '2019'}, {'publication_year': '2014'}, {'publication_year': '2011'}, {'publication_year': '2012'}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT COUNT(article_id), STRFTIME('%Y', publication_date) AS publication_year FROM article_metadata WHERE region = 'Europe' AND publication_date LIKE '201%' GROUP BY publication_year"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'COUNT(article_id)': 1306, 'publication_year': '2010'}, {'COUNT(article_id)': 1316, 'publication_year': '2011'}, {'COUNT(article_id)': 1355, 'publication_year': '2012'}, {'COUNT(article_id)': 1354, 'publication_year': '2013'}, {'COUNT(article_id)': 1372, 'publication_year': '2014'}, {'COUNT(article_id)': 1357, 'publication_year': '2015'}, {'COUNT(article_id)': 1364, 'publication_year': '2016'}, "
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT COUNT(article_id), STRFTIME('%Y', publication_date) AS publication_year FROM article_metadata WHERE region = 'Europe' AND publication_date LIKE '201%' GROUP BY publication_year"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'COUNT(article_id)': 1306, 'publication_year': '2010'}, {'COUNT(article_id)': 1316, 'publication_year': '2011'}, {'COUNT(article_id)': 1355, 'publication_year': '2012'}, {'COUNT(article_id)': 1354, 'publication_year': '2013'}, {'COUNT(article_id)': 1372, 'publication_year': '2014'}, {'COUNT(article_id)': 1357, 'publication_year': '2015'}, {'COUNT(article_id)': 1364, 'publication_year': '2016'}, "
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1}",
+              "collection": "articles",
+              "query": "{}",
+              "db_name": "articles_database",
+              "query_type": "find"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb777605750662e7a632', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb777605750662e7a633', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT COUNT(T1.article_id), STRFTIME('%Y', T1.publication_date) AS publication_year FROM article_metadata AS T1 INNER JOIN authors AS T2 ON T1.author_id = T2.author_id WHERE T1.region = 'Europe' AND T1.publication_date LIKE '201%' GROUP BY publication_year"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'COUNT(T1.article_id)': 1306, 'publication_year': '2010'}, {'COUNT(T1.article_id)': 1316, 'publication_year': '2011'}, {'COUNT(T1.article_id)': 1355, 'publication_year': '2012'}, {'COUNT(T1.article_id)': 1354, 'publication_year': '2013'}, {'COUNT(T1.article_id)': 1372, 'publication_year': '2014'}, {'COUNT(T1.article_id)': 1357, 'publication_year': '2015'}, {'COUNT(T1.article_id)': 1364, 'publica"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT COUNT(article_id), STRFTIME('%Y', publication_date) AS publication_year FROM article_metadata WHERE region = 'Europe' AND publication_date LIKE '201%' GROUP BY publication_year"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'COUNT(article_id)': 1306, 'publication_year': '2010'}, {'COUNT(article_id)': 1316, 'publication_year': '2011'}, {'COUNT(article_id)': 1355, 'publication_year': '2012'}, {'COUNT(article_id)': 1354, 'publication_year': '2013'}, {'COUNT(article_id)': 1372, 'publication_year': '2014'}, {'COUNT(article_id)': 1357, 'publication_year': '2015'}, {'COUNT(article_id)': 1364, 'publication_year': '2016'}, "
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "{}",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1}",
+              "query_type": "find",
+              "collection": "articles",
+              "db_name": "articles_database"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb777605750662e7a632', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb777605750662e7a633', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT COUNT(article_id), STRFTIME('%Y', publication_date) AS publication_year FROM article_metadata WHERE region = 'Europe' AND publication_date BETWEEN '2010-01-01' AND '2020-12-31' GROUP BY publication_year"
+            },
+            "success": true,
+            "rows": 11,
+            "preview": "[{'COUNT(article_id)': 1306, 'publication_year': '2010'}, {'COUNT(article_id)': 1316, 'publication_year': '2011'}, {'COUNT(article_id)': 1355, 'publication_year': '2012'}, {'COUNT(article_id)': 1354, 'publication_year': '2013'}, {'COUNT(article_id)': 1372, 'publication_year': '2014'}, {'COUNT(article_id)': 1357, 'publication_year': '2015'}, {'COUNT(article_id)': 1364, 'publication_year': '2016'}, "
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "find",
+              "query": "{}",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1}",
+              "collection": "articles",
+              "db_name": "articles_database"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb777605750662e7a632', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb777605750662e7a633', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT COUNT(article_id), STRFTIME('%Y', publication_date) AS publication_year FROM article_metadata WHERE region = 'Europe' AND STRFTIME('%Y', publication_date) BETWEEN '2010' AND '2020' GROUP BY publication_year",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 11,
+            "preview": "[{'COUNT(article_id)': 1306, 'publication_year': '2010'}, {'COUNT(article_id)': 1316, 'publication_year': '2011'}, {'COUNT(article_id)': 1355, 'publication_year': '2012'}, {'COUNT(article_id)': 1354, 'publication_year': '2013'}, {'COUNT(article_id)': 1372, 'publication_year': '2014'}, {'COUNT(article_id)': 1357, 'publication_year': '2015'}, {'COUNT(article_id)': 1364, 'publication_year': '2016'}, "
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "collection": "articles",
+              "query_type": "find",
+              "query": "{}",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1}",
+              "db_name": "articles_database"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb777605750662e7a632', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb777605750662e7a633', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 29.179,
+        "validation_message": "Ground truth numeric value '336.6363636363636' (tol=0.01) not found in LLM output: 1345.818",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query4",
+        "question": "In 2015, which region published the largest number of articles in the World category?",
+        "agent_answer": "Europe",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT region, publication_date, article_id FROM article_metadata"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'region': 'Asia', 'publication_date': '2022-09-18', 'article_id': 0}, {'region': 'North America', 'publication_date': '2004-03-20', 'article_id': 1}, {'region': 'South America', 'publication_date': '2021-02-04', 'article_id': 2}, {'region': 'Europe', 'publication_date': '2020-03-04', 'article_id': 3}, {'region': 'Africa', 'publication_date': '2012-02-01', 'article_id': 4}, {'region': 'Africa', '"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "find",
+              "db_name": "articles_database",
+              "query": "{}",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb959fb3c71c91d41751', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb959fb3c71c91d41752', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "002"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 002', 'source': 'critical_rules.md', 'content': '## Entry 002 — Mixed Datetime Formats\\n\\n- confidence: high\\n- datasets_seen: yelp, stockindex, stockmarket\\n\\n**When:** Time-filtered counts or aggregates are unexpectedly low.\\n**Why:** Single-format datetime parsing silently drops rows with alternative formats.\\n**Fix:** Use `COALESCE` over multiple `TRY_STRPTIME"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, strftime('%Y', publication_date) AS publication_year, article_id FROM article_metadata WHERE strftime('%Y', publication_date) = '2015'",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'region': 'Europe', 'publication_year': '2015', 'article_id': 13}, {'region': 'South America', 'publication_year': '2015', 'article_id': 18}, {'region': 'Africa', 'publication_year': '2015', 'article_id': 26}, {'region': 'South America', 'publication_year': '2015', 'article_id': 51}, {'region': 'Africa', 'publication_year': '2015', 'article_id': 52}, {'region': 'Asia', 'publication_year': '2015'"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1}",
+              "query": "{}",
+              "collection": "articles",
+              "query_type": "find"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb959fb3c71c91d41751', 'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'_id': '69e3cb959fb3c71c91d41752', 'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Ca"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT article_id, region, strftime('%Y', publication_date) AS publication_year FROM article_metadata",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'article_id': 0, 'region': 'Asia', 'publication_year': '2022'}, {'article_id': 1, 'region': 'North America', 'publication_year': '2004'}, {'article_id': 2, 'region': 'South America', 'publication_year': '2021'}, {'article_id': 3, 'region': 'Europe', 'publication_year': '2020'}, {'article_id': 4, 'region': 'Africa', 'publication_year': '2012'}, {'article_id': 5, 'region': 'Africa', 'publication_y"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "query": "{\"$and\": [{\"title\": {\"$exists\": true}}, {\"description\": {\"$exists\": true}}]}",
+              "query_type": "find",
+              "collection": "articles",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1, \"_id\": 0}"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'article_id': 0, 'title': 'Wall St. Bears Claw Back Into the Black (Reuters)', 'description': \"Reuters - Short-sellers, Wall Street's dwindling\\\\band of ultra-cynics, are seeing green again.\"}, {'article_id': 1, 'title': 'Carlyle Looks Toward Commercial Aerospace (Reuters)', 'description': 'Reuters - Private investment firm Carlyle Group,\\\\which has a reputation for making well-timed and occasio"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' GROUP BY region ORDER BY article_count DESC LIMIT 1",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "{\"$or\": [{\"title\": {\"$regex\": \"World\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"World\", \"$options\": \"i\"}}]}",
+              "query_type": "find",
+              "db_name": "articles_database",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb959fb3c71c91d41755', 'article_id': 4, 'title': 'Oil prices soar to all-time record, posing new menace to US economy (AFP)', 'description': 'AFP - Tearaway world oil prices, toppling records and straining wallets, present a new economic menace barely three months before the US presidential elections.'}, {'_id': '69e3cb959fb3c71c91d41784', 'article_id': 51, 'title': 'Delightful Dell'"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' GROUP BY region ORDER BY article_count DESC"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}, {'region': 'Africa', 'article_count': 1345}, {'region': 'Asia', 'article_count': 1333}, {'region': 'South America', 'article_count': 1332}, {'region': 'North America', 'article_count': 1329}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "find",
+              "db_name": "articles_database",
+              "collection": "articles",
+              "projection": "{\"article_id\": 1, \"title\": 1, \"description\": 1, \"_id\": 0}",
+              "query": "{\"$or\": [{\"title\": {\"$regex\": \"World\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"World\", \"$options\": \"i\"}}]}"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'article_id': 4, 'title': 'Oil prices soar to all-time record, posing new menace to US economy (AFP)', 'description': 'AFP - Tearaway world oil prices, toppling records and straining wallets, present a new economic menace barely three months before the US presidential elections.'}, {'article_id': 51, 'title': 'Delightful Dell', 'description': \"The company's results show that it's not grim all ov"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' AND article_id IN (SELECT article_id FROM article_metadata WHERE article_id IN (SELECT article_id FROM article_metadata) ) GROUP BY region ORDER BY article_count DESC LIMIT 1",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT T1.region, COUNT(T1.article_id) FROM article_metadata AS T1 INNER JOIN (SELECT article_id FROM articles WHERE description LIKE '%World%' OR title LIKE '%World%') AS T2 ON T1.article_id = T2.article_id WHERE T1.publication_date LIKE '2015%' GROUP BY T1.region ORDER BY COUNT(T1.article_id) DESC LIMIT 1"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: articles"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "017"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 017', 'source': 'critical_rules.md', 'content': '## Entry 017 — Cross-DB Joins: Compute Locally, Don\\'t Fake SQL\\n\\n- confidence: high\\n- datasets_seen: bookreview, deps_dev_v1, crmarenapro\\n\\n**When:** SQL JOIN across different physical DB engines yields \"relation does not exist\" or empty results.\\n**Why:** Cross-database SQL joins are not supported — each engine"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' GROUP BY region ORDER BY article_count DESC LIMIT 1",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query_type": "find",
+              "collection": "articles",
+              "db_name": "articles_database",
+              "query": "{\"$or\": [{\"title\": {\"$regex\": \"World\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"World\", \"$options\": \"i\"}}]}",
+              "projection": "{\"article_id\": 1}"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb959fb3c71c91d41755', 'article_id': 4}, {'_id': '69e3cb959fb3c71c91d41784', 'article_id': 51}, {'_id': '69e3cb959fb3c71c91d4178b', 'article_id': 58}, {'_id': '69e3cb959fb3c71c91d417a8', 'article_id': 87}, {'_id': '69e3cb959fb3c71c91d417b5', 'article_id': 100}, {'_id': '69e3cb959fb3c71c91d417be', 'article_id': 109}, {'_id': '69e3cb959fb3c71c91d417ca', 'article_id': 121}, {'_id': '69e"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' AND article_id IN (SELECT article_id FROM articles WHERE description LIKE '%World%' OR title LIKE '%World%') GROUP BY region ORDER BY article_count DESC"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: articles"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' GROUP BY region ORDER BY article_count DESC LIMIT 1",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "db_name": "articles_database",
+              "query_type": "find",
+              "query": "{\"$or\": [{\"title\": {\"$regex\": \"World\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"World\", \"$options\": \"i\"}}]}",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb959fb3c71c91d41755', 'article_id': 4, 'title': 'Oil prices soar to all-time record, posing new menace to US economy (AFP)', 'description': 'AFP - Tearaway world oil prices, toppling records and straining wallets, present a new economic menace barely three months before the US presidential elections.'}, {'_id': '69e3cb959fb3c71c91d41784', 'article_id': 51, 'title': 'Delightful Dell'"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' AND article_id IN (SELECT article_id FROM articles WHERE description LIKE '%World%' OR title LIKE '%World%') GROUP BY region ORDER BY article_count DESC",
+              "db_name": "metadata_database"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: articles"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' GROUP BY region ORDER BY article_count DESC LIMIT 1",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}]"
+          },
+          {
+            "tool": "query_mongodb",
+            "args": {
+              "query": "{\"$or\": [{\"title\": {\"$regex\": \"World\", \"$options\": \"i\"}}, {\"description\": {\"$regex\": \"World\", \"$options\": \"i\"}}]}",
+              "query_type": "find",
+              "db_name": "articles_database",
+              "collection": "articles"
+            },
+            "success": true,
+            "rows": 500,
+            "preview": "[{'_id': '69e3cb959fb3c71c91d41755', 'article_id': 4, 'title': 'Oil prices soar to all-time record, posing new menace to US economy (AFP)', 'description': 'AFP - Tearaway world oil prices, toppling records and straining wallets, present a new economic menace barely three months before the US presidential elections.'}, {'_id': '69e3cb959fb3c71c91d41784', 'article_id': 51, 'title': 'Delightful Dell'"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "metadata_database",
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' AND article_id IN (SELECT article_id FROM articles WHERE description LIKE '%World%' OR title LIKE '%World%') GROUP BY region ORDER BY article_count DESC"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: articles"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "048"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 048', 'source': 'corrections-log.md', 'content': \"## Entry 048 — Cross-DB Function Call in SQL is Always Invalid\\n\\nMetadata:\\n- confidence: high\\n- last_verified_run_id: 2026-04-18-003\\n- datasets_seen: pancancer_atlas, deps_dev_v1, crmarenapro\\n\\nFailure pattern:\\n- Agent writes a SQL query that calls `query_postgres(...)`, `query_duckdb(...)`, or `query_sqlite("
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT region, COUNT(article_id) AS article_count FROM article_metadata WHERE strftime('%Y', publication_date) = '2015' GROUP BY region ORDER BY article_count DESC LIMIT 1",
+              "db_name": "metadata_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'region': 'Europe', 'article_count': 1357}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 101.262,
+        "validation_message": "Ground truth 'Africa' not found in LLM output: Europe",
+        "error": null,
+        "error_type": null
+      }
+    ],
+    "methodology_notes": {
+      "harness_script": "eval/harness.py",
+      "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
+      "timeout_sec": 240.0,
+      "environment_errors": 0,
+      "timeout_errors": 0,
+      "agent_errors": 0,
+      "strict_no_leakage": "1",
+      "oracle_forge_llm_provider": "openrouter",
+      "openai_model": "gpt-4.1",
+      "openrouter_model": "google/gemini-2.0-flash-001",
+      "mcp_url_passed_to_child": true
+    }
+  },
+  {
+    "run_id": "2026-04-18-002",
+    "dataset": "music_brainz_20k",
+    "date": "2026-04-18",
+    "total_queries": 3,
+    "passed": 1,
+    "failed": 2,
+    "pass_at_1": 0.3333,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "How much revenue in USD did Apple Music make from Beyoncé's song 'Get Me Bodied' in Canada?",
+        "agent_answer": "601.44",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "tracks_database",
+              "sql": "SELECT track_id, title, artist FROM tracks WHERE title = 'Get Me Bodied' AND artist = 'Beyoncé'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT track_id, title, artist FROM tracks WHERE LOWER(title) = 'get me bodied' AND LOWER(artist) = 'beyonce'",
+              "db_name": "tracks_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT track_id, title, artist FROM tracks WHERE title LIKE '%Get Me Bodied%' AND artist LIKE '%Beyoncé%'",
+              "db_name": "tracks_database"
+            },
+            "success": true,
+            "rows": 2,
+            "preview": "[{'track_id': 4233, 'title': 'Get Me Bodied (Sexxxplicit R&B, Volume 25)', 'artist': 'Beyoncé'}, {'track_id': 12954, 'title': 'Get Me Bodied - Sexxxplicit R&B, Volume 25', 'artist': 'Beyoncé'}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "sql": "SELECT SUM(revenue_usd) FROM sales WHERE track_id IN (4233, 12954) AND country = 'Canada' AND store = 'Apple Music'",
+              "db_name": "sales_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'sum(revenue_usd)': 601.44}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 9.817,
+        "validation_message": "Ground truth '1059.46' not found in LLM output: 601.44",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which store earned the most revenue in USD from Brucqe Maginnis' song 'Street Hype' across all countries?",
+        "agent_answer": "Amazon Music, 304.13",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "tracks_database",
+              "sql": "SELECT track_id, title, artist FROM tracks WHERE title = 'Street Hype' AND artist = 'Brocque Maginnis'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "tracks_database",
+              "sql": "SELECT track_id, title, artist FROM tracks WHERE title LIKE '%Street Hype%' AND artist LIKE '%Brocque Maginnis%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT track_id, title, artist FROM tracks WHERE title = 'Street Hype'",
+              "db_name": "tracks_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'track_id': 4122, 'title': 'Street Hype', 'artist': 'Brucqe Maginnis'}]"
+          },
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "sql": "SELECT store, SUM(revenue_usd) AS total_revenue FROM sales WHERE track_id = 4122 GROUP BY store ORDER BY total_revenue DESC LIMIT 1",
+              "db_name": "sales_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'store': 'Amazon Music', 'total_revenue': 304.13}]"
+          }
+        ],
+        "passed": true,
+        "execution_time_sec": 14.238,
+        "validation_message": "Ground truth found in LLM output.",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query3",
+        "question": "Which song generated the highest total revenue in USD across all stores and countries?",
+        "agent_answer": "Systemisch bled",
+        "query_trace": [
+          {
+            "tool": "query_duckdb",
+            "args": {
+              "db_name": "sales_database",
+              "sql": "SELECT track_id, SUM(revenue_usd) AS total_revenue FROM sales GROUP BY track_id ORDER BY total_revenue DESC LIMIT 1"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'track_id': 14719, 'total_revenue': 2522.82}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT title FROM tracks WHERE track_id = 14719",
+              "db_name": "tracks_database"
+            },
+            "success": true,
+            "rows": 1,
+            "preview": "[{'title': 'Systemisch bled'}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 4.815,
+        "validation_message": "No fuzzy match (Zo gaat het leven aan je voor) found in Systemisch bled. Best score: 0.25",
+        "error": null,
+        "error_type": null
+      }
+    ],
+    "methodology_notes": {
+      "harness_script": "eval/harness.py",
+      "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
+      "timeout_sec": 240.0,
+      "environment_errors": 0,
+      "timeout_errors": 0,
+      "agent_errors": 0,
+      "strict_no_leakage": "1",
+      "oracle_forge_llm_provider": "openrouter",
+      "openai_model": "gpt-4.1",
+      "openrouter_model": "google/gemini-2.0-flash-001",
+      "mcp_url_passed_to_child": true
+    }
+  },
+  {
+    "run_id": "2026-04-18-003",
+    "dataset": "googlelocal",
+    "date": "2026-04-18",
+    "total_queries": 4,
+    "passed": 1,
+    "failed": 3,
+    "pass_at_1": 0.25,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "What are the top 5 businesses located in Los Angeles, California, ranked by highest average rating in descending order?",
+        "agent_answer": "I am unable to provide an answer. The query to combine the data from the two databases failed due to a syntax error.",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "PRAGMA table_info(review)",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'cid': 0, 'name': 'name', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 1, 'name': 'time', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 2, 'name': 'rating', 'type': 'INTEGER', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 3, 'name': 'text', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 4, 'name': 'gmap_id', 'type': 'TEXT', "
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, gmap_id, description FROM business_description WHERE description ILIKE '%Los Angeles, California%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, gmap_id, description FROM business_description WHERE description ILIKE '%Los Angeles, CA%'"
+            },
+            "success": true,
+            "rows": 7,
+            "preview": "[{'name': 'City Textile', 'gmap_id': 'gmap_44', 'description': ' Located in Los Angeles, CA 90023, this company specializes in the international trade of high-quality fabrics and materials.'}, {'name': 'San Soo Dang', 'gmap_id': 'gmap_41', 'description': ' This vibrant eatery in Los Angeles, CA 90005 offers a delightful array of traditional dishes and barbecue specialties inspired by the rich flav"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "review_database",
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id ORDER BY avg_rating DESC LIMIT 5"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'gmap_id': 'gmap_9', 'avg_rating': 5.0}, {'gmap_id': 'gmap_8', 'avg_rating': 5.0}, {'gmap_id': 'gmap_77', 'avg_rating': 5.0}, {'gmap_id': 'gmap_76', 'avg_rating': 5.0}, {'gmap_id': 'gmap_73', 'avg_rating': 5.0}]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, gmap_id FROM business_description WHERE description ILIKE '%Los Angeles, CA%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 7,
+            "preview": "[{'name': 'City Textile', 'gmap_id': 'gmap_44'}, {'name': 'San Soo Dang', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'gmap_id': 'gmap_43'}, {'name': 'Nobel Textile Co', 'gmap_id': 'gmap_38'}, {'name': 'Beads and More', 'gmap_id': 'gmap_39'}, {'name': 'Ace Jewelry & Loan', 'gmap_id': 'gmap_42'}, {'name': 'Widows Peak Salon', 'gmap_id': 'gmap_40'}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "review_database",
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id"
+            },
+            "success": true,
+            "rows": 79,
+            "preview": "[{'gmap_id': 'gmap_0', 'avg_rating': 4.888888888888889}, {'gmap_id': 'gmap_1', 'avg_rating': 5.0}, {'gmap_id': 'gmap_10', 'avg_rating': 5.0}, {'gmap_id': 'gmap_11', 'avg_rating': 4.9603174603174605}, {'gmap_id': 'gmap_12', 'avg_rating': 5.0}, {'gmap_id': 'gmap_13', 'avg_rating': 4.625}, {'gmap_id': 'gmap_14', 'avg_rating': 4.375}, {'gmap_id': 'gmap_15', 'avg_rating': 4.911111111111111}, {'gmap_id'"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, gmap_id FROM business_description WHERE description ILIKE '%Los Angeles, CA%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 7,
+            "preview": "[{'name': 'City Textile', 'gmap_id': 'gmap_44'}, {'name': 'San Soo Dang', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'gmap_id': 'gmap_43'}, {'name': 'Nobel Textile Co', 'gmap_id': 'gmap_38'}, {'name': 'Beads and More', 'gmap_id': 'gmap_39'}, {'name': 'Ace Jewelry & Loan', 'gmap_id': 'gmap_42'}, {'name': 'Widows Peak Salon', 'gmap_id': 'gmap_40'}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 79,
+            "preview": "[{'gmap_id': 'gmap_0', 'avg_rating': 4.888888888888889}, {'gmap_id': 'gmap_1', 'avg_rating': 5.0}, {'gmap_id': 'gmap_10', 'avg_rating': 5.0}, {'gmap_id': 'gmap_11', 'avg_rating': 4.9603174603174605}, {'gmap_id': 'gmap_12', 'avg_rating': 5.0}, {'gmap_id': 'gmap_13', 'avg_rating': 4.625}, {'gmap_id': 'gmap_14', 'avg_rating': 4.375}, {'gmap_id': 'gmap_15', 'avg_rating': 4.911111111111111}, {'gmap_id'"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, gmap_id FROM business_description WHERE description ILIKE '%Los Angeles, CA%'"
+            },
+            "success": true,
+            "rows": 7,
+            "preview": "[{'name': 'City Textile', 'gmap_id': 'gmap_44'}, {'name': 'San Soo Dang', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'gmap_id': 'gmap_43'}, {'name': 'Nobel Textile Co', 'gmap_id': 'gmap_38'}, {'name': 'Beads and More', 'gmap_id': 'gmap_39'}, {'name': 'Ace Jewelry & Loan', 'gmap_id': 'gmap_42'}, {'name': 'Widows Peak Salon', 'gmap_id': 'gmap_40'}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id ORDER BY avg_rating DESC",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 79,
+            "preview": "[{'gmap_id': 'gmap_9', 'avg_rating': 5.0}, {'gmap_id': 'gmap_8', 'avg_rating': 5.0}, {'gmap_id': 'gmap_77', 'avg_rating': 5.0}, {'gmap_id': 'gmap_76', 'avg_rating': 5.0}, {'gmap_id': 'gmap_73', 'avg_rating': 5.0}, {'gmap_id': 'gmap_56', 'avg_rating': 5.0}, {'gmap_id': 'gmap_51', 'avg_rating': 5.0}, {'gmap_id': 'gmap_50', 'avg_rating': 5.0}, {'gmap_id': 'gmap_5', 'avg_rating': 5.0}, {'gmap_id': 'gm"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, gmap_id FROM business_description WHERE description ILIKE '%Los Angeles, CA%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 7,
+            "preview": "[{'name': 'City Textile', 'gmap_id': 'gmap_44'}, {'name': 'San Soo Dang', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'gmap_id': 'gmap_43'}, {'name': 'Nobel Textile Co', 'gmap_id': 'gmap_38'}, {'name': 'Beads and More', 'gmap_id': 'gmap_39'}, {'name': 'Ace Jewelry & Loan', 'gmap_id': 'gmap_42'}, {'name': 'Widows Peak Salon', 'gmap_id': 'gmap_40'}]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT T1.gmap_id, T2.name, T1.avg_rating FROM (SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id ORDER BY avg_rating DESC LIMIT 10) AS T1 INNER JOIN (SELECT gmap_id, name FROM business_description WHERE description ILIKE '%Los Angeles, CA%') AS T2 ON T1.gmap_id = T2.gmap_id ORDER BY T1.avg_rating DESC LIMIT 5",
+              "db_name": "review_database"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "near \"ILIKE\": syntax error"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, gmap_id FROM business_description WHERE description ILIKE '%Los Angeles, CA%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 7,
+            "preview": "[{'name': 'City Textile', 'gmap_id': 'gmap_44'}, {'name': 'San Soo Dang', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'gmap_id': 'gmap_43'}, {'name': 'Nobel Textile Co', 'gmap_id': 'gmap_38'}, {'name': 'Beads and More', 'gmap_id': 'gmap_39'}, {'name': 'Ace Jewelry & Loan', 'gmap_id': 'gmap_42'}, {'name': 'Widows Peak Salon', 'gmap_id': 'gmap_40'}]"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 36.312,
+        "validation_message": "Missing name in LLM output: Widows Peak Salon",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Which massage therapy businesses have an average rating of at least 4.0, and what are their respective average ratings?",
+        "agent_answer": "I am unable to find any businesses that are massage therapy businesses.",
+        "query_trace": [
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%massage therapy%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%massage%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%therapy%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "PRAGMA table_info(review)",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'cid': 0, 'name': 'name', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 1, 'name': 'time', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 2, 'name': 'rating', 'type': 'INTEGER', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 3, 'name': 'text', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 4, 'name': 'gmap_id', 'type': 'TEXT', "
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id HAVING AVG(rating) >= 4.0",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 66,
+            "preview": "[{'gmap_id': 'gmap_0', 'avg_rating': 4.888888888888889}, {'gmap_id': 'gmap_1', 'avg_rating': 5.0}, {'gmap_id': 'gmap_10', 'avg_rating': 5.0}, {'gmap_id': 'gmap_11', 'avg_rating': 4.9603174603174605}, {'gmap_id': 'gmap_12', 'avg_rating': 5.0}, {'gmap_id': 'gmap_13', 'avg_rating': 4.625}, {'gmap_id': 'gmap_14', 'avg_rating': 4.375}, {'gmap_id': 'gmap_15', 'avg_rating': 4.911111111111111}, {'gmap_id'"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%massage therapy%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%massage%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%therapy%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "review_database",
+              "sql": "SELECT T1.gmap_id, T1.avg_rating, T2.name FROM (SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id HAVING AVG(rating) >= 4.0) AS T1 INNER JOIN business_description AS T2 ON T1.gmap_id = T2.gmap_id"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: business_description"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description ILIKE '%massage%' OR description ILIKE '%therapy%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description LIKE '%massage%' OR description LIKE '%therapy%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name, description FROM business_description",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 79,
+            "preview": "[{'gmap_id': 'gmap_44', 'name': 'City Textile', 'description': ' Located in Los Angeles, CA 90023, this company specializes in the international trade of high-quality fabrics and materials.'}, {'gmap_id': 'gmap_41', 'name': 'San Soo Dang', 'description': ' This vibrant eatery in Los Angeles, CA 90005 offers a delightful array of traditional dishes and barbecue specialties inspired by the rich flav"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT T1.gmap_id, T1.avg_rating, T2.name FROM (SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id HAVING AVG(rating) >= 4.0) AS T1 INNER JOIN (SELECT gmap_id, name, description FROM business_description WHERE description LIKE '%massage%' OR description LIKE '%therapy%') AS T2 ON T1.gmap_id = T2.gmap_id",
+              "db_name": "review_database"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: business_description"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT T1.gmap_id, T1.avg_rating FROM (SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id HAVING AVG(rating) >= 4.0) AS T1 INNER JOIN (SELECT gmap_id, name, description FROM business_description WHERE description LIKE '%massage%' OR description LIKE '%therapy%') AS T2 ON T1.gmap_id = T2.gmap_id",
+              "db_name": "review_database"
+            },
+            "success": false,
+            "rows": 0,
+            "preview": "no such table: business_description"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description LIKE '%massage%' OR description LIKE '%therapy%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description LIKE '%massage%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description LIKE '%therapy%'"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id HAVING AVG(rating) >= 4.0",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 66,
+            "preview": "[{'gmap_id': 'gmap_0', 'avg_rating': 4.888888888888889}, {'gmap_id': 'gmap_1', 'avg_rating': 5.0}, {'gmap_id': 'gmap_10', 'avg_rating': 5.0}, {'gmap_id': 'gmap_11', 'avg_rating': 4.9603174603174605}, {'gmap_id': 'gmap_12', 'avg_rating': 5.0}, {'gmap_id': 'gmap_13', 'avg_rating': 4.625}, {'gmap_id': 'gmap_14', 'avg_rating': 4.375}, {'gmap_id': 'gmap_15', 'avg_rating': 4.911111111111111}, {'gmap_id'"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT gmap_id, name FROM business_description WHERE description LIKE '%massage%' OR description LIKE '%therapy%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 0,
+            "preview": "[]"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "046"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 046', 'source': 'critical_rules.md', 'content': '## Entry 046 — Avoid Premature Abstention\\n\\n- confidence: high\\n- last_verified_run_id: 2026-04-18-012\\n- datasets_seen: patents, pancancer_atlas, yelp, crmarenapro\\n\\n**When:** Final answer is a refusal (`No answer possible`, `cannot complete`, `insufficient data`) despite non-empty tool results in trace.\\n**Why:*"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 56.888,
+        "validation_message": "Missing name in LLM output: Elite Massage",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query3",
+        "question": "What are the top 5 businesses that remain open after 6:00 PM on at least one weekday, ranked by highest average rating? Include their names, operating hours, and average ratings.",
+        "agent_answer": "Mariscos el poblano, [[\"Thursday\", \"Open 24 hours\"], [\"Friday\", \"8AM–3:30PM\"], [\"Saturday\", \"8AM–3:30PM\"], [\"Sunday\", \"8AM–3:30PM\"], [\"Monday\", \"9AM–3:30AM\"], [\"Tuesday\", \"8AM–3:30PM\"], [\"Wednesday\", \"8AM–3:30PM\"]], 5; TACOS LA CABANA, [[\"Thursday\", \"Closed\"], [\"Friday\", \"5–11PM\"], [\"Saturday\", \"5–11PM\"], [\"Sunday\", \"5–11PM\"], [\"Monday\", \"5–11PM\"], [\"Tuesday\", \"Closed\"], [\"Wednesday\", \"Closed\"]], 5; Taba Rug Gallery, [[\"Thursday\", \"10AM–7PM\"], [\"Friday\", \"10AM–7PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"10AM–7PM\"], [\"Tuesday\", \"10AM–7PM\"], [\"Wednesday\", \"10AM–7PM\"]], 5; Beauty Divine Artistry, [[\"Thursday\", \"9AM–8PM\"], [\"Friday\", \"9AM–8PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"9AM–8PM\"], [\"Tuesday\", \"9AM–8PM\"], [\"Wednesday\", \"9AM–8PM\"]], 5; Paradise tattoo, [[\"Thursday\", \"12–10PM\"], [\"Friday\", \"12PM–12AM\"], [\"Saturday\", \"12PM–12AM\"], [\"Sunday\", \"12–10PM\"], [\"Monday\", \"12–10PM\"], [\"Tuesday\", \"12–10PM\"], [\"Wednesday\", \"12–10PM\"]], 4.96",
+        "query_trace": [
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE hours LIKE '%PM%'"
+            },
+            "success": true,
+            "rows": 61,
+            "preview": "[{'name': 'San Soo Dang', 'hours': '[[\"Thursday\", \"6:30AM–6PM\"], [\"Friday\", \"6:30AM–6PM\"], [\"Saturday\", \"6:30AM–6PM\"], [\"Sunday\", \"7AM–12PM\"], [\"Monday\", \"Closed\"], [\"Tuesday\", \"6:30AM–6PM\"], [\"Wednesday\", \"6:30AM–6PM\"]]', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'hours': '[[\"Thursday\", \"9AM–5PM\"], [\"Friday\", \"9AM–5PM\"], [\"Saturday\", \"Closed\"], [\"Sunday\", \"Closed\"], [\"Monday\", \"9AM–5PM\"], ["
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "review_database",
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id"
+            },
+            "success": true,
+            "rows": 79,
+            "preview": "[{'gmap_id': 'gmap_0', 'avg_rating': 4.888888888888889}, {'gmap_id': 'gmap_1', 'avg_rating': 5.0}, {'gmap_id': 'gmap_10', 'avg_rating': 5.0}, {'gmap_id': 'gmap_11', 'avg_rating': 4.9603174603174605}, {'gmap_id': 'gmap_12', 'avg_rating': 5.0}, {'gmap_id': 'gmap_13', 'avg_rating': 4.625}, {'gmap_id': 'gmap_14', 'avg_rating': 4.375}, {'gmap_id': 'gmap_15', 'avg_rating': 4.911111111111111}, {'gmap_id'"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "001"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 001', 'source': 'critical_rules.md', 'content': '## Entry 001 — Cross-DB Key Normalization\\n\\n- confidence: high\\n- datasets_seen: yelp, bookreview, crmarenapro\\n\\n**When:** Cross-database joins return zero rows despite related entities existing.\\n**Why:** Equivalent IDs use different string prefixes across systems.\\n**Fix:** Normalize both IDs to a canonical key "
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "054"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 054', 'source': 'corrections-log.md', 'content': '## Entry 054 — StockIndex: No Region Column — Use Exchange-to-Symbol Mapping\\n\\nMetadata:\\n- confidence: high\\n- last_verified_run_id: 2026-04-18-002\\n- datasets_seen: stockindex\\n\\nFailure pattern:\\n- Agent filters wrong set of indices for a region query (e.g., includes non-Asia symbols or excludes valid ones).\\n-"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "007"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 007', 'source': 'critical_rules.md', 'content': '## Entry 007 — Output Formatting Compatibility\\n\\n- confidence: high\\n- datasets_seen: stockindex, yelp, bookreview\\n\\n**When:** Semantically correct answer fails validation.\\n**Why:** Extra formatting, preamble text, or non-standard separators break validator parser assumptions.\\n**Fix:** Return compact plain text "
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "046"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 046', 'source': 'critical_rules.md', 'content': '## Entry 046 — Avoid Premature Abstention\\n\\n- confidence: high\\n- last_verified_run_id: 2026-04-18-012\\n- datasets_seen: patents, pancancer_atlas, yelp, crmarenapro\\n\\n**When:** Final answer is a refusal (`No answer possible`, `cannot complete`, `insufficient data`) despite non-empty tool results in trace.\\n**Why:*"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "034"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 034', 'source': 'critical_rules.md', 'content': '## Entry 034 — Final Answer Must Be Compact (supersedes Entry 037)\\n\\n- confidence: high\\n- last_verified_run_id: 2026-04-18-005\\n- datasets_seen: all datasets\\n\\n**When:** Validator misses the correct value because it is wrapped in reasoning prose, policy text, or \"I cannot determine\" caveats.\\n**Why:** Model emits"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "006"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 006', 'source': 'critical_rules.md', 'content': '## Entry 006 — Avoid Average-of-Averages\\n\\n- confidence: high\\n- datasets_seen: yelp, stockmarket, bookreview\\n\\n**When:** Final averages seem biased high or low.\\n**Why:** Averaging per-group averages instead of row-level observations produces a weighted distortion.\\n**Fix:** Aggregate directly over row-level meas"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "002"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 002', 'source': 'critical_rules.md', 'content': '## Entry 002 — Mixed Datetime Formats\\n\\n- confidence: high\\n- datasets_seen: yelp, stockindex, stockmarket\\n\\n**When:** Time-filtered counts or aggregates are unexpectedly low.\\n**Why:** Single-format datetime parsing silently drops rows with alternative formats.\\n**Fix:** Use `COALESCE` over multiple `TRY_STRPTIME"
+          },
+          {
+            "tool": "lookup_kb",
+            "args": {
+              "entry_id": "017"
+            },
+            "success": true,
+            "rows": null,
+            "preview": "{'success': True, 'entry': 'Entry 017', 'source': 'critical_rules.md', 'content': '## Entry 017 — Cross-DB Joins: Compute Locally, Don\\'t Fake SQL\\n\\n- confidence: high\\n- datasets_seen: bookreview, deps_dev_v1, crmarenapro\\n\\n**When:** SQL JOIN across different physical DB engines yields \"relation does not exist\" or empty results.\\n**Why:** Cross-database SQL joins are not supported — each engine"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "PRAGMA table_info(review)",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'cid': 0, 'name': 'name', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 1, 'name': 'time', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 2, 'name': 'rating', 'type': 'INTEGER', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 3, 'name': 'text', 'type': 'TEXT', 'notnull': 0, 'dflt_value': None, 'pk': 0}, {'cid': 4, 'name': 'gmap_id', 'type': 'TEXT', "
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE hours LIKE '%PM%'",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 61,
+            "preview": "[{'name': 'San Soo Dang', 'hours': '[[\"Thursday\", \"6:30AM–6PM\"], [\"Friday\", \"6:30AM–6PM\"], [\"Saturday\", \"6:30AM–6PM\"], [\"Sunday\", \"7AM–12PM\"], [\"Monday\", \"Closed\"], [\"Tuesday\", \"6:30AM–6PM\"], [\"Wednesday\", \"6:30AM–6PM\"]]', 'gmap_id': 'gmap_41'}, {'name': 'Nova Fabrics', 'hours': '[[\"Thursday\", \"9AM–5PM\"], [\"Friday\", \"9AM–5PM\"], [\"Saturday\", \"Closed\"], [\"Sunday\", \"Closed\"], [\"Monday\", \"9AM–5PM\"], ["
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id ORDER BY avg_rating DESC LIMIT 5",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'gmap_id': 'gmap_9', 'avg_rating': 5.0}, {'gmap_id': 'gmap_8', 'avg_rating': 5.0}, {'gmap_id': 'gmap_77', 'avg_rating': 5.0}, {'gmap_id': 'gmap_76', 'avg_rating': 5.0}, {'gmap_id': 'gmap_73', 'avg_rating': 5.0}]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_9', 'gmap_8', 'gmap_77', 'gmap_76', 'gmap_73')",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'name': 'TACOS LA CABANA', 'hours': '[[\"Thursday\", \"Closed\"], [\"Friday\", \"5–11PM\"], [\"Saturday\", \"5–11PM\"], [\"Sunday\", \"5–11PM\"], [\"Monday\", \"5–11PM\"], [\"Tuesday\", \"Closed\"], [\"Wednesday\", \"Closed\"]]', 'gmap_id': 'gmap_8'}, {'name': 'Mariscos el poblano', 'hours': '[[\"Thursday\", \"Open 24 hours\"], [\"Friday\", \"8AM–3:30PM\"], [\"Saturday\", \"8AM–3:30PM\"], [\"Sunday\", \"8AM–3:30PM\"], [\"Monday\", \"9AM–3:30"
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review GROUP BY gmap_id ORDER BY avg_rating DESC LIMIT 10",
+              "db_name": "review_database"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'gmap_id': 'gmap_9', 'avg_rating': 5.0}, {'gmap_id': 'gmap_8', 'avg_rating': 5.0}, {'gmap_id': 'gmap_77', 'avg_rating': 5.0}, {'gmap_id': 'gmap_76', 'avg_rating': 5.0}, {'gmap_id': 'gmap_73', 'avg_rating': 5.0}, {'gmap_id': 'gmap_56', 'avg_rating': 5.0}, {'gmap_id': 'gmap_51', 'avg_rating': 5.0}, {'gmap_id': 'gmap_50', 'avg_rating': 5.0}, {'gmap_id': 'gmap_5', 'avg_rating': 5.0}, {'gmap_id': 'gm"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_9', 'gmap_8', 'gmap_77', 'gmap_76', 'gmap_73', 'gmap_56', 'gmap_51', 'gmap_50', 'gmap_5', 'gmap_37')",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 10,
+            "preview": "[{'name': 'HDR', 'hours': '[[\"Thursday\", \"8AM–5PM\"], [\"Friday\", \"8AM–5PM\"], [\"Saturday\", \"Closed\"], [\"Sunday\", \"Closed\"], [\"Monday\", \"8AM–5PM\"], [\"Tuesday\", \"8AM–5PM\"], [\"Wednesday\", \"8AM–5PM\"]]', 'gmap_id': 'gmap_50'}, {'name': 'J & T Plumbing Pros', 'hours': '[[\"Thursday\", \"7AM–5PM\"], [\"Friday\", \"7AM–5PM\"], [\"Saturday\", \"Closed\"], [\"Sunday\", \"Closed\"], [\"Monday\", \"7AM–5PM\"], [\"Tuesday\", \"7AM–5PM"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_9', 'gmap_8', 'gmap_51', 'gmap_5', 'gmap_36')",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'name': 'Taba Rug Gallery', 'hours': '[[\"Thursday\", \"10AM–7PM\"], [\"Friday\", \"10AM–7PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"10AM–7PM\"], [\"Tuesday\", \"10AM–7PM\"], [\"Wednesday\", \"10AM–7PM\"]]', 'gmap_id': 'gmap_51'}, {'name': 'Beauty Divine Artistry', 'hours': '[[\"Thursday\", \"9AM–8PM\"], [\"Friday\", \"9AM–8PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"9A"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_9', 'gmap_8', 'gmap_51', 'gmap_36', 'gmap_12')"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'name': 'Taba Rug Gallery', 'hours': '[[\"Thursday\", \"10AM–7PM\"], [\"Friday\", \"10AM–7PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"10AM–7PM\"], [\"Tuesday\", \"10AM–7PM\"], [\"Wednesday\", \"10AM–7PM\"]]', 'gmap_id': 'gmap_51'}, {'name': 'Beauty Divine Artistry', 'hours': '[[\"Thursday\", \"9AM–8PM\"], [\"Friday\", \"9AM–8PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"9A"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_11', 'gmap_9', 'gmap_8', 'gmap_51', 'gmap_36')"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'name': 'Taba Rug Gallery', 'hours': '[[\"Thursday\", \"10AM–7PM\"], [\"Friday\", \"10AM–7PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"10AM–7PM\"], [\"Tuesday\", \"10AM–7PM\"], [\"Wednesday\", \"10AM–7PM\"]]', 'gmap_id': 'gmap_51'}, {'name': 'Beauty Divine Artistry', 'hours': '[[\"Thursday\", \"9AM–8PM\"], [\"Friday\", \"9AM–8PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"9A"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_11', 'gmap_9', 'gmap_8', 'gmap_51', 'gmap_36', 'gmap_28')"
+            },
+            "success": true,
+            "rows": 6,
+            "preview": "[{'name': 'Good Massage', 'hours': '[[\"Thursday\", \"9:30AM–9:30PM\"], [\"Friday\", \"9:30AM–9:30PM\"], [\"Saturday\", \"9:30AM–9:30PM\"], [\"Sunday\", \"9:30AM–9:30PM\"], [\"Monday\", \"9:30AM–9:30PM\"], [\"Tuesday\", \"9:30AM–9:30PM\"], [\"Wednesday\", \"9:30AM–9:30PM\"]]', 'gmap_id': 'gmap_28'}, {'name': 'Taba Rug Gallery', 'hours': '[[\"Thursday\", \"10AM–7PM\"], [\"Friday\", \"10AM–7PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", "
+          },
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "review_database",
+              "sql": "SELECT gmap_id, AVG(rating) AS avg_rating FROM review WHERE gmap_id IN ('gmap_11', 'gmap_9', 'gmap_8', 'gmap_51', 'gmap_36', 'gmap_28') GROUP BY gmap_id ORDER BY avg_rating DESC"
+            },
+            "success": true,
+            "rows": 6,
+            "preview": "[{'gmap_id': 'gmap_9', 'avg_rating': 5.0}, {'gmap_id': 'gmap_8', 'avg_rating': 5.0}, {'gmap_id': 'gmap_51', 'avg_rating': 5.0}, {'gmap_id': 'gmap_36', 'avg_rating': 5.0}, {'gmap_id': 'gmap_11', 'avg_rating': 4.9603174603174605}, {'gmap_id': 'gmap_28', 'avg_rating': 3.875}]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "db_name": "business_database",
+              "sql": "SELECT name, hours, gmap_id FROM business_description WHERE gmap_id IN ('gmap_11', 'gmap_9', 'gmap_8', 'gmap_51', 'gmap_36')"
+            },
+            "success": true,
+            "rows": 5,
+            "preview": "[{'name': 'Taba Rug Gallery', 'hours': '[[\"Thursday\", \"10AM–7PM\"], [\"Friday\", \"10AM–7PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"10AM–7PM\"], [\"Tuesday\", \"10AM–7PM\"], [\"Wednesday\", \"10AM–7PM\"]]', 'gmap_id': 'gmap_51'}, {'name': 'Beauty Divine Artistry', 'hours': '[[\"Thursday\", \"9AM–8PM\"], [\"Friday\", \"9AM–8PM\"], [\"Saturday\", \"10AM–7PM\"], [\"Sunday\", \"11AM–6PM\"], [\"Monday\", \"9A"
+          }
+        ],
+        "passed": false,
+        "execution_time_sec": 39.438,
+        "validation_message": "Missing business name: White Barn Candle Co",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query4",
+        "question": "Which 3 businesses received the highest number of reviews with ratings of 4.5 or higher during 2019? Include their names and the count of high-rating reviews.",
+        "agent_answer": "Encino Dermatology & Laser: Alex Khadavi MD, 19; The Boochyard @ Local Roots, 17; Aurora Massage, 14",
+        "query_trace": [
+          {
+            "tool": "query_sqlite",
+            "args": {
+              "db_name": "review_database",
+              "sql": "SELECT gmap_id, COUNT(rating) AS review_count FROM review WHERE rating >= 4.5 AND time LIKE \"%2019%\" GROUP BY gmap_id ORDER BY review_count DESC LIMIT 3"
+            },
+            "success": true,
+            "rows": 3,
+            "preview": "[{'gmap_id': 'gmap_35', 'review_count': 19}, {'gmap_id': 'gmap_53', 'review_count': 17}, {'gmap_id': 'gmap_20', 'review_count': 14}]"
+          },
+          {
+            "tool": "query_postgres",
+            "args": {
+              "sql": "SELECT name, gmap_id FROM business_description WHERE gmap_id IN ('gmap_35', 'gmap_53', 'gmap_20')",
+              "db_name": "business_database"
+            },
+            "success": true,
+            "rows": 3,
+            "preview": "[{'name': 'Aurora Massage', 'gmap_id': 'gmap_20'}, {'name': 'The Boochyard @ Local Roots', 'gmap_id': 'gmap_53'}, {'name': 'Encino Dermatology & Laser: Alex Khadavi MD', 'gmap_id': 'gmap_35'}]"
+          }
+        ],
+        "passed": true,
+        "execution_time_sec": 5.952,
+        "validation_message": "All names and numbers matched.",
+        "error": null,
+        "error_type": null
+      }
+    ],
+    "methodology_notes": {
+      "harness_script": "eval/harness.py",
+      "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
+      "timeout_sec": 240.0,
+      "environment_errors": 0,
+      "timeout_errors": 0,
+      "agent_errors": 0,
+      "strict_no_leakage": "1",
+      "oracle_forge_llm_provider": "openrouter",
+      "openai_model": "gpt-4.1",
+      "openrouter_model": "google/gemini-2.0-flash-001",
+      "mcp_url_passed_to_child": true
+    }
+  },
+  {
+    "run_id": "2026-04-18-004",
+    "dataset": "GITHUB_REPOS",
+    "date": "2026-04-18",
+    "total_queries": 4,
+    "passed": 0,
+    "failed": 4,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "Among repositories that do not use Python, what proportion of their README.md files include copyright information?",
+        "agent_answer": "",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 18.477,
+        "validation_message": null,
+        "error": "RuntimeError(\"LLM API billing error (402): Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 4096 tokens, but can only afford 2213. To increase, visit https://openrouter.ai/se\")",
+        "error_type": "agent"
+      },
+      {
+        "query_id": "query2",
+        "question": "Identify the repository in Swift language that contains the most frequently copied non-binary Swift file in the dataset, ensuring that each file is uniquely determined by its ID.",
+        "agent_answer": "",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.433,
+        "validation_message": null,
+        "error": "RuntimeError(\"LLM API billing error (402): Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 4096 tokens, but can only afford 2213. To increase, visit https://openrouter.ai/se\")",
+        "error_type": "agent"
+      },
+      {
+        "query_id": "query3",
+        "question": "How many commit messages are found in repositories that use the Shell programming language and are licensed under Apache-2.0, where each message exists, is shorter than 1,000 characters, and does not begin with 'merge', 'update', or 'test'?",
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.46,
+        "validation_message": "Number 1077 not found in LLM output.",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query4",
+        "question": "List the repository names for the top five GitHub repositories whose main language is not Python, ordered by the highest number of commits.",
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 1.551,
+        "validation_message": "Could not match: 'apple/swift'",
+        "error": null,
+        "error_type": null
+      }
+    ],
+    "methodology_notes": {
+      "harness_script": "eval/harness.py",
+      "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
+      "timeout_sec": 300,
+      "environment_errors": 0,
+      "timeout_errors": 0,
+      "agent_errors": 2,
+      "strict_no_leakage": "1",
+      "oracle_forge_llm_provider": "openrouter",
+      "openai_model": "gpt-4.1",
+      "openrouter_model": "google/gemini-2.0-flash-001",
+      "mcp_url_passed_to_child": true
+    }
+  }
+]

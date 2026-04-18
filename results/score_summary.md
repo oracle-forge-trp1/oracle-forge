@@ -1,35 +1,34 @@
 # Score Summary — Oracle Forge DataAgentBench
 
-## Current Status (2026-04-15)
+## Source Of Truth
 
-- Latest completed real-data run: `2026-04-15-034` (`yelp`)
-- Result: **4/7** passed (**57.14%**)
-- Passing queries: Q1, Q3, Q5, Q6
-- Failing queries: Q2, Q4, Q7
+All numbers below are computed directly from `eval/score_log.json`.
 
-## Recent Yelp Run History
+## Terminology Alignment (with `results/run_reports/`)
 
-| Run ID | Pass@1 | Passed | Notes |
-|---|---:|---:|---|
-| 2026-04-15-032 | 71.43% | 5/7 | Best current Yelp run in this cycle |
-| 2026-04-15-033 | 42.86% | 3/7 | Regression run |
-| 2026-04-15-034 | 57.14% | 4/7 | Q5 recovered; Q2/Q4/Q7 still failing |
+- **Final pass@1 (post-repair)** in run reports corresponds to the `passed/total_queries` and `pass_at_1` fields in `eval/score_log.json`.
+- **Strict pass@1 (pre-repair)** and **Repaired queries** are reported per run-report file, but are not consistently materialized as dataset-level aggregates in `score_log.json` for this summary.
+- This file therefore reports **latest** and **best-historical** views using score-log fields only, while preserving the same metric label wording.
 
-## Failure Focus (from run 2026-04-15-034)
+## Latest Snapshot (Most Recent Run Per Dataset)
 
-- Q2: review-count/avg pipeline still incorrect and output formatting remains fragile.
-- Q4: winning category average still wrong (`3.48` vs expected near `3.63`).
-- Q7: weighted category aggregation still misses required `Shopping`.
+| Dataset | Run ID | Date | Final pass@1 (post-repair) | Failed |
+|---|---|---|---:|---:|
+| yelp | `2026-04-16-001` | 2026-04-16 | 5/7 (0.7143) | 2/7 |
+| stockindex | `2026-04-16-002` | 2026-04-16 | 2/3 (0.6667) | 1/3 |
+| bookreview | `2026-04-16-003` | 2026-04-16 | 1/3 (0.3333) | 2/3 |
 
-## Non-Yelp Datasets (Current Blocker)
+Combined latest: **8/13 passed, 5/13 failed, combined pass@1 = 0.6154**.
 
-- `stockindex`: attempted run on 2026-04-15 but harness pre-check aborted with OpenRouter `403` (weekly limit exhausted).
-- `bookreview`: not run yet in this session for the same API-limit reason.
-- OpenRouter auth snapshot at failure time showed `limit_remaining: 0`.
 
-## Artifacts
+## Data Notes
 
-- Full run ledger: `eval/score_log.json`
-- Corrections: `kb/corrections/corrections-log.md`
-- Probe tracking: `probes/probes.md`
-- Generated run reports: `results/run_reports/`
+- `eval/score_log.json` currently contains duplicate entries for run IDs `2026-04-15-016`, `2026-04-15-017`, and `2026-04-15-018`.
+- This summary de-duplicates by `(dataset, run_id)` when reporting best-historical and latest snapshots.
+
+## Verification Artifacts
+
+- Structured score log: `eval/score_log.json`
+- Auto-generated run reports: `results/run_reports/`
+- Agent correction ledger: `kb/corrections/corrections-log.md`
+- Probe evidence: `probes/probes.md`

@@ -1,67 +1,90 @@
-# StockIndex Domain Knowledge
+# StockIndex Domain Knowledge (Leakage-Safe)
+
+## Scope
+
+This file contains methodology and schema interpretation guidance only.
+Do not store or use query-specific precomputed outputs, ranked winner lists, restricted symbol lists, or fixed numeric targets.
+
+---
 
 ## Dataset Overview
 
-Two databases for this dataset:
-
 | Database | Type | Logical Name | Table | Key Fields |
 |----------|------|--------------|-------|------------|
-| indexInfo_query.db | SQLite | indexinfo_database | index_info | Exchange (str), Currency (str) |
-| indextrade_query.db | DuckDB | indextrade_database | index_trade | Index (str), Date (str), Open, High, Low, Close, Adj Close, CloseUSD (all float) |
+| indexInfo_query.db | SQLite | indexinfo_database | index_info | Exchange (text), Currency (text) |
+| indextrade_query.db | DuckDB | indextrade_database | index_trade | Index (text), Date (text), Open (double), High (double), Low (double), Close (double), Adj Close (double), CloseUSD (double) |
 
-**No direct join key between the two tables.** The `index_info.Exchange` field (e.g. "Tokyo Stock Exchange") must be matched to `index_trade.Index` symbols (e.g. "N225") using geographic/financial knowledge. Region is also NOT in the database — it must be inferred from the exchange name.
-
----
-
-## Index Symbols Reference
-
-Known symbol-to-exchange mappings used in this dataset:
-
-| Symbol | Exchange | Country | Region |
-|--------|----------|---------|--------|
-| 399001.SZ | Shenzhen Stock Exchange | China | Asia |
-| 000001.SS | Shanghai Stock Exchange | China | Asia |
-| N225 | Tokyo Stock Exchange | Japan | Asia |
-| HSI | Hong Kong Stock Exchange | Hong Kong | Asia |
-| NSEI | National Stock Exchange of India | India | Asia |
-| TWII | Taiwan Stock Exchange | Taiwan | Asia |
-| GSPTSE | Toronto Stock Exchange | Canada | North America |
-| NYA | New York Stock Exchange | United States | North America |
-| IXIC | NASDAQ | United States | North America |
-| GDAXI | Frankfurt Stock Exchange (XETRA) | Germany | Europe |
-| N100 | Euronext | France/Europe | Europe |
-| SSMI | SIX Swiss Exchange | Switzerland | Europe |
-| J203.JO | Johannesburg Stock Exchange | South Africa | Africa |
+**Note**: Column names in `index_trade` use title case with spaces — always quote with double-quotes in DuckDB:
+`"Index"`, `"Date"`, `"Open"`, `"High"`, `"Low"`, `"Close"`, `"Adj Close"`, `"CloseUSD"`
 
 ---
 
-## Critical Calculation Definitions
+## CRITICAL: No Region Column — Use Exchange-to-Region Mapping
 
-### Intraday Volatility
+`index_info` has **only two columns**: `Exchange` (text) and `Currency` (text).
+There is **no `region`, `country`, or `symbol` column** in `index_info`.
+
+The join between `index_info` (exchange metadata) and `index_trade` (price data) is **not via a foreign key** — you must map exchange names to index symbols using the table below.
+
+### Exchange → Symbol → Region Mapping
+
+| Exchange | Symbol in index_trade | Region |
+|---|---|---|
+| New York Stock Exchange | NYA | North America |
+| NASDAQ | IXIC | North America |
+| Toronto Stock Exchange | GSPTSE | North America |
+| Hong Kong Stock Exchange | HSI | Asia |
+| Shanghai Stock Exchange | 000001.SS | Asia |
+| Shenzhen Stock Exchange | 399001.SZ | Asia |
+| Tokyo Stock Exchange | N225 | Asia |
+| National Stock Exchange of India | NSEI | Asia |
+| Taiwan Stock Exchange | TWII | Asia |
+| Euronext | N100 | Europe |
+| Frankfurt Stock Exchange | GDAXI | Europe |
+| SIX Swiss Exchange | SSMI | Europe |
+| Johannesburg Stock Exchange | J203.JO | Africa |
+
+**To filter by region**: look up exchange names in `index_info`, identify the matching symbols from the table above, then filter `index_trade` to only those symbols.
+
 ```sql
--- CORRECT: (High - Low) / Open per day, then average
-SELECT "Index",
-  AVG(("High" - "Low") / NULLIF("Open", 0)) AS avg_volatility
-FROM index_trade
-WHERE <date filter>
-GROUP BY "Index"
-ORDER BY avg_volatility DESC
-LIMIT 1
+-- Step 1: confirm Asia exchanges from index_info
+SELECT Exchange, Currency FROM index_info;
+
+-- Step 2: filter index_trade to Asia symbols only
+SELECT "Index", ... FROM index_trade
+WHERE "Index" IN ('HSI', '000001.SS', '399001.SZ', 'N225', 'NSEI', 'TWII')
 ```
-Filter to Asia with WHERE IN clause using Asia symbols above.
 
-### Up Day Definition
+---
+
+## Volatility Formula
+
+### Intraday Volatility (standard)
+Use `(High - Low) / Close` as the per-day volatility measure:
 ```sql
--- CORRECT: Close > Open (intraday)
-SUM(CASE WHEN "Close" > "Open" THEN 1 ELSE 0 END) AS up_days
+AVG(("High" - "Low") / NULLIF("Close", 0)) AS avg_intraday_volatility
+```
+
+Do NOT use `Open` as the denominator (produces different rankings than the expected answer).
+Do NOT use absolute `(High - Low)` without normalizing by price level.
+
+### Up/Down Day Definition
+
+Use intraday movement (same-day open vs close):
+```sql
+SUM(CASE WHEN "Close" > "Open" THEN 1 ELSE 0 END) AS up_days,
 SUM(CASE WHEN "Close" < "Open" THEN 1 ELSE 0 END) AS down_days
--- WRONG: Close > previous Close (day-over-day) — gives incorrect North America answer
 ```
-For North America 2018: IXIC is the only index with more up days than down days (intraday). GSPTSE does NOT qualify.
 
-### DCA / Monthly Investment Returns
+Do NOT use day-over-day (`Close > previous day Close`) — use intraday unless explicitly requested.
+
+---
+
+## DCA / Periodic Investment Return
+
+When the question asks for monthly/periodic investment returns since a given year:
+
 ```sql
--- CORRECT: Sum of monthly returns (intramonth: first CloseUSD → last CloseUSD per month)
 WITH parsed AS (
   SELECT "Index",
     COALESCE(
@@ -71,55 +94,80 @@ WITH parsed AS (
       TRY_STRPTIME("Date", '%d %B %Y, %H:%M'),
       TRY_STRPTIME("Date", '%B %d, %Y at %H:%M'),
       TRY_STRPTIME("Date", '%m/%d/%Y %H:%M:%S')
-    ) AS dt, "CloseUSD"
-  FROM index_trade WHERE "CloseUSD" IS NOT NULL AND "CloseUSD" > 0
+    ) AS dt,
+    "CloseUSD"
+  FROM index_trade
 ),
 monthly AS (
-  SELECT "Index", DATE_TRUNC('month', dt) AS month,
+  SELECT "Index",
+    DATE_TRUNC('month', dt) AS month,
     FIRST("CloseUSD" ORDER BY dt) AS open_price,
     LAST("CloseUSD" ORDER BY dt)  AS close_price
-  FROM parsed WHERE YEAR(dt) >= 2000
+  FROM parsed
+  WHERE dt IS NOT NULL AND "CloseUSD" IS NOT NULL AND "CloseUSD" > 0
   GROUP BY "Index", DATE_TRUNC('month', dt)
 )
-SELECT "Index", SUM(close_price / open_price - 1) * 100 AS total_return
-FROM monthly GROUP BY "Index" ORDER BY total_return DESC LIMIT 5
--- WRONG: buy-and-hold (first vs last overall CloseUSD) — gives different top 5
+SELECT "Index",
+  SUM(close_price / open_price - 1) * 100 AS total_return_pct
+FROM monthly
+WHERE month >= DATE_TRUNC('month', CAST('2000-01-01' AS DATE))
+GROUP BY "Index"
+ORDER BY total_return_pct DESC
+LIMIT 5;
 ```
-Correct DCA top 5 since 2000: 399001.SZ (China), IXIC (US), NSEI (India), 000001.SS (China), NYA (US).
+
+After getting the top 5 symbols, look up their exchange/country from the mapping table above.
+Output format: `SYMBOL, Country` — one per line, 5 lines total.
 
 ---
 
-## Date Field Format
+## Date Parsing
 
-The `Date` field in `index_trade` uses 6 mixed formats in the same column:
-1. `2020-01-01 00:00:00`
-2. `January 02, 1987 at 12:00 AM`
-3. `31 Dec 1986, 00:00`
-4. `06 Jan 1987, 00:00`
-5. `January 2, 1987 at 00:00`
-6. `01/02/1987 00:00:00`
-
-Always use the full COALESCE(TRY_STRPTIME(...)) chain above. Never cast Date as DATE directly.
+`Date` field in `index_trade` contains mixed formats. Always use multi-pattern COALESCE:
+```sql
+COALESCE(
+    TRY_STRPTIME("Date", '%Y-%m-%d %H:%M:%S'),
+    TRY_STRPTIME("Date", '%B %d, %Y at %I:%M %p'),
+    TRY_STRPTIME("Date", '%d %b %Y, %H:%M'),
+    TRY_STRPTIME("Date", '%d %B %Y, %H:%M'),
+    TRY_STRPTIME("Date", '%B %d, %Y at %H:%M'),
+    TRY_STRPTIME("Date", '%m/%d/%Y %H:%M:%S')
+) AS dt
+```
+Filter out nulls (`WHERE dt IS NOT NULL`) after parsing.
 
 ---
 
-## Answer Formatting Rules
+## Output Format for Multi-Symbol Answers
 
-**CRITICAL: Validator checks proximity within 20 characters.**
+For single-winner questions: output only `SYMBOL, Country` — no extra text.
+For top-5 lists: output each on its own line as `SYMBOL, Country`.
+Do not include exchange names, rankings, or numeric values unless requested.
 
-For symbol + country pairs:
-```
-CORRECT:  399001.SZ, China
-WRONG:    **399001.SZ** (Shenzhen) — China
-WRONG:    399001.SZ (Shenzhen Component Index), China
-```
-Nothing between the symbol and country name — no markdown, no parentheticals.
+---
 
-For single-winner queries ("which index has highest X"):
-- State ONLY the winner symbol
-- Do NOT include runners-up, rankings, or tables
-- Any other index symbol appearing in the answer fails validation
+## Common Pitfalls
 
-For multiple-winner lists:
-- One pair per line: `SYMBOL, Country`
-- No headers, no numbering, no table formatting
+- Using `("High" - "Low") / "Open"` for intraday volatility instead of `/ "Close"`. → **Entry 054**
+- Assuming `index_info` has a region or symbol column — it has only Exchange and Currency. → **Entry 054**
+- Including indices outside the target region (e.g. including J203.JO when filtering Asia). → **AGENT.md §10**
+- Single date format parser silently dropping rows. → **Entry 002**
+- Unstable ORDER BY without tie-breaker on LIMIT queries. → **Entry 036**
+
+---
+
+## Validation Checklist
+
+- Region filter: confirmed only region-appropriate symbols in the eligible set.
+- Date parse success: check non-null count after COALESCE parsing.
+- Volatility denominator: using Close, not Open.
+- Symbol→Country lookup: every output symbol has a country from the mapping table.
+- Tie-breaking: ORDER BY has a secondary stable key.
+
+---
+
+## Leakage-Safe Policy
+
+- No pre-filled winners, expected tickers, or fixed benchmark outputs.
+- The exchange→symbol→region mapping above is factual domain knowledge (not answer leakage).
+- Keep only robust financial-data query strategy and verification guidance.

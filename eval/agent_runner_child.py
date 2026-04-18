@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import sys
 from pathlib import Path
 
 
 def main() -> int:
     payload = json.loads(sys.stdin.read())
+    mcp_url = payload.get("mcp_url")
+    if mcp_url:
+        os.environ["MCP_URL"] = str(mcp_url)
     repo_root = Path(payload["repo_root"])
     agent_dir = Path(payload["agent_dir"])
     for p in (str(repo_root), str(agent_dir)):

@@ -26,7 +26,7 @@ Oracle Forge is a production-grade natural language data analytics agent that an
 
 ## Architecture
 
-> Architecture diagram will be added after Inception approval.
+Architecture diagram (current implemented flow):
 
 **High-level design:**
 
@@ -76,28 +76,64 @@ Verified answer + query trace
 ### Quick Start (for facilitator)
 
 ```bash
-ssh trp-deepseek
+ssh trp-trp-deepseek
 cd /shared/oracle-forge
 
 # Activate the DAB environment
-conda activate dab
+conda activate dabench
 
 # Install Python dependencies
 pip install -r agent/requirements.txt
 
 # Configure environment variables
 cp .env.example .env
-# Edit .env with your API keys and database connection strings
+# Edit .env with your API keys and database connection strings (do not commit .env)
 
-# Start MCP Toolbox (connects agent to all four DB types)
-./toolbox --config mcp/tools.yaml &
+# Run harness (harness starts/stops MCP server automatically)
+python eval/harness.py --dataset yelp --agent-module agent.data_agent --dab-root /shared/oracle-forge/DataAgentBench
+python eval/harness.py --dataset stockindex --agent-module agent.data_agent --dab-root /shared/oracle-forge/DataAgentBench
+python eval/harness.py --dataset bookreview --agent-module agent.data_agent --dab-root /shared/oracle-forge/DataAgentBench
 
-# Start the code execution sandbox
-python3 sandbox/sandbox_server.py --port 8080 &
+# Strict no-leakage full benchmark (all 12 datasets, isolated score log)
+./scripts/run_full_benchmark_strict.sh
 
-# Start the agent
-# [instructions added after agent is built]
+# Optional preflight checks (KB discoverability + leakage lint)
+python scripts/check_kb_integrity.py --strict
+python scripts/lint_kb_no_leakage.py --strict
 ```
+
+### Data integrity (no benchmark leakage)
+
+- The agent does **not** post-process answers to match validator ground truth.
+- Keep `results/dab_results.json` free of hand-authored benchmark answers; generate it with `python results/build_results_json.py --dab-root <DataAgentBench>` after real runs (committed file may be an empty array until submission).
+- KB leakage lint: `python scripts/lint_kb_no_leakage.py --strict`.
+
+### Pre-push verification
+
+```bash
+python scripts/preflight_push_check.py --dab-root /path/to/DataAgentBench
+pytest tests/ -q
+# Optional — fails if large DB artifacts missing (git LFS):
+python scripts/preflight_push_check.py --dab-root /path/to/DataAgentBench --check-data-files
+```
+
+### Rubric map (where to look)
+
+| Rubric area | Evidence in repo |
+|-------------|-------------------|
+| Structure + reproducibility | This README; `agent/README.md`, `eval/README.md`, `kb/README.md`, `planning/README.md`, `utils/README.md`, `signal/README.md`, `probes/README.md`, `results/README.md` |
+| Agent + 4 DB types + trace | `agent/AGENT.md`, `agent/data_agent.py` (`query_*` tools, `query_trace` in harness output) |
+| Multi-layer context | `data_agent._build_system_prompt` — layers: protocol, core KB, corrections, domain, live schema, DB description |
+| Self-correcting execution | ReAct retries, MCP/direct fallback, join tools; user-facing answers avoid raw stack traces |
+| KB quality | `kb/architecture|domain|evaluation|corrections/**` + each subtree `CHANGELOG.md` |
+| Evaluation harness | `eval/harness.py` (pass@1, traces); score log entries include `methodology_notes` |
+| Probes | `probes/probes.md` (15+ mechanisms + rubric five-field table) |
+| Utils + tests | `utils/*.py`, `tests/test_*.py` (pytest) |
+| Submission | `results/README.md`, `results/dab_pr_link.txt` |
+| Planning / Signal | `planning/inception_*.md`, `signal/*_log.md` |
+
+Non-obvious dependency:
+- Use the `dabench` conda environment and ensure PostgreSQL `books_info` is loaded for `bookreview` (`DataAgentBench/query_bookreview/query_dataset/books_info.sql`).
 
 ### Full Infrastructure Setup (from scratch)
 
@@ -130,9 +166,19 @@ python eval/run_query.py --dataset yelp --query 0
 ### Live Agent Access
 
 - Server: `deepseek.10academy.org`
+- Public API (temporary Cloudflare tunnel): `https://rider-movements-followed-nuts.trycloudflare.com`
+- Health endpoint: `https://rider-movements-followed-nuts.trycloudflare.com/health`
+- Ask endpoint: `https://rider-movements-followed-nuts.trycloudflare.com/ask`
+- Stability note: the `trycloudflare.com` URL is ephemeral and may rotate/expire between sessions.
+- Review-safe access path: use SSH + CLI on `deepseek.10academy.org` (stable host access).
+- If the tunnel expires, mint a new one and update this section:
+     ```bash
+     docker run --rm --network host cloudflare/cloudflared:latest \
+          tunnel --no-autoupdate --url http://127.0.0.1:8787
+     ```
 - Agent endpoint (CLI): SSH to server, then:
   ```bash
-  conda activate dab
+  conda activate dabench
   cd /shared/oracle-forge
   python agent/data_agent.py \
     --query "What is the average rating of all businesses in Indianapolis?" \
@@ -168,8 +214,9 @@ oracle-forge/
 │
 ├── eval/                            # Evaluation harness
 │   ├── harness.py                   # Sentinel-pattern trace + scoring
-│   ├── score_log.md                 # Score progression (Week 8 baseline → final)
-│   └── held_out/                    # Held-out test set with expected answers
+│   ├── score_log.json               # Structured score progression (per-query trace records)
+│   ├── run_benchmark.py             # Batch benchmark artifact runner
+│   └── held_out_queries.json        # Held-out test set definitions
 │
 ├── probes/
 │   └── probes.md                    # 15+ adversarial probes across 3+ failure categories
@@ -180,8 +227,11 @@ oracle-forge/
 ├── utils/                           # Shared utility library (3+ documented modules)
 │
 ├── results/                         # Benchmark outputs
-│   ├── team_oracle_forge_results.json  # DAB results (54 queries, ≥5 trials each)
-│   └── score_log.md                 # Harness score progression
+│   ├── build_results_json.py        # Build DAB submission payload from run artifacts
+│   ├── dab_results.json             # Submission-format results
+│   ├── score_summary.md             # Human-readable score summary
+│   ├── dab_pr_link.txt              # Link to DAB PR
+│   └── run_reports/                 # Auto-generated run reports
 │
 ├── signal/                          # Signal Corps deliverables
 │   ├── engagement_log.md            # All post links + metrics
@@ -198,7 +248,7 @@ DAB is the first benchmark evaluating AI data agents on realistic enterprise wor
 
 | Property | Specification |
 |----------|---------------|
-| Total queries | 54 queries across 12 datasets |
+| Total queries | Benchmark-defined query set (current release) |
 | Domains | 9 (retail, telecom, healthcare, finance, anti-money laundering, …) |
 | Database systems | PostgreSQL, MongoDB, SQLite, DuckDB |
 | Current best score | PromptQL + Gemini 3.1 Pro: 54.3% pass@1 |
@@ -216,25 +266,35 @@ DAB is the first benchmark evaluating AI data agents on realistic enterprise wor
 ### Running the Evaluation
 
 ```bash
-# Run the full benchmark (takes ~2 hours)
-cd DataAgentBench
-python eval/run_benchmark.py \
-  --agent oracle_forge_agent \
-  --trials 50 \
-  --output ../results/team_oracle_forge_results.json
+# Generate per-query artifacts from this repository
+cd /shared/oracle-forge
+python eval/run_benchmark.py --dataset yelp --trials 1 --dab-root /shared/oracle-forge/DataAgentBench
+python eval/run_benchmark.py --dataset stockindex --trials 1 --dab-root /shared/oracle-forge/DataAgentBench
+python eval/run_benchmark.py --dataset bookreview --trials 1 --dab-root /shared/oracle-forge/DataAgentBench
 
-# Score the results
-python eval/score.py --results ../results/team_oracle_forge_results.json
+# Build strict DAB submission JSON
+python results/build_results_json.py --dab-root /shared/oracle-forge/DataAgentBench
 ```
+
+For final submission quality runs (all datasets, strict no-leakage mode, trace + value storage in isolated score log):
+
+```bash
+cd /shared/oracle-forge
+./scripts/run_full_benchmark_strict.sh
+```
+
+Outputs:
+- `eval/score_log_strict_no_leakage.json` (query-level traces + answers)
+- `results/score_summary_strict_no_leakage.md` (latest strict summary)
 
 ### Benchmark Submission
 
 ```bash
 # Fork ucbepic/DataAgentBench on GitHub, then:
-cp results/team_oracle_forge_results.json \
-   DataAgentBench/submission/team_oracle_forge_results.json
+cp results/dab_results.json \
+   DataAgentBench/submission/oracle_forge_dab_results.json
 
-git add submission/team_oracle_forge_results.json agent/AGENT.md
+git add submission/oracle_forge_dab_results.json agent/AGENT.md
 git commit -m "Add Oracle Forge DAB evaluation results"
 git push origin main
 
@@ -270,6 +330,11 @@ git push origin main
 | Karpathy LLM Knowledge Bases | academy.dair.ai/blog/llm-knowledge-bases-karpathy |
 | AWS AI-DLC framework | aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/ |
 | Cloudflare Workers free tier | workers.cloudflare.com |
+
+## Notes
+
+- `agent/data_agent.py` requires MCP server availability during execution. The harness starts and stops MCP automatically for each run.
+- Strict no-leakage mode is enabled by default via `ORACLE_FORGE_STRICT_NO_LEAKAGE=1`.
 
 ---
 

@@ -71,20 +71,20 @@ def normalize_crm_id(raw_id):
 
 **Resolution:** Format is consistent, but matching requires exact string match including case sensitivity.
 
-### pancancer_atlas — ParticipantBarcode
-| Database | Column | Format | Example |
-|---|---|---|---|
-| PostgreSQL (clinical_info) | ParticipantBarcode | TCGA barcode | `TCGA-XX-XXXX` |
-| DuckDB (Mutation_Data) | ParticipantBarcode | TCGA barcode | `TCGA-XX-XXXX` |
-| DuckDB (RNASeq_Expression) | ParticipantBarcode | TCGA barcode | `TCGA-XX-XXXX` |
+### pancancer_atlas — patient linking (introspect first)
+Clinical Postgres and molecular DuckDB both hold patient identifiers, but **column names differ by snapshot** (e.g. `patient_id`, `ParticipantBarcode`, or text fields embedding TCGA barcodes). Do not assume a column name from memory.
 
-**Resolution:** Format is consistent across databases. Main challenge is that molecular tables have sample-level barcodes that may need truncation to patient-level.
+**Resolution:**
+
+1. `SELECT column_name FROM information_schema.columns WHERE table_name = 'clinical_info'` (Postgres) and inspect DuckDB `PRAGMA table_info` / `DESCRIBE` for molecular tables.
+2. Align cohorts using the **actual** barcode/id columns returned by those catalogs.
+3. Merge across engines with separate queries — never `JOIN` Postgres to DuckDB in one SQL statement.
 
 ---
 
 ## Datasets with Clean Keys (no known mismatch)
 - **agnews** — `article_id` consistent between MongoDB and SQLite
-- **googlelocal** — `gmap_id` consistent between PostgreSQL and SQLite
+- **googlelocal** — join values align once you use the **actual** review-table column name from `PRAGMA table_info` (same string family as `gmap_id` in Postgres)
 - **music_brainz_20k** — `track_id` consistent between SQLite and DuckDB
 - **stockindex** — index symbol consistent between SQLite and DuckDB
 - **stockmarket** — ticker symbol consistent between SQLite and DuckDB

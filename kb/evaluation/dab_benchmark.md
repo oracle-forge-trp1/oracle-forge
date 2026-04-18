@@ -27,7 +27,7 @@ DAB is the first benchmark for evaluating AI data agents on realistic enterprise
 ## Submission Format
 Run agent on all 54 queries, collect results as JSON:
 ```json
-[{"dataset": "bookreview", "query": "1", "run": 0, "answer": "2020s"}]
+[{"dataset": "example_dataset", "query": "1", "run": 0, "answer": "computed_answer"}]
 ```
 Submit via GitHub PR to `ucbepic/DataAgentBench`.
 

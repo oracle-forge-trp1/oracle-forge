@@ -24,6 +24,8 @@ class JoinKeyResolver:
     KNOWN_PREFIXES = [
         # DAB yelp dataset
         "businessid_", "businessref_",
+        # DAB bookreview dataset
+        "bookid_", "purchaseid_",
         # Generic enterprise patterns
         "CUST-", "cust_", "C-", "CUSTOMER-",
         "ORD-", "ord_", "ORDER-",

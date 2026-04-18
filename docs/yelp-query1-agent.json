@@ -1,6 +1,6 @@
 {
   "meta": {
-    "description": "Agent response for DAB Yelp Query 1 — ground truth verification artifact",
+    "description": "Agent response for DAB Yelp Query 1 — validator verification artifact (sanitized)",
     "run_id": "2026-04-13-003",
     "query_id": "query1",
     "dataset": "yelp",
@@ -8,15 +8,15 @@
     "date": "2026-04-13"
   },
   "query": {
-    "question": "What is the average rating of all businesses located in Indianapolis, Indiana?",
-    "ground_truth": "3.547008547008547",
-    "tolerance": 0.01
+    "question": "[sanitized benchmark query]",
+    "validation_mode": "numeric-tolerance",
+    "tolerance": "configured in harness"
   },
   "agent_result": {
-    "answer": "3.55",
+    "answer": "[sanitized numeric output]",
     "passed": true,
     "execution_time_sec": 17.701,
-    "validation_message": "Found matching number: 3.55 \u2248 3.55"
+    "validation_message": "Output accepted by validator under configured tolerance"
   },
   "query_trace": [
     {
@@ -24,20 +24,20 @@
       "tool": "query_mongodb",
       "db": "businessinfo_database",
       "collection": "business",
-      "operation": "find with regex filter for Indianapolis",
-      "filter": {"description": {"$regex": "Indianapolis|IN"}},
+      "operation": "find with regex filter for target location",
+      "filter": {"description": {"$regex": "[sanitized location filter]"}},
       "result_rows": 12,
-      "note": "Agent filtered to 8 confirmed Indianapolis businesses after reviewing descriptions"
+      "note": "Agent filtered to confirmed target-location businesses after reviewing descriptions"
     },
     {
       "step": 2,
       "tool": "query_duckdb",
       "db": "user_database",
       "table": "review",
-      "operation": "Flat average of all ratings for 8 Indianapolis businesses",
+      "operation": "Flat average of all ratings for selected businesses",
       "join_key_translation": "businessid_N \u2192 businessref_N (CORRECTION 1 applied)",
       "aggregation": "flat average across all review rows (not average of per-business averages)",
-      "result": 3.547008547008547
+      "result": "[sanitized numeric result]"
     }
   ],
   "context_layers_used": {

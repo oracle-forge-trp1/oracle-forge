@@ -46,6 +46,8 @@ db.collection.aggregate([
 ## Pattern 3: DuckDB Analytical SQL
 DuckDB supports advanced analytical SQL beyond standard PostgreSQL.
 
+**Reserved names as columns:** If a table has a column literally named `FILTER` (common in mutation VCF-style data), compare with quotes: `"FILTER" = 'PASS'`.
+
 ```sql
 -- Window functions for running totals
 SELECT ticker, date,
@@ -68,6 +70,12 @@ SELECT * FROM read_csv_auto('file.csv');
 
 ## Pattern 4: PostgreSQL Queries
 Standard SQL with PostgreSQL-specific features.
+
+**Mixed-case / camelCase columns:** PostgreSQL lowercases unquoted identifiers. If a column was created as `titleFull`, `titlePart`, or `childGroups`, you **must** quote it in SQL:
+
+```sql
+SELECT symbol, "titleFull", "titlePart" FROM cpc_definition WHERE level = 4;
+```
 
 ```sql
 -- ILIKE for case-insensitive text search
@@ -180,4 +188,196 @@ WHERE date BETWEEN '2023-01-01' AND '2023-12-31'
 GROUP BY ticker;
 
 -- Avoid SELECT * on large tables
+```
+
+## Pattern 11: Deterministic Top-N Ranking
+Ranking outputs can drift across runs when ties are unresolved.
+
+```sql
+-- Prefer deterministic ordering with tie-breakers
+ORDER BY metric DESC, entity_id ASC
+```
+
+Use stable tie-breakers before LIMIT to avoid non-deterministic winners.
+
+## Pattern 12: Pagination Under Result Caps
+Tool responses are capped for context safety. Design queries to avoid silent truncation bias.
+
+```sql
+-- Prefer bounded projections and iterative windows
+SELECT id, metric
+FROM big_table
+WHERE <filters>
+ORDER BY id
+LIMIT 500 OFFSET 0;
+```
+
+When full coverage is required, iterate over pages and aggregate in application layer.
+
+## Pattern 13: Join Cardinality Audit
+Cross-DB joins should include a cardinality check before final aggregation.
+
+```
+1. Count left-side keys
+2. Count right-side keys
+3. Count matched keys after normalization
+4. If match rate is unexpectedly low, diagnose key format/type mismatch
+```
+
+This prevents silent zero/low-match failures.
+
+## Pattern 14: Runtime Health-Gated Execution
+Before expensive multi-step plans, run a quick health query per required tool/database.
+
+```
+1. Probe tool availability
+2. Execute a lightweight COUNT or LIMIT 1 query
+3. Abort early with explicit trace note on connectivity/auth failures
+```
+
+This reduces wasted iterations under MCP/API instability.
+
+## Pattern 15: Final Answer Contract Checks
+Before returning final text, enforce query-intent-specific output contracts.
+
+```
+1. Infer expected output type (single id, label, list, numeric, pair)
+2. Run format checks for that type
+3. If check fails, revise final response once before return
+```
+
+Typical checks:
+- Identifier queries: at least one ID token present
+- Single-winner queries: one entity only
+- Pair queries: required values adjacent
+- Numeric queries: one canonical numeric token
+
+## Pattern 16: Evidence-Decision Consistency Guard
+Classification and policy answers should not contradict extracted evidence.
+
+```
+if evidence_count > 0 and decision == "no_violation":
+  decision = "violation"
+```
+
+General rule: final decision must be mechanically consistent with evidence table outputs.
+
+## Pattern 17: Exhaustive List Rendering
+When validator expects complete sets/lists, avoid partial outputs.
+
+```
+1. Build full eligible set
+2. Deduplicate
+3. Deterministically sort
+4. Render all required items in compact format
+```
+
+Do not finalize from sampled intermediate rows.
+
+## Pattern 18: Precision-Then-Round Numeric Output
+Maintain precision through computation and round only at render time.
+
+```
+value = compute_full_precision()
+final = round(value, required_decimals)
+```
+
+Emit one canonical numeric value in the final answer to reduce parser ambiguity.
+
+## Pattern 19: Taxonomy-Constrained Labels
+For stage/category/class outputs, emit canonical labels only from allowed set.
+
+```
+if predicted_label not in allowed_labels:
+  predicted_label = map_to_nearest_allowed(predicted_label)
+```
+
+Avoid free-form synonyms in final output when strict validators are used.
+
+## Pattern 20: Compute/Render Date Separation
+Date parsing for computation and date wording for output should be separate steps.
+
+```
+dt = parse_any_supported_format(raw_date)
+render = format_required_token(dt)  # e.g., month-name token
+```
+
+This prevents correct computation with validator-incompatible final text.
+
+## Pattern 21: Two-stage rank-then-restrict
+Many prompts implicitly chain two objectives: (A) find the group or entity that **maximizes a count or coverage**, then (B) compute a **different statistic** for that winner only.
+
+```
+1. On the full eligible population, compute the ranking metric for each group (state, category bucket, etc.).
+2. Identify the single winning group (break ties with a stable secondary key).
+3. Restrict all data for step (B) to rows/documents belonging to that winning group only.
+4. Emit the step (B) result — do not mix in global aggregates.
+```
+
+Skipping step 3 is a common source of plausible but wrong numeric answers.
+
+## Pattern 22: Schema-first recovery from DuckDB binder/catalog errors
+When a DuckDB query fails with `Binder Error` or `Catalog Error`, stop guessing and do schema discovery.
+
+```sql
+-- Discover tables
+SHOW TABLES;
+
+-- Inspect columns (copy identifiers exactly; quote mixed-case names)
+DESCRIBE some_table;
+
+-- Alternative: list columns via information_schema
+SELECT table_name, column_name
+FROM information_schema.columns
+WHERE table_schema = 'main'
+ORDER BY table_name, ordinal_position;
+```
+
+Rules:
+- Treat “Candidate bindings” in binder errors as the authoritative list of usable columns.
+- If the table should be in SQLite but fails in DuckDB, you’re in the wrong `db_name` (engine mismatch).
+
+## Pattern 23: Exact metrics only (never extrapolate from capped previews)
+Tool outputs may be capped; never compute “approximate” answers from partial previews.
+
+```
+If validator expects an exact value:
+  - compute it with COUNT/SUM/AVG over the full eligible set, or
+  - materialize the full eligible ID set, classify all of it, then count exactly.
+Never:
+  - “sample 80 rows”, “assume representative”, “estimate from preview”.
+```
+
+## Pattern 24: Engine mismatch detection (SQLite vs DuckDB vs Postgres vs Mongo)
+Many failures are simply the right SQL sent to the wrong engine/database.
+
+Heuristic:
+- If you see `Binder Error` / `Catalog Error` → DuckDB.
+- If you see `no such table` / `near "ILIKE"` → SQLite.
+- If you see `permission denied` / `relation ... does not exist` → PostgreSQL.
+- If you see JSON parsing / pipeline operator errors → MongoDB.
+
+Correction:
+- Re-check the dataset’s DATABASE DESCRIPTION for the correct logical `db_name`.
+- Run a tiny sanity query (`SELECT 1`, `SHOW TABLES`, `LIMIT 1`) before the full query.
+
+## Pattern 25: Final output should be value-first, not explanation-first
+Many strict validator misses come from verbose narrative responses.
+
+```
+Before return_answer:
+1. Identify expected shape: scalar | token | list | pair.
+2. Keep only the final payload in output text.
+3. Remove analysis, caveats, and "based on sample" commentary.
+```
+
+If uncertainty remains, still return the best evidence-backed compact value instead of a long refusal paragraph.
+
+## Pattern 26: Exact token copy for labels/codes
+For entity names, taxonomy labels, repo paths, CPC/histology codes, and IDs, token fidelity matters.
+
+```
+1. Select winner rows via SQL/aggregation.
+2. Render output tokens by direct copy from selected row fields.
+3. Do not normalize punctuation/case/pluralization in final render.
 ```

@@ -12,6 +12,11 @@ Usage:
     conda run -n dabench python mcp/toolbox_server.py
     # Listens on http://localhost:5000/mcp (MCP JSON-RPC endpoint)
 
+Env:
+    ORACLE_FORGE_REGISTER_ONLY_DB_CONFIG — optional absolute path to one db_config.yaml.
+    When set, only that dataset is registered (avoids logical-name collisions across
+    many query_* folders). The eval harness sets this automatically.
+
 Protocol:
     POST /mcp  — MCP JSON-RPC 2.0
     GET  /     — health check (returns "🧰 Oracle Forge MCP Server 🧰")
@@ -155,6 +160,14 @@ _sqlite_connections:   dict[str, str]  = {}   # logical_name → abs_path
 _postgres_connections: dict[str, dict] = {}   # logical_name → {db_name, host, port, user, password}
 
 
+def _clear_connection_registry() -> None:
+    """Reset all logical DB registrations (used before single-dataset registration)."""
+    _mongo_connections.clear()
+    _duckdb_connections.clear()
+    _sqlite_connections.clear()
+    _postgres_connections.clear()
+
+
 def register_dataset(db_config_path: str) -> None:
     """Load a db_config.yaml and register its connections globally.
     Entries whose db_path / dump_folder / sql_file does not exist on disk are skipped
@@ -203,7 +216,36 @@ def register_dataset(db_config_path: str) -> None:
 
 
 def _auto_register() -> None:
-    """Auto-register all db_config.yaml files found under DAB_ROOT."""
+    """Populate connection registries from db_config.yaml files.
+
+    If ORACLE_FORGE_REGISTER_ONLY_DB_CONFIG is set to an absolute or repo-relative
+    path, only that file is loaded. This avoids logical-name collisions when many
+    datasets reuse the same keys (e.g. metadata_database) — otherwise the last
+    file wins and queries hit the wrong SQLite/DuckDB files.
+
+    When unset, every db_config.yaml under DATAAGENTBENCH_ROOT is registered
+    (dev convenience; duplicate keys still overwrite).
+    """
+    only = os.getenv("ORACLE_FORGE_REGISTER_ONLY_DB_CONFIG", "").strip()
+    if only:
+        cfg = Path(only)
+        if not cfg.is_absolute():
+            cfg = (REPO_ROOT / cfg).resolve()
+        else:
+            cfg = cfg.resolve()
+        if not cfg.is_file():
+            logger.error(
+                "ORACLE_FORGE_REGISTER_ONLY_DB_CONFIG is not a file: %s — no DBs registered.",
+                cfg,
+            )
+            return
+        _clear_connection_registry()
+        try:
+            register_dataset(str(cfg))
+        except Exception as exc:
+            logger.error("Could not register %s: %s", cfg, exc)
+        return
+
     for p in DAB_ROOT.rglob("db_config.yaml"):
         try:
             register_dataset(str(p))
@@ -275,6 +317,7 @@ def _exec_sqlite(args: dict) -> dict:
         conn.close()
         return {"success": True, "rows": len(rows), "data": rows}
     except Exception as exc:
+        # Include an explicit error payload so the agent can self-correct.
         return {"success": False, "error": str(exc), "rows": 0, "data": []}
 
 
@@ -295,6 +338,8 @@ def _exec_postgres(args: dict) -> dict:
         conn.close()
         return {"success": True, "rows": len(rows), "data": rows}
     except Exception as exc:
+        # Return explicit error payload (without a fake empty data array) so
+        # upstream traces and the LLM can see the true failure reason.
         return {"success": False, "error": str(exc), "rows": 0, "data": []}
 
 

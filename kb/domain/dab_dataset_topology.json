@@ -1,0 +1,188 @@
+{
+  "generated_at_utc": "2026-04-17T09:14:05Z",
+  "totals": {
+    "datasets": 12,
+    "query_folders": 54,
+    "db_type_counts": {
+      "duckdb": 9,
+      "mongo": 2,
+      "postgres": 5,
+      "sqlite": 12
+    }
+  },
+  "datasets": [
+    {
+      "dataset_key": "agnews",
+      "query_folder_count": 4,
+      "db_types": [
+        "mongo",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "articles_database",
+        "metadata_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "bookreview",
+      "query_folder_count": 3,
+      "db_types": [
+        "postgres",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "books_database",
+        "review_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "crmarenapro",
+      "query_folder_count": 13,
+      "db_types": [
+        "duckdb",
+        "postgres",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "activities",
+        "core_crm",
+        "products_orders",
+        "sales_pipeline",
+        "support",
+        "territory"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "deps_dev_v1",
+      "query_folder_count": 2,
+      "db_types": [
+        "duckdb",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "package_database",
+        "project_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "github_repos",
+      "query_folder_count": 4,
+      "db_types": [
+        "duckdb",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "artifacts_database",
+        "metadata_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "googlelocal",
+      "query_folder_count": 4,
+      "db_types": [
+        "postgres",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "business_database",
+        "review_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "music_brainz_20k",
+      "query_folder_count": 3,
+      "db_types": [
+        "duckdb",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "sales_database",
+        "tracks_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "pancancer_atlas",
+      "query_folder_count": 3,
+      "db_types": [
+        "duckdb",
+        "postgres"
+      ],
+      "db_client_logical_names": [
+        "clinical_database",
+        "molecular_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "patents",
+      "query_folder_count": 3,
+      "db_types": [
+        "postgres",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "CPCDefinition_database",
+        "publication_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "stockindex",
+      "query_folder_count": 3,
+      "db_types": [
+        "duckdb",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "indexinfo_database",
+        "indextrade_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "stockmarket",
+      "query_folder_count": 5,
+      "db_types": [
+        "duckdb",
+        "sqlite"
+      ],
+      "db_client_logical_names": [
+        "stockinfo_database",
+        "stocktrade_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    },
+    {
+      "dataset_key": "yelp",
+      "query_folder_count": 7,
+      "db_types": [
+        "duckdb",
+        "mongo"
+      ],
+      "db_client_logical_names": [
+        "businessinfo_database",
+        "user_database"
+      ],
+      "has_db_description_txt": true,
+      "has_db_description_withhint_txt": true
+    }
+  ]
+}

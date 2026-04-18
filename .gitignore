@@ -41,10 +41,12 @@ node_modules/
 
 # MCP Toolbox binary
 toolbox
-utils/tests/
 # Temp
 *.tmp
 *.log
+eval/score_log_strict_no_leakage.json
+results/*_pass_*.log
+results/*_pass*.log
 DataAgentBench/
 DataAgentBench/query_yelp
 DataAgentBench/*

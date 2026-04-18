@@ -1,3 +1,17 @@
+from utils.join_key_resolver import JoinKeyResolver
+
+
+def test_normalize_yelp_key_variants_to_same_integer():
+    resolver = JoinKeyResolver()
+    assert resolver.normalize("businessid_42", "integer") == 42
+    assert resolver.normalize("businessref_42", "integer") == 42
+
+
+def test_detect_prefixed_format():
+    resolver = JoinKeyResolver()
+    fmt = resolver.detect_format(["businessid_1", "businessid_22"])
+    assert fmt["prefix"] == "businessid_"
+
 """Tests for JoinKeyResolver utility."""
 
 import os

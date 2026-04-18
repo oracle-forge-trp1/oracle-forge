@@ -1,3 +1,39 @@
+# Utils Library
+
+Reusable utility modules shared across agent and evaluation workflows.
+
+## Modules
+
+- `utils/join_key_resolver.py`
+  - Purpose: normalize mismatched IDs across databases (e.g., `businessid_42` vs `businessref_42`) and support robust cross-db joins.
+  - Usage:
+    ```python
+    from utils.join_key_resolver import JoinKeyResolver
+    resolver = JoinKeyResolver()
+    canonical = resolver.normalize("businessid_42", target_type="integer")  # 42
+    ```
+  - Test: `tests/test_join_key_resolver.py`
+
+- `utils/multi_pass_retrieval.py`
+  - Purpose: suggest and inject targeted KB documents after failed attempts, then retry with enriched context.
+  - Usage:
+    ```python
+    from utils.multi_pass_retrieval import MultiPassRetriever
+    retriever = MultiPassRetriever(kb_root="kb")
+    doc = retriever.suggest_document("why 0 rows?", "join returned zero rows")
+    ```
+  - Test: (optional) extend `tests/` with retrieval tests when KB fixtures are added
+
+- `utils/injection_tester.py`
+  - Purpose: run KB injection tests (document + question + expected keywords), batch execution, and markdown report generation.
+  - Usage:
+    ```python
+    from utils.injection_tester import InjectionTester
+    tester = InjectionTester(provider="openrouter")
+    result = tester.test("kb/domain/join_keys.md", "What key issue occurs?", ["businessid", "businessref"])
+    ```
+  - Test: run `pytest tests/` — add dedicated injection tests when API keys available in CI
+
 # Shared Utility Library
 
 Reusable modules for the Oracle Forge data agent. Any team member can use these.
@@ -213,5 +249,5 @@ harness.export_results(results, "results/team_oracle_forge_results.json")
 ## Running Tests
 
 ```bash
-pytest utils/tests/ -v
+pytest tests/ -v
 ```
