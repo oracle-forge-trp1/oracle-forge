@@ -1071,34 +1071,6 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
     # Build system prompt: AGENT.md + corrections log + domain KB + live schema + DB description
     system_prompt = _build_system_prompt(db_config_path, db_description, connections)
 
-    # Init LLM client.
-    # Provider selection order: explicit ORACLE_FORGE_LLM_PROVIDER > key-based autodetect.
-    llm_provider = os.getenv("ORACLE_FORGE_LLM_PROVIDER", "").strip().lower()
-    has_openai = bool(os.getenv("OPENAI_API_KEY", "").strip())
-    if llm_provider in ("openrouter", "open_router", "google", "google_ai_studio", "gemini"):
-        has_openai = False
-
-    if llm_provider in ("google", "google_ai_studio", "gemini"):
-        # Google AI Studio — free-tier OpenAI-compatible endpoint
-        client = OpenAI(
-            api_key=os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", "")),
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        )
-        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-        logger.info("LLM provider: google_ai_studio")
-    elif llm_provider in ("openai", "open_ai") or (not llm_provider and has_openai):
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-        model = os.getenv("OPENAI_MODEL", "gpt-4.1")
-        logger.info("LLM provider: openai")
-    else:
-        client = OpenAI(
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            base_url="https://openrouter.ai/api/v1",
-        )
-        model = os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL)
-        logger.info("LLM provider: openrouter")
-    logger.info("Model: %s", model)
-
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user",   "content": query}
