@@ -120,6 +120,7 @@ When the final answer must name a CPC code, emit the **exact** `symbol` string f
 1. Extract candidate fields from `Patents_info` via regex (application, publication, assignee, country).
 2. Materialize extraction results as temporary structured columns.
 3. Validate extraction coverage before computing aggregates.
+4. Emit CPC/section labels and assignee/theme strings exactly as stored in source fields (preserve punctuation such as semicolons).
 
 ---
 

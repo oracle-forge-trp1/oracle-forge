@@ -135,6 +135,8 @@ Split before counting/filtering event instances.
 - **Attribute-based rankings:** For “most businesses with attribute X”, count businesses meeting X per group, find the winning group, then any follow-up average must use **only** rows/businesses in that group—not a global average of X across all groups.
 - **Category lists:** For “top categories” across businesses matching a date or other filter, explode/normalize categories from **all** matching businesses before ranking—not from a handful of top businesses by review count or stars.
 - **Review-linked metrics:** Star averages and similar measures should come from **review** rows in DuckDB joined to the relevant business keys after normalization—not from Mongo-only shortcuts when the question is about review behavior.
+- **State + numeric pair outputs:** If the question expects a state token and a metric (for example a value near `PA`/`Pennsylvania`), compute the winning state first, then compute the metric restricted to that state only, and output the pair compactly in one line.
+- **Category fidelity:** For category answers, emit exact category tokens from `business.categories` (for example keep `Breakfast & Brunch` exactly as stored).
 
 ---
 

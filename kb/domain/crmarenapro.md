@@ -121,6 +121,11 @@ FROM Opportunity
 GROUP BY OwnerId
 ```
 
+### Output contract for validator-facing CRM queries
+- Month questions: return month name token only (for example `November`), no explanation.
+- Agent/product/knowledge questions: return canonical IDs exactly as stored (`005...`, `01t...`, `ka0...` etc.) when IDs are requested.
+- Do not answer with policy narrative (`no violation`) when the prompt asks for an identifier from matched records.
+
 ---
 
 ## Common Pitfalls

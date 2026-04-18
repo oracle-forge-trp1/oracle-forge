@@ -764,6 +764,58 @@ Verification note:
 
 ---
 
+## Entry 034 — Final answer must be compact value output (no long reasoning)
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-005
+- datasets_seen: agnews, pancancer_atlas, stockmarket
+- expires_after_runs: 20
+
+Failure pattern:
+- Validator misses obvious values because the answer is wrapped in a long narrative, policy explanation, or “I cannot determine” preface.
+
+Root cause:
+- The model emits chain-of-thought style prose instead of the expected compact answer shape.
+
+Correct approach:
+- Final answer should contain only the required payload:
+  - single numeric value, or
+  - single entity/token, or
+  - compact list in requested format.
+- Remove analysis paragraphs, caveats about truncation, and methodological notes from final output.
+
+Verification note:
+- A human can parse the answer in one line and map it directly to validator target type.
+
+---
+
+## Entry 035 — Exact-token fidelity for identifiers and taxonomy labels
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-004
+- datasets_seen: patents, pancancer_atlas, github_repos, deps_dev_v1
+- expires_after_runs: 20
+
+Failure pattern:
+- Fuzzy/near-match failures for expected codes, names, histology labels, or repo paths.
+
+Root cause:
+- Output tokens are normalized, truncated, or paraphrased instead of copied verbatim from source rows.
+
+Correct approach:
+- For code/name/label outputs, emit exact source tokens:
+  - preserve punctuation (`;`, `/`, `-`, parentheses),
+  - preserve case,
+  - avoid shortening or “cleaning” technical labels.
+- If selecting top-N, compute first, then render each selected token exactly as stored.
+
+Verification note:
+- Every output token can be traced to an exact string in query results.
+
+---
+
 ## Template
 
 Metadata:

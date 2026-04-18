@@ -143,6 +143,7 @@ Do not guess columns like `ProjectName` in `project_info`; DuckDB will throw bin
 - Treating JSON-like text fields as plain strings for exact equality filters.
 - Forgetting ms→s conversion for `UpstreamPublishedAt`.
 - Aggregating project metrics without first deduplicating package-version rows.
+- Returning incomplete project/package names (token truncation) instead of exact `owner/repo` or package strings from selected rows.
 
 ---
 

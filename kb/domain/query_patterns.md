@@ -360,3 +360,24 @@ Heuristic:
 Correction:
 - Re-check the dataset’s DATABASE DESCRIPTION for the correct logical `db_name`.
 - Run a tiny sanity query (`SELECT 1`, `SHOW TABLES`, `LIMIT 1`) before the full query.
+
+## Pattern 25: Final output should be value-first, not explanation-first
+Many strict validator misses come from verbose narrative responses.
+
+```
+Before return_answer:
+1. Identify expected shape: scalar | token | list | pair.
+2. Keep only the final payload in output text.
+3. Remove analysis, caveats, and "based on sample" commentary.
+```
+
+If uncertainty remains, still return the best evidence-backed compact value instead of a long refusal paragraph.
+
+## Pattern 26: Exact token copy for labels/codes
+For entity names, taxonomy labels, repo paths, CPC/histology codes, and IDs, token fidelity matters.
+
+```
+1. Select winner rows via SQL/aggregation.
+2. Render output tokens by direct copy from selected row fields.
+3. Do not normalize punctuation/case/pluralization in final render.
+```
