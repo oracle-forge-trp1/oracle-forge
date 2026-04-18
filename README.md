@@ -315,9 +315,6 @@ git push origin main
 | AI-DLC Inception documents with team approval records | Drivers | 5% | Apr 14 |
 | Shared utility library — documented, tested, reusable | Intelligence Officers | 5% | Apr 18 |
 
-**Interim submission:** Tuesday, April 14 — 21:00 UTC (GitHub repo + PDF report)  
-**Final submission:** Saturday, April 18 — 21:00 UTC (GitHub repo + PDF + demo video)
-
 ## Key References
 
 | Resource | URL |
