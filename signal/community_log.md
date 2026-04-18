@@ -11,16 +11,21 @@
 - **Infrastructure** — Cloudflare Workers free tier confirmed, 
   signal/ directory created in repo
 
-## April 11, 2026
-- **Reddit comment** — r/MachineLearning  
-  https://www.reddit.com/r/MachineLearning/comments/1sjb0qi/comment/ofwstt5/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-  - Topic: Claude Code memory layers and tool-scoping implications for production data agents.
+## April 15, 2026
+- **Reddit reply** — r/LocalLLaMA
+  Response to routing exploration vs execution comment
+  https://www.reddit.com/r/LocalLLaMA/comments/1smbt8u/comment/ogd77gk/
 
-- **Reddit comment** — r/LocalLLaMA  
-  https://www.reddit.com/r/LocalLLaMA/comments/1sjh8fr/comment/ofwwi8n/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-  - Topic: DataAgentBench 38% ceiling and why join-key normalization is the dominant failure class.
+## April 16, 2026
+- **Joined** r/learnmachinelearning — https://reddit.com/r/learnmachinelearning
+- **Joined** r/OpenSourceAI — https://reddit.com/r/OpenSourceAI
+- **Joined** r/dataengineering — https://reddit.com/r/dataengineering
 
-## April 13, 2026
-- **X thread (technical)**  
-  https://x.com/hibet_zemzem/status/2043679905771053431?s=20
-  - Topic: multi-database routing, correction-driven reliability, and benchmark execution insights.
+## April 16, 2026
+- **Reddit reply** — r/learnmachinelearning
+  Response to trailing spaces / location format comment
+  https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/oglx94g/
+
+- **Reddit reply** — r/learnmachinelearning
+  Response to Kudra AI pre-extraction schema inference comment
+  https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogspvej/

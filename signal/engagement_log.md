@@ -45,18 +45,36 @@
   Note: Commenter mentioned routing exploration vs execution — potential intelligence for IOs
   Link: https://www.reddit.com/r/LocalLLaMA/comments/1smbt8u/comment/ogd77gk/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
 
-### Additional pasted references
-- X (formerly Twitter) Zemzem hibet (@hibet_zemzem) on X
-- @karpathy We're applying this exact pattern as the knowledge layer for a multi-database data agent running against @UCBEPICs DataAgentBench.
-- Reddit: From the MachineLearning community on Reddit
-  https://www.reddit.com/r/MachineLearning/comments/1sjb0qi/comment/ofwstt5/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-- Reddit: Life_Meringue_4343's comment on "DataAgentBench: frontier models score 38% on real enterprise data queries - failure analysis. is worth reading"
-  https://www.reddit.com/r/LocalLLaMA/comments/1sjh8fr/comment/ofwwi8n/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-- X (formerly Twitter) Zemzem hibet (@hibet_zemzem) on X
-  We're building a multi-database data agent from scratch and submitting to @UCBEPICs DataAgentBench - the first benchmark testing AI agents on real enterprise data workloads.
-- LinkedIn: TheNextGenTechInsider.com post
-  DataAgentBench Exposes 38% Failure Rate in Frontier AI Models on Enterprise Data Queries
-- Summary snippet:
-  Frontier AI models struggle badly in real-world enterprise data tasks. DataAgentBench reveals 38% failure rate for top performers like Gemini-3-Pro. The benchmark exposes critical gaps in multi-database integration, ill-formatted keys, and natural language parsing. With 85% of errors from planning or execution flaws, these AI agents are unprepared for messy, complex enterprise data environments.
-  Read more: https://lnkd.in/dmiMv-8s
-  Hashtags: #Dataagentbench #Ucberkeley #Hasura #Enterprisedata #Multidatabase
+## April 16, 2026
+- **Reddit post** — r/learnmachinelearning
+  Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/real_failure_modes_we_hit_building_a/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+  
+## April 16, 2026
+- **Reddit post** — r/OpenSourceeAI
+  Link: https://www.reddit.com/r/OpenSourceeAI/comments/1sni7zc/real_failure_modes_we_hit_building_a/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+    
+## April 16, 2026
+- **Reddit reply** — r/learnmachinelearning
+  Response to comment about trailing spaces and arbitrary location format mismatches
+  Note: Real production examples of ill-formatted join key problem — validates DAB's benchmark design
+  Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/oglx94g/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+  
+## April 16, 2026
+- **Community intelligence** — Kudra AI practitioner
+  r/learnmachinelearning reply on production failure modes Flagged to team: pre-extraction schema inference as potentially more adaptive alternative to our manual join key mapping approach
+Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogry025/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+
+## April 17, 2026
+- **Reddit reply** — r/learnmachinelearning
+  Response to Kudra AI practitioner on silent failure modes and pre-extraction schema inference
+  Note: Kudra AI building production financial doc pipelines — relevant company to follow
+  Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogspvej/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+   
+## April 17, 2026
+- **Medium article published** — Context Engineering Is Not Prompt Engineering — Here Is the Difference
+  Link: https://medium.com/@zumihibet2/context-engineering-is-not-prompt-engineering-here-is-the-difference-fd1cca2fd971
+
+- **LinkedIn post** — sharing Medium article
+  Link: https://www.linkedin.com/posts/zemzem-hibet_context-engineering-is-not-prompt-engineering-activity-7451060743824711680-wSWk?utm_source=share&utm_medium=member_desktop&rcm=ACoAACoQ5tYBk-I7qgTdzeo9LHdyyk2Fl0QNAIM
+
+

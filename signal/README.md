@@ -1,10 +1,42 @@
-# signal/
+# Signal Corps — signal/
 
-Signal Corps deliverables: external engagement evidence.
+This directory contains all Signal Corps deliverables for the Oracle Forge project, Weeks 8–9.
 
-| File | Purpose |
-|------|---------|
-| `engagement_log.md` | Chronological links: posts, threads, articles (Week 8–9). **Week 9:** add benchmark discussion thread, DAB PR announcement, and final community thread when ready. |
-| `community_log.md` | Substantive **replies** to others (Reddit/X/Discord/LinkedIn), not only outbound posts. |
+## Signal Corps Member
+Zemzem Hibet (zumi123)
 
-Rubric reminder: each Signal Corps member should have article/thread links here; verify links before submission.
+## Directory Contents
+
+### engagement_log.md
+Chronological log of all posts, threads, articles, 
+and comments published externally across both weeks. 
+Covers X, Reddit, LinkedIn, and Medium. Each entry 
+includes a direct link to the published content.
+
+### community_log.md
+Log of all communities joined, accounts followed, 
+and repositories watched. Covers GitHub, Reddit, 
+X, and LinkedIn. Includes responses to others — 
+not only outbound posts.
+
+### resource_acquisition.md
+Record of external resources acquired for the team. 
+Covers Cloudflare Workers free tier setup, GitHub 
+organization access, and Medium account creation. 
+Includes instructions for Drivers to use acquired 
+resources.
+
+## External Links
+
+### Published Articles
+- Article 1 — Context Engineering Is Not Prompt Engineering
+  https://medium.com/@zumihibet2/context-engineering-is-not-prompt-engineering-here-is-the-difference-fd1cca2fd971
+
+- Article 2 — The Silent Failure Problem
+  [paste link when published]
+
+### X Profile
+https://x.com/hibet_zemzem
+
+### LinkedIn Profile
+https://www.linkedin.com/in/zemzem-hibet
