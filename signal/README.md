@@ -33,7 +33,7 @@ resources.
   https://medium.com/@zumihibet2/context-engineering-is-not-prompt-engineering-here-is-the-difference-fd1cca2fd971
 
 - Article 2 — The Silent Failure Problem
-  [paste link when published]
+  https://medium.com/@zumihibet2/the-silent-failure-problem-how-an-empty-result-almost-fooled-our-agent-e1d89e984ce2
 
 ### X Profile
 https://x.com/hibet_zemzem
