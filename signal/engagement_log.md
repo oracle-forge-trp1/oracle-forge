@@ -62,7 +62,7 @@
 ## April 16, 2026
 - **Community intelligence** — Kudra AI practitioner
   r/learnmachinelearning reply on production failure modes Flagged to team: pre-extraction schema inference as potentially more adaptive alternative to our manual join key mapping approach
-Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogry025/?utm_[…]m=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogry025/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
 
 ## April 17, 2026
 - **Reddit reply** — r/learnmachinelearning
