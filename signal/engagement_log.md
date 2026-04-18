@@ -80,4 +80,5 @@ Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogr
 ## April 18, 2026
 - **Medium article published** — The Silent Failure Problem — How an Empty Result Almost Fooled Our Agent
   Link: https://medium.com/@zumihibet2/the-silent-failure-problem-how-an-empty-result-almost-fooled-our-agent-e1d89e984ce2
-
+- **X thread** — DAB benchmark submission
+  Link: https://x.com/hibet_zemzem/status/2045603393637343463?s=20
