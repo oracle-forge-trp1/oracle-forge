@@ -158,7 +158,7 @@ def _check_llm_api() -> Optional[str]:
 
     if llm_provider in ("openai", "open_ai") or (not llm_provider and has_openai):
         api_key = os.getenv("OPENAI_API_KEY", "")
-        model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        model = os.getenv("OPENAI_MODEL", "gpt-4.1")
         url = "https://api.openai.com/v1/chat/completions"
         if not api_key:
             return "OPENAI_API_KEY not set in environment or .env"

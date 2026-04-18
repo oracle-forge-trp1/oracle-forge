@@ -7,10 +7,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 DAB_ROOT="${DAB_ROOT:-$REPO_ROOT/DataAgentBench}"
-# Default: gpt-4.1-mini (better planning than gpt-4o-mini; still cost-conscious).
-# Stronger: MODEL=openai/gpt-4.1  (flagship GPT-4.1 for hardest DAB queries)
+# Default: gpt-4.1 (strong planning for hardest DAB queries).
+# Cost-conscious: MODEL=openai/gpt-4.1-mini
 # Cheaper baseline: MODEL=openai/gpt-4o-mini
-MODEL="${MODEL:-openai/gpt-4.1-mini}"
+MODEL="${MODEL:-openai/gpt-4.1}"
 TIMEOUT="${TIMEOUT:-240}"
 # Optional agent tuning (see agent/data_agent.py): ORACLE_FORGE_MAX_ITERATIONS, ORACLE_FORGE_TOOL_PREVIEW_ROWS
 SCORE_LOG="${SCORE_LOG:-$REPO_ROOT/eval/score_log_strict_no_leakage.json}"
@@ -24,7 +24,7 @@ export ORACLE_FORGE_LLM_PROVIDER="${ORACLE_FORGE_LLM_PROVIDER:-openai}"
 
 # Model handling:
 # - If MODEL is "openai/<name>", export OPENAI_MODEL="<name>"
-# - Otherwise, treat MODEL as the raw OpenAI model name (e.g. "gpt-4.1-mini")
+# - Otherwise, treat MODEL as the raw OpenAI model name (e.g. "gpt-4.1")
 if [[ "$MODEL" == openai/* ]]; then
   export OPENAI_MODEL="${MODEL#openai/}"
 else

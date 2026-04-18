@@ -160,6 +160,8 @@ TOOLS = [
             "description": (
                 "Run a SQL query against a DuckDB database. "
                 "Supports analytical SQL including TRY_STRPTIME, window functions, CTEs. "
+                "Table and column names are case-sensitive: copy identifiers exactly from the schema "
+                "or quote mixed-case names (e.g. \"PackageInfo\"). "
                 "Quote reserved-word column names (e.g. \"FILTER\") when they are actual columns."
             ),
             "parameters": {
@@ -909,7 +911,7 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
 
     if llm_provider in ("openai", "open_ai") or (not llm_provider and has_openai):
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-        model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        model = os.getenv("OPENAI_MODEL", "gpt-4.1")
         logger.info("LLM provider: openai")
     else:
         client = OpenAI(
