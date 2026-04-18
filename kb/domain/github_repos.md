@@ -137,11 +137,13 @@ When final answers require repo identifiers, emit exact `owner/repo` strings cop
 ## Common Pitfalls
 
 - Joining metadata and artifacts without normalizing repo key format.
-- Counting files after joining contents in a way that duplicates rows.
+- Counting files after joining contents in a way that duplicates rows. → **See Entry 009**
 - Treating truncated `content` as complete source text.
 - Confusing `watch_count` semantics with stars/forks.
-- Mixing up engines: querying SQLite-only tables in DuckDB (or vice versa) because both use SQL.
+- Mixing up engines: querying SQLite-only tables in DuckDB (or vice versa) because both use SQL. → **See Entry 028**
 - Ignoring `difference_truncated` and over-trusting commit-level change statistics.
+- Estimating ratio/count from a subset of rows shown in tool preview. → **See Entry 029**
+- Emitting truncated or paraphrased repo path instead of exact `owner/repo` token. → **See Entry 035** (extended corrections log)
 
 ---
 

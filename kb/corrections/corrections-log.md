@@ -22,6 +22,12 @@ Entry metadata (recommended for every new entry):
 
 ---
 
+> **Navigation:** Priority rules + self-correction symptom index → `kb/corrections/critical_rules.md` (always loaded first in system prompt).
+> Dataset-specific rules for yelp → see DOMAIN KNOWLEDGE (yelp) § Common Pitfalls.
+> Dataset-specific rules for crmarenapro → see DOMAIN KNOWLEDGE (crmarenapro) § Common Pitfalls.
+
+---
+
 ## Entry 001 — Cross-DB Key Normalization
 
 Metadata:
@@ -841,7 +847,7 @@ Verification note:
 
 ---
 
-## Entry 037 — Compact final output over narrative explanations
+## Entry 037 — SUPERSEDED by Entry 034 in critical_rules.md
 
 Metadata:
 - confidence: high

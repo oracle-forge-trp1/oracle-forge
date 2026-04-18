@@ -47,7 +47,8 @@ except ImportError:
 
 AGENT_MD_PATH   = Path(__file__).parent / "AGENT.md"
 KB_ROOT         = Path(__file__).parent.parent / "kb"
-CORRECTIONS_LOG = KB_ROOT / "corrections" / "corrections-log.md"
+CORRECTIONS_LOG  = KB_ROOT / "corrections" / "corrections-log.md"
+CRITICAL_RULES_LOG = KB_ROOT / "corrections" / "critical_rules.md"
 DEFAULT_MODEL   = "anthropic/claude-haiku-4.5"
 MAX_ITERATIONS  = int(os.getenv("ORACLE_FORGE_MAX_ITERATIONS", "28"))
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
@@ -703,6 +704,17 @@ def _build_system_prompt(
     if AGENT_MD_PATH.exists():
         parts.append(_truncate("AGENT.md", AGENT_MD_PATH.read_text(encoding="utf-8"), 18000))
 
+    # 1b. Critical rules — self-correction index + top-priority entries (compact, always fits)
+    if not (strict_no_leakage and omit_kb_in_strict):
+        if CRITICAL_RULES_LOG.exists():
+            cr_raw = CRITICAL_RULES_LOG.read_text(encoding="utf-8")
+            cr_text = _truncate("critical_rules", cr_raw, 10000)
+            parts.append("---\n\n## CRITICAL RULES\n\n" + cr_text)
+            if len(cr_text.strip()) < len(cr_raw.strip()):
+                logger.warning("critical_rules.md was truncated — trim the file or increase budget")
+        else:
+            logger.warning("critical_rules.md not found: %s", CRITICAL_RULES_LOG)
+
     # 2. Core methodology KB (leakage-safe, dataset-agnostic)
     if not (strict_no_leakage and omit_kb_in_strict):
         core_kb_files = [
@@ -806,7 +818,7 @@ def _build_system_prompt(
 
     full = "\n\n".join(parts).strip()
     if os.getenv("ORACLE_FORGE_LOG_CONTEXT_LAYERS", "").strip().lower() in {"1", "true", "yes", "on"}:
-        markers = [m for m in ("CORE KB (METHODOLOGY)", "CORRECTIONS LOG", "DOMAIN KNOWLEDGE", "STRICT MODE", "LIVE SCHEMA", "DATABASE DESCRIPTION") if m in full]
+        markers = [m for m in ("CRITICAL RULES", "CORE KB (METHODOLOGY)", "CORRECTIONS LOG", "DOMAIN KNOWLEDGE", "STRICT MODE", "LIVE SCHEMA", "DATABASE DESCRIPTION") if m in full]
         logger.info(
             "system_prompt layers: chars=%s strict_no_leakage=%s omit_kb_in_strict=%s markers=%s",
             len(full),

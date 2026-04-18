@@ -127,11 +127,13 @@ When the final answer must name a CPC code, emit the **exact** `symbol` string f
 
 ## Common Pitfalls
 
-- Treating `cpc` as a scalar string instead of a list of symbols.
+- Treating `cpc` as a scalar string instead of a list of symbols. → **See Entry 020** (extended corrections log)
 - Joining on CPC title text instead of canonical symbol.
-- Mixing `filing_date`, `publication_date`, and `grant_date` in one metric without explicit definition.
+- Mixing `filing_date`, `publication_date`, and `grant_date` in one metric without explicit definition. → **See Entry 002**
 - Using strict inner joins to CPC definitions and unintentionally dropping patents with unknown/deleted symbols.
 - Counting raw citation string length rather than parsed citation entries.
+- Returning `None`/abstaining when evidence rows exist in trace. → **See Entry 046**
+- Emitting placeholder output instead of synthesizing from available rows. → **See Entry 047**
 
 ---
 

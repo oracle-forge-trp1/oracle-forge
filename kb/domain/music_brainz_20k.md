@@ -109,9 +109,10 @@ For queries asking about "unique tracks" or "distinct songs":
 
 ## Common Pitfalls
 
-- Treating `track_id` as one-to-one with real-world songs.
+- Treating `track_id` as one-to-one with real-world songs. → **See CRITICAL section above**
 - Deduplicating by title only and merging different artists' tracks.
-- Aggregating sales before entity resolution, which inflates duplicates.
+- Aggregating sales before entity resolution, which inflates duplicates. → **See Entry 009**
+- Returning numeric `track_id` in final answer when question asks for title/artist. → **See Entry 027** (extended corrections log)
 - Mixing language/year normalization rules inconsistently across grouping steps.
 - Assuming one source catalog; `source_id` fragmentation can hide duplicate entities.
 
