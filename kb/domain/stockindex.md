@@ -138,11 +138,11 @@ Always use multi-pattern `COALESCE(TRY_STRPTIME(...))` and filter out null parse
 
 ## Common Pitfalls
 
-- Applying a single date parser to mixed-format `Date` values.
+- Applying a single date parser to mixed-format `Date` values. → **See Entry 002**
 - Using day-over-day movement when question intent is intraday movement.
-- Hardcoding exchange-to-region mappings without checking `index_info` contents.
+- Hardcoding exchange-to-region mappings without checking `index_info` contents. → **See Entry 023** (extended corrections log)
 - Mixing `Close` and `CloseUSD` in one calculation without explicit conversion intent.
-- Ranking on unstable denominators (for example, tiny sample months).
+- Ranking on unstable denominators (for example, tiny sample months). → **See Entry 036**
 
 ---
 

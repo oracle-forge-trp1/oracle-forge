@@ -117,10 +117,11 @@ WHERE description LIKE '%technology%'
 
 ## Common Pitfalls
 
-- Querying `stock_trade` without early ticker/date filters on large scans.
+- Querying `stock_trade` without early ticker/date filters on large scans. → **See Entry 018** (use correct db_name)
 - Confusing exchange code semantics with market category tiers.
 - Mixing adjusted and unadjusted close values without documenting intent.
-- Joining info/trade tables after aggregation and losing required group keys.
+- Joining info/trade tables after aggregation and losing required group keys. → **See Entry 017**
+- Returning different top stocks on each run due to missing tie-breaker in ORDER BY. → **See Entry 036**
 - Treating text `description` matches as precise industry labels.
 
 ---

@@ -104,11 +104,13 @@ articles = query_mongodb("articles_database", "articles", "find",
 
 ## Common Pitfalls
 
-- Assuming category is a single normalized column when it may require text-based classification.
+- Assuming category is a single normalized column when it may require text-based classification. → **See Entry 014** (extended corrections log)
 - Joining Mongo and SQLite before deduplicating `article_id`, causing over-counting.
-- Applying region/date filters to Mongo documents instead of SQLite metadata.
+- Applying region/date filters to Mongo documents instead of SQLite metadata. → **See Entry 017**
 - Ignoring null or empty `title`/`description` during classification.
-- Mixing publication date formats without explicit normalization.
+- Mixing publication date formats without explicit normalization. → **See Entry 002**
+- Using MongoDB `find` to identify the longest/most-X article instead of an aggregation pipeline. → **See Entry 016**
+- Classifying a sample of articles and extrapolating counts instead of classifying all eligible articles. → **See Entry 029**
 - Guessing SQLite table/column names — introspect with `sqlite_master` / `PRAGMA table_info` when a query errors.
 
 ---

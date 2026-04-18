@@ -11,6 +11,10 @@ Data covers US-only Google Maps businesses and reviews through September 2021.
 
 ---
 
+⚠️ **CRITICAL — BEFORE ANY JOIN:**
+The SQLite `review` table's business key column name is **not guaranteed** — confirm with `PRAGMA table_info(review)` before writing any join predicate.
+
+
 ## Cross-Database Join Keys
 
 - PostgreSQL `business_description.gmap_id` must match the SQLite review table’s business key column **as returned by introspection** (often same logical id; column name may differ from examples).
@@ -76,11 +80,13 @@ Data goes through September 2021. "Recent" in queries means late 2021, not curre
 
 ## Common Pitfalls
 
-- Filtering location/business type only in one DB when the signal is split across both.
+- Filtering location/business type only in one DB when the signal is split across both. → **See Entry 017**
 - Using inner joins too early and dropping businesses with sparse review coverage.
 - Treating `description` as normalized taxonomy instead of noisy free text.
-- Averaging per-business averages when query intent requires review-level aggregates.
+- Averaging per-business averages when query intent requires review-level aggregates. → **See Entry 006**
 - Ignoring timeframe boundaries and interpreting "recent" as current-year data.
+- Using MongoDB `find` for extrema (longest description, etc.) instead of aggregation pipeline. → **See Entry 016**
+- Category or name token inferred from description instead of canonical field. → **See Entry 032** (extended corrections log)
 
 ---
 

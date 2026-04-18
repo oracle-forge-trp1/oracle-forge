@@ -138,12 +138,13 @@ Do not guess columns like `ProjectName` in `project_info`; DuckDB will throw bin
 
 ## Common Pitfalls
 
-- Joining by `Name` only and ignoring `System` (ecosystem collisions).
+- Joining by `Name` only and ignoring `System` (ecosystem collisions). → **See Entry 001** (key normalization principle)
 - Dropping `Version` in joins and creating false many-to-many matches.
-- Treating JSON-like text fields as plain strings for exact equality filters.
+- Treating JSON-like text fields as plain strings for exact equality filters. → **See Entry 005** (extended corrections log)
 - Forgetting ms→s conversion for `UpstreamPublishedAt`.
 - Aggregating project metrics without first deduplicating package-version rows.
-- Returning incomplete project/package names (token truncation) instead of exact `owner/repo` or package strings from selected rows.
+- Returning incomplete project/package names (token truncation) instead of exact `owner/repo` or package strings from selected rows. → **See Entry 035** (extended corrections log)
+- Querying DuckDB with a table name as `db_name`. → **See Entry 018**
 
 ---
 

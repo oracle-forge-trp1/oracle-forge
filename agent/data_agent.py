@@ -47,7 +47,8 @@ except ImportError:
 
 AGENT_MD_PATH   = Path(__file__).parent / "AGENT.md"
 KB_ROOT         = Path(__file__).parent.parent / "kb"
-CORRECTIONS_LOG = KB_ROOT / "corrections" / "corrections-log.md"
+CORRECTIONS_LOG  = KB_ROOT / "corrections" / "corrections-log.md"
+CRITICAL_RULES_LOG = KB_ROOT / "corrections" / "critical_rules.md"
 DEFAULT_MODEL   = "anthropic/claude-haiku-4.5"
 MAX_ITERATIONS  = int(os.getenv("ORACLE_FORGE_MAX_ITERATIONS", "28"))
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
@@ -283,6 +284,34 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "lookup_kb",
+            "description": (
+                "Look up a specific corrections entry or KB file on demand during the ReAct loop. "
+                "Use this whenever you hit a known failure pattern — the Self-Correction Index in "
+                "CRITICAL RULES maps symptoms to entry numbers. "
+                "Examples: lookup_kb(entry_id='028') for DuckDB binder errors, "
+                "lookup_kb(file='domain/unstructured_fields.md') for text-field parsing guidance. "
+                "Call with no arguments to retrieve the full Self-Correction Index."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entry_id": {
+                        "type": "string",
+                        "description": "Corrections entry number, e.g. '028' or '001'. Searches both critical_rules.md and corrections-log.md.",
+                    },
+                    "file": {
+                        "type": "string",
+                        "description": "Relative path under kb/, e.g. 'domain/unstructured_fields.md' or 'domain/join_keys.md'.",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+        {
+        "type": "function",
+        "function": {
             "name": "return_answer",
             "description": (
                 "Return the final verified answer. Call exactly once. "
@@ -306,29 +335,55 @@ TOOLS = [
 # ── Serialization helper ──────────────────────────────────────────────────────
 
 def _make_json_serializable(obj: Any) -> Any:
-    """Recursively convert non-JSON-serializable types (ObjectId, datetime, etc.) to str."""
+    """Recursively convert non-JSON-serializable types (ObjectId, datetime, Decimal, etc.) to str."""
     if isinstance(obj, dict):
         return {k: _make_json_serializable(v) for k, v in obj.items()}
     if isinstance(obj, list):
         return [_make_json_serializable(i) for i in obj]
+    try:
+        from decimal import Decimal
+        if isinstance(obj, Decimal):
+            return float(obj)
+    except ImportError:
+        pass
     try:
         json.dumps(obj)
         return obj
     except (TypeError, ValueError):
         return str(obj)
 
+
+def _parse_query_arg(val: Any) -> Any:
+    """Parse a tool 'query' argument that may arrive as a dict, list, or JSON string.
+    Models like Gemini often pass structured args as objects rather than JSON-encoded strings."""
+    if isinstance(val, (dict, list)):
+        return val
+    if isinstance(val, str):
+        val = val.strip()
+        try:
+            return json.loads(val)
+        except json.JSONDecodeError:
+            # Tolerate trailing content after valid JSON (e.g. Gemini adds a trailing newline)
+            decoder = json.JSONDecoder()
+            obj, _ = decoder.raw_decode(val)
+            return obj
+    return val
+
 # ── Database executors ────────────────────────────────────────────────────────
 
 def execute_mongodb_query(args: dict, uri: str, db_name: str) -> dict:
     """Execute a MongoDB find or aggregate query. Returns {success, rows, data}."""
     try:
+        if not args.get("collection"):
+            return {"success": False, "error": "Missing required parameter: collection. Specify the MongoDB collection name.", "rows": 0, "data": []}
         client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
         db     = client[db_name]
         coll   = db[args["collection"]]
-        query  = json.loads(args["query"])
+        query      = _parse_query_arg(args.get("query", "{}"))
+        query_type = args.get("query_type", "find")
 
-        if args["query_type"] == "find":
-            proj = json.loads(args["projection"]) if args.get("projection") else None
+        if query_type == "find":
+            proj = _parse_query_arg(args["projection"]) if args.get("projection") else None
             cursor = coll.find(query, proj) if proj else coll.find(query)
             results = [_make_json_serializable(doc) for doc in cursor.limit(MAX_RESULT_ROWS)]
         else:
@@ -381,7 +436,7 @@ def execute_postgres_query(args: dict, cfg: dict) -> dict:
         )
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute(args["sql"])
-        rows = [dict(r) for r in cur.fetchmany(MAX_RESULT_ROWS)]
+        rows = [_make_json_serializable(dict(r)) for r in cur.fetchmany(MAX_RESULT_ROWS)]
         conn.close()
         return {"success": True, "rows": len(rows), "data": rows}
     except Exception as exc:
@@ -521,6 +576,61 @@ def load_db_config(db_config_path: str) -> dict:
                 list(mongo_dbs), list(duckdb_paths), list(sqlite_paths), list(postgres_dbs))
     return {"mongo": mongo_dbs, "duckdb": duckdb_paths, "sqlite": sqlite_paths, "postgres": postgres_dbs}
 
+# ── KB lookup executor ───────────────────────────────────────────────────────
+
+def _execute_lookup_kb(tool_args: dict) -> dict:
+    """
+    Serve lookup_kb tool calls: return a specific corrections entry or KB file.
+    Searches critical_rules.md first (faster, always present), then corrections-log.md.
+    """
+    import re as _re
+    entry_id = (tool_args.get("entry_id") or "").strip()
+    file_path = (tool_args.get("file") or "").strip()
+
+    if entry_id:
+        num = _re.sub(r"[^0-9]", "", entry_id).zfill(3)
+        pattern = rf"(## Entry {num} —[^\n]*\n.*?)(?=\n## Entry |\Z)"
+        for source_path in (CRITICAL_RULES_LOG, CORRECTIONS_LOG):
+            if not source_path.exists():
+                continue
+            raw = source_path.read_text(encoding="utf-8")
+            m = _re.search(pattern, raw, _re.DOTALL)
+            if m:
+                content = m.group(1).strip()
+                return {
+                    "success": True,
+                    "entry": f"Entry {num}",
+                    "source": source_path.name,
+                    "content": content[:3000],
+                    "truncated": len(content) > 3000,
+                }
+        return {"success": False, "error": f"Entry {num} not found in corrections log or critical_rules.md"}
+
+    if file_path:
+        safe = (KB_ROOT / file_path).resolve()
+        if not str(safe).startswith(str(KB_ROOT.resolve())):
+            return {"success": False, "error": "Access denied: path must be inside kb/"}
+        if not safe.exists():
+            available = sorted(str(p.relative_to(KB_ROOT)) for p in KB_ROOT.rglob("*.md"))
+            return {"success": False, "error": f"File not found: {file_path}", "available": available}
+        raw = safe.read_text(encoding="utf-8")
+        return {
+            "success": True,
+            "file": file_path,
+            "content": raw[:4000],
+            "truncated": len(raw) > 4000,
+        }
+
+    # No args: return Self-Correction Index from critical_rules.md
+    if CRITICAL_RULES_LOG.exists():
+        raw = CRITICAL_RULES_LOG.read_text(encoding="utf-8")
+        import re as _re2
+        m = _re2.search(r"## Self-Correction Index\n\n(.*?)(?=\n---|\Z)", raw, _re2.DOTALL)
+        if m:
+            return {"success": True, "content": "Self-Correction Index\n\n" + m.group(1).strip()}
+    return {"success": False, "error": "Provide entry_id='NNN' or file='domain/file.md'"}
+
+
 # ── Tool dispatcher ───────────────────────────────────────────────────────────
 
 def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
@@ -585,6 +695,9 @@ def dispatch_tool(tool_name: str, tool_args: dict, connections: dict) -> dict:
         if not cfg:
             return {"success": False, "error": f"Unknown PostgreSQL db_name '{logical}' (direct fallback)"}
         return execute_postgres_query(tool_args, cfg)
+
+    if tool_name == "lookup_kb":
+        return _execute_lookup_kb(tool_args)
 
     return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
@@ -703,6 +816,17 @@ def _build_system_prompt(
     if AGENT_MD_PATH.exists():
         parts.append(_truncate("AGENT.md", AGENT_MD_PATH.read_text(encoding="utf-8"), 18000))
 
+    # 1b. Critical rules — self-correction index + top-priority entries (compact, always fits)
+    if not (strict_no_leakage and omit_kb_in_strict):
+        if CRITICAL_RULES_LOG.exists():
+            cr_raw = CRITICAL_RULES_LOG.read_text(encoding="utf-8")
+            cr_text = _truncate("critical_rules", cr_raw, 10000)
+            parts.append("---\n\n## CRITICAL RULES\n\n" + cr_text)
+            if len(cr_text.strip()) < len(cr_raw.strip()):
+                logger.warning("critical_rules.md was truncated — trim the file or increase budget")
+        else:
+            logger.warning("critical_rules.md not found: %s", CRITICAL_RULES_LOG)
+
     # 2. Core methodology KB (leakage-safe, dataset-agnostic)
     if not (strict_no_leakage and omit_kb_in_strict):
         core_kb_files = [
@@ -718,7 +842,7 @@ def _build_system_prompt(
                 core_chunks.append(p.read_text(encoding="utf-8"))
         if core_chunks:
             core_text = "\n\n---\n\n".join(core_chunks)
-            parts.append("---\n\n## CORE KB (METHODOLOGY)\n\n" + _truncate("core_kb", core_text, 20000))
+            parts.append("---\n\n## CORE KB (METHODOLOGY)\n\n" + _truncate("core_kb", core_text, 24000))
 
     # 3. Corrections log — allowed (leakage-linted), but can be omitted in strict if requested.
     if strict_no_leakage:
@@ -731,7 +855,7 @@ def _build_system_prompt(
         )
     if not (strict_no_leakage and omit_kb_in_strict):
         if CORRECTIONS_LOG.exists():
-            parts.append("---\n\n## CORRECTIONS LOG\n\n" + _truncate("corrections-log", CORRECTIONS_LOG.read_text(encoding="utf-8"), 12000))
+            parts.append("---\n\n## CORRECTIONS LOG\n\n" + _truncate("corrections-log", CORRECTIONS_LOG.read_text(encoding="utf-8"), 8000))
         else:
             logger.warning("Corrections log not found: %s", CORRECTIONS_LOG)
 
@@ -806,7 +930,7 @@ def _build_system_prompt(
 
     full = "\n\n".join(parts).strip()
     if os.getenv("ORACLE_FORGE_LOG_CONTEXT_LAYERS", "").strip().lower() in {"1", "true", "yes", "on"}:
-        markers = [m for m in ("CORE KB (METHODOLOGY)", "CORRECTIONS LOG", "DOMAIN KNOWLEDGE", "STRICT MODE", "LIVE SCHEMA", "DATABASE DESCRIPTION") if m in full]
+        markers = [m for m in ("CRITICAL RULES", "CORE KB (METHODOLOGY)", "CORRECTIONS LOG", "DOMAIN KNOWLEDGE", "STRICT MODE", "LIVE SCHEMA", "DATABASE DESCRIPTION") if m in full]
         logger.info(
             "system_prompt layers: chars=%s strict_no_leakage=%s omit_kb_in_strict=%s markers=%s",
             len(full),
@@ -947,26 +1071,6 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
     # Build system prompt: AGENT.md + corrections log + domain KB + live schema + DB description
     system_prompt = _build_system_prompt(db_config_path, db_description, connections)
 
-    # Init LLM client.
-    # Default behavior: prefer OpenAI if OPENAI_API_KEY is present.
-    llm_provider = os.getenv("ORACLE_FORGE_LLM_PROVIDER", "").strip().lower()
-    has_openai = bool(os.getenv("OPENAI_API_KEY", "").strip())
-    if llm_provider in ("openrouter", "open_router"):
-        has_openai = False
-
-    if llm_provider in ("openai", "open_ai") or (not llm_provider and has_openai):
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-        model = os.getenv("OPENAI_MODEL", "gpt-4.1")
-        logger.info("LLM provider: openai")
-    else:
-        client = OpenAI(
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            base_url="https://openrouter.ai/api/v1",
-        )
-        model = os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL)
-        logger.info("LLM provider: openrouter")
-    logger.info("Model: %s", model)
-
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user",   "content": query}
@@ -1008,16 +1112,39 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
                 timeout=120
             )
         except Exception as exc:
+            err_str = str(exc)
             logger.error("LLM call failed: %s", exc)
-            # Do not surface raw API/exception strings to the user-facing answer path (rubric hygiene).
+            # Surface billing/auth errors clearly so they don't look like agent failures
+            if "402" in err_str or "Insufficient credits" in err_str:
+                raise RuntimeError(f"LLM API billing error (402): {err_str[:200]}") from exc
+            if "401" in err_str:
+                raise RuntimeError(f"LLM API auth error (401) — check API key: {err_str[:200]}") from exc
             return {"answer": "The agent could not complete this request due to an upstream error. Retry later.", "query_trace": query_trace}
 
         msg = response.choices[0].message
 
-        # No tool calls → agent produced a plain text answer (fallback)
+        # No tool calls → model returned plain text instead of using a tool.
+        # Push back up to 3 times to force tool usage; only accept on the 4th occurrence.
         if not msg.tool_calls:
-            final_answer = msg.content or ""
-            logger.info("Plain text answer (no tool call): %s", final_answer)
+            plain_text = (msg.content or "").strip()
+            logger.info("Plain text (no tool call, iter %d): %s", iteration + 1, plain_text[:120])
+            no_tool_count = sum(
+                1 for m in messages if m.get("role") == "user"
+                and "You must call a tool" in (m.get("content") or "")
+            )
+            if no_tool_count < 3:
+                messages.append({"role": "assistant", "content": plain_text})
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "You must call a tool — do NOT return a text answer directly. "
+                        "Call a database query tool (query_duckdb, query_sqlite, query_mongodb, query_postgres) "
+                        "or lookup_kb() to gather evidence before answering. "
+                        "Check the DATABASE DESCRIPTION for exact db_name values and table names."
+                    ),
+                })
+                continue
+            final_answer = plain_text
             break
 
         # Append assistant message with tool calls

@@ -4,6 +4,19 @@ This document is injected into the agent's Domain Knowledge context layer before
 
 ---
 
+⚠️ **CRITICAL — READ BEFORE ANY QUERY:**
+
+**1. Cross-DB joins are NOT SQL — query each DB separately, merge in Python.**
+Do NOT write `FROM duckdb_table JOIN (SELECT ... FROM query_postgres(...))` — DuckDB has no `query_postgres()` function. This syntax is invalid and will always fail with a Parser Error. → **See Entry 017, Entry 048**
+
+**2. `clinical_info` does NOT have a `gender` column.**
+Confirmed absent in live runs. Available sex/demographic fields: `race`, `ethnicity`, `menopause_status`. To filter by biological sex, use `menopause_status` or introspect for an alternative. → **See Entry 049**
+
+**3. Patient identifier column name varies — always introspect before joining.**
+Run `SELECT * FROM clinical_info LIMIT 3` and `information_schema.columns` to discover actual column names in both databases before writing any join.
+DuckDB column `FILTER` is a reserved word — always quote it: `"FILTER" = 'PASS'`.
+
+
 ## Dataset Overview
 
 Two active databases. Clinical data lives in PostgreSQL; molecular data (mutations, expression) is served as **`molecular_database`** in the harness — the engine is **whatever `db_config.yaml` declares** (often DuckDB). Always follow the **DATABASE DESCRIPTION** for the active run.
@@ -119,9 +132,11 @@ Only use reliable mutation rows where the quality column equals `PASS` unless th
 
 ## Common Pitfalls
 
-- Joining mutation and expression tables directly without patient-level de-duplication.
+- Joining mutation and expression tables directly without patient-level de-duplication. → **See Entry 017**
 - Mixing tumor-level and patient-level units in one statistic.
 - Forgetting `+1` before log transform on zero-valued expression.
+- Assuming `ParticipantBarcode` column name without introspecting the actual clinical_info schema. → **See Entry 028**
+- Forgetting to quote `"FILTER"` column in DuckDB SQL. → **See Entry 026** (extended corrections log)
 - Comparing cancer types using free-text assumptions instead of acronym values stored in clinical data.
 - Ignoring quality filter (`FILTER`) in mutation analyses.
 

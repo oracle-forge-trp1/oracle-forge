@@ -34,6 +34,16 @@ CHILD_SCRIPT = EVAL_DIR / "agent_runner_child.py"
 DEFAULT_DAB = str(REPO_ROOT / "DataAgentBench")
 SCORE_LOG = EVAL_DIR / "score_log.json"
 QUERY_TIMEOUT_SEC = 240
+
+# Per-dataset timeouts override the default. CLI --timeout still takes precedence.
+# Rationale: crmarenapro (6 DBs, 13 queries, complex joins) regularly needs 6-7 min.
+# pancancer_atlas, deps_dev_v1, github_repos need ~5 min for heavy reasoning steps.
+DATASET_TIMEOUT_SEC: dict[str, float] = {
+    "crmarenapro":     420,   # 6 DBs, most complex dataset
+    "pancancer_atlas": 300,   # molecular + clinical cross-DB, chi-square calcs
+    "deps_dev_v1":     300,   # 3-table chain join + JSON parsing + timestamp math
+    "github_repos":    300,   # large content table, commit parsing
+}
 MCP_SERVER_SCRIPT = REPO_ROOT / "mcp" / "toolbox_server.py"
 MCP_HEALTH_URL = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp").replace("/mcp", "/health")
 
@@ -392,6 +402,30 @@ def _resolve_dataset_root(dab_root: Path, dataset: str) -> tuple[str, Path]:
     )
 
 
+# Known environment-failure signatures (not agent reasoning failures).
+_ENV_ERROR_PATTERNS = (
+    "permission denied for table",
+    "permission denied for schema",
+    "available: []",          # empty db registry — wiring/config not loaded
+    "could not connect to server",
+    "connection refused",
+    "modulenotfounderror: common_scaffold",
+    "no such file or directory",  # missing db file
+)
+
+
+def _classify_error(err: str | None) -> str:
+    """Return 'timeout' | 'environment' | 'agent' | None for a harness error string."""
+    if err is None:
+        return None
+    if err.startswith("agent_timeout"):
+        return "timeout"
+    lower = err.lower()
+    if any(p in lower for p in _ENV_ERROR_PATTERNS):
+        return "environment"
+    return "agent"
+
+
 def run_harness(
     *,
     dataset: str,
@@ -401,6 +435,7 @@ def run_harness(
     timeout_sec: float,
     run_id: Optional[str],
     score_log_path: Path,
+    skip_precheck: bool = False,
 ) -> Dict[str, Any]:
     dataset_key, dataset_root = _resolve_dataset_root(dab_root, dataset)
 
@@ -417,13 +452,21 @@ def run_harness(
     if not dummy and not agent_module:
         raise ValueError("Provide --agent-module or use --dummy")
 
-    # Fast-fail if the LLM API key is unusable — avoids burning time on all queries
-    if not dummy and agent_module:
+    # Fast-fail if the LLM API key is unusable — avoids burning time on all queries.
+    # skip_precheck=True when running multiple datasets (pre-check done once by the caller).
+    if not dummy and agent_module and not skip_precheck:
         api_err = _check_llm_api()
         if api_err:
             raise RuntimeError(f"LLM API pre-check failed: {api_err}")
 
     mod_name = agent_module or "dummy"
+
+    # Use dataset-specific timeout when caller passed the global default.
+    effective_timeout = timeout_sec
+    if timeout_sec == QUERY_TIMEOUT_SEC and dataset_key.lower() in {k.lower() for k in DATASET_TIMEOUT_SEC}:
+        matched = next(v for k, v in DATASET_TIMEOUT_SEC.items() if k.lower() == dataset_key.lower())
+        effective_timeout = matched
+        print(f"[harness] Using dataset timeout {effective_timeout}s for '{dataset_key}'.", flush=True)
 
     query_dirs = discover_query_dirs(dataset_root)
     if not query_dirs:
@@ -455,6 +498,7 @@ def run_harness(
                 "execution_time_sec": None,
                 "validation_message": None,
                 "error": None,
+                "error_type": None,
             }
 
             if not qjson.is_file():
@@ -477,7 +521,7 @@ def run_harness(
                 db_config_path=db_config_path,
                 db_description=db_description,
                 dummy=dummy,
-                timeout_sec=timeout_sec,
+                timeout_sec=effective_timeout,
                 mcp_url=mcp_rpc_url,
             )
             t1 = datetime.now(timezone.utc)
@@ -486,13 +530,17 @@ def run_harness(
             if err == "timeout":
                 row["agent_answer"] = ""
                 row["query_trace"] = trace
-                row["error"] = f"agent_timeout_after_{timeout_sec}s"
+                row["error"] = f"agent_timeout_after_{effective_timeout}s"
+                row["error_type"] = "timeout"
                 results.append(row)
                 continue
             if err:
                 row["agent_answer"] = answer or ""
                 row["query_trace"] = trace
                 row["error"] = err
+                row["error_type"] = _classify_error(err)
+                if row["error_type"] == "environment":
+                    print(f"[harness] Environment error on {qid} (infrastructure, not agent): {err[:120]}", flush=True)
                 results.append(row)
                 continue
 
@@ -532,7 +580,10 @@ def run_harness(
         "methodology_notes": {
             "harness_script": "eval/harness.py",
             "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
-            "timeout_sec": timeout_sec,
+            "timeout_sec": effective_timeout,
+            "environment_errors": sum(1 for r in results if r.get("error_type") == "environment"),
+            "timeout_errors": sum(1 for r in results if r.get("error_type") == "timeout"),
+            "agent_errors": sum(1 for r in results if r.get("error_type") == "agent"),
             "strict_no_leakage": os.getenv("ORACLE_FORGE_STRICT_NO_LEAKAGE", ""),
             "oracle_forge_llm_provider": os.getenv("ORACLE_FORGE_LLM_PROVIDER", ""),
             "openai_model": os.getenv("OPENAI_MODEL", ""),
@@ -558,6 +609,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=QUERY_TIMEOUT_SEC, help="Per-query agent timeout in seconds")
     parser.add_argument("--run-id", default=None, help="Override auto-generated run id (e.g. 2026-04-10-001)")
     parser.add_argument("--score-log", type=Path, default=SCORE_LOG, help="Append-only JSON score log path")
+    parser.add_argument("--skip-precheck", action="store_true", help="Skip LLM API pre-check (use when running multiple datasets to avoid consuming rate-limit quota on health probes)")
     args = parser.parse_args()
 
     dab = Path(args.dab_root or __import__("os").environ.get("DATAAGENTBENCH_ROOT", DEFAULT_DAB))
@@ -577,6 +629,7 @@ def main() -> int:
             timeout_sec=args.timeout,
             run_id=args.run_id,
             score_log_path=args.score_log,
+            skip_precheck=args.skip_precheck,
         )
     except Exception as e:  # noqa: BLE001
         print(f"Harness error: {e}", file=sys.stderr)

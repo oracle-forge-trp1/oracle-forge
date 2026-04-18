@@ -155,11 +155,14 @@ Split before counting/filtering event instances.
 
 ## Common Pitfalls
 
-- Joining Mongo and DuckDB IDs without canonical normalization.
+- Joining Mongo and DuckDB IDs without canonical normalization. → **See Entry 001**
 - Assuming structured city/state fields always exist in business records.
-- Aggregating per-business averages when question requires review-level aggregation.
+- Aggregating per-business averages when question requires review-level aggregation. → **See Entry 006**
 - Failing to parse multi-value check-in strings before event counts.
-- Treating mixed-type attribute values as uniformly typed booleans/numbers.
+- Treating mixed-type attribute values as uniformly typed booleans/numbers. → **See Entry 004**
+- Using MongoDB `find` to find the longest/shortest/max entity instead of an aggregation pipeline. → **See Entry 016**
+- State token missing or null in final output despite correct numeric part. → **See Entry 042** (extended corrections log)
+- Category tokens paraphrased or case-normalized instead of copied verbatim from `business.categories`. → **See Entry 043** (extended corrections log)
 
 ---
 

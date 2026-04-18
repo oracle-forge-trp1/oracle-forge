@@ -17,6 +17,12 @@ This is the **largest DAB dataset** (13 queries). Salesforce-style CRM data spre
 
 ---
 
+⚠️ **CRITICAL — READ BEFORE ANY QUERY:**
+- ~25% of ID fields have a leading `#` prefix — strip with `lstrip('#').strip()` before ANY join or comparison.
+- ~20% of text fields have trailing whitespace — `.strip()` all string fields before comparison.
+- Affected across ALL 6 databases: Id, AccountId, ContactId, OwnerId, Name, FirstName, LastName.
+
+
 ## CRITICAL: Data Corruption (~25% of records)
 
 ### ID Field Corruption — Leading `#`
@@ -130,11 +136,13 @@ GROUP BY OwnerId
 
 ## Common Pitfalls
 
-- Joining IDs without first removing leading `#` and surrounding whitespace.
+- Joining IDs without first removing leading `#` and surrounding whitespace. → **See Entry 001**
 - Mixing cleaned and uncleaned IDs across intermediate query steps.
 - Assuming support-table casing is uniform; PostgreSQL identifiers may need quoting.
-- Treating `permission denied` as a reasoning issue and retrying indefinitely (it is a server role/GRANT issue).
+- Treating `permission denied` as a reasoning issue and retrying indefinitely (it is a server role/GRANT issue). → **See Entry 030**
 - Counting opportunities/orders after many-to-many joins without deduplication keys.
+- Returning `None` or permission text when an ID can be selected from accessible filtered candidates. → **See Entry 044** (extended corrections log)
+- Selecting winner from partially filtered rows or with unstable tie ordering. → **See Entry 045** (extended corrections log)
 - Computing SLA/resolution metrics from raw text timestamps without normalization.
 
 ---

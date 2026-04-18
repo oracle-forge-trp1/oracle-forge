@@ -22,6 +22,12 @@ Entry metadata (recommended for every new entry):
 
 ---
 
+> **Navigation:** Priority rules + self-correction symptom index → `kb/corrections/critical_rules.md` (always loaded first in system prompt).
+> Dataset-specific rules for yelp → see DOMAIN KNOWLEDGE (yelp) § Common Pitfalls.
+> Dataset-specific rules for crmarenapro → see DOMAIN KNOWLEDGE (crmarenapro) § Common Pitfalls.
+
+---
+
 ## Entry 001 — Cross-DB Key Normalization
 
 Metadata:
@@ -841,7 +847,7 @@ Verification note:
 
 ---
 
-## Entry 037 — Compact final output over narrative explanations
+## Entry 037 — SUPERSEDED by Entry 034 in critical_rules.md
 
 Metadata:
 - confidence: high
@@ -1096,6 +1102,53 @@ Correct approach:
 
 Verification note:
 - Final output contains expected payload token type (ID/name/category/value), never placeholder-only text.
+
+---
+
+## Entry 048 — Cross-DB Function Call in SQL is Always Invalid
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-003
+- datasets_seen: pancancer_atlas, deps_dev_v1, crmarenapro
+
+Failure pattern:
+- Agent writes a SQL query that calls `query_postgres(...)`, `query_duckdb(...)`, or `query_sqlite(...)` as an inline subquery function inside another engine's SQL. For example: `SELECT ... FROM duckdb_table JOIN (SELECT ... FROM query_postgres(db_name=..., sql=...)) AS t2`.
+
+Root cause:
+- Agent conflates the Python tool names with SQL functions. DuckDB, SQLite, and PostgreSQL have no such built-in function — the call always fails with a Parser Error.
+
+Correct approach:
+1. Query each database separately using its own tool call: first `query_duckdb(...)`, then `query_postgres(...)`.
+2. Collect the results as Python lists in the agent's working memory.
+3. Join the lists in your reasoning (match on common key values).
+4. Never attempt a single SQL statement that spans two different DB engines.
+
+Verification note:
+- Each SQL statement may only reference tables that exist within the single DB connection named by `db_name`. If two tables need joining and they are in different engines, you must use two separate tool calls.
+
+---
+
+## Entry 049 — Schema Column Assumptions Cause Silent Failures
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-003
+- datasets_seen: pancancer_atlas, crmarenapro, bookreview
+
+Failure pattern:
+- Agent uses assumed column names (`gender`, `sex`, `user_id`, `ParticipantBarcode`) in WHERE clauses without verifying they exist. The query fails with "column does not exist" or returns 0 rows, and the agent then abstains.
+
+Root cause:
+- Plausible column names are guessed from question wording rather than discovered from actual schema.
+
+Correct approach:
+1. Before writing any WHERE/JOIN on a column you have not yet confirmed, run: `SELECT column_name FROM information_schema.columns WHERE table_name='<table>'` (PostgreSQL/DuckDB) or `PRAGMA table_info(<table>)` (SQLite).
+2. Use ONLY column names returned by that query.
+3. Confirmed real-run facts — pancancer_atlas `clinical_info` does NOT have `gender`; use `menopause_status`, `race`, `ethnicity` for demographics.
+
+Verification note:
+- If a column existence error appears in the trace, the next tool call must be a schema introspection query — never retry the same column name.
 
 ---
 

@@ -59,6 +59,7 @@ def main() -> int:
 
     checks = [
         ("AGENT.md (role)", "data analytics agent" in text.lower() or "Role" in text),
+        ("CRITICAL RULES", "CRITICAL RULES" in text),
         ("CORE KB (METHODOLOGY)", "CORE KB (METHODOLOGY)" in text),
         ("CORRECTIONS LOG", "CORRECTIONS LOG" in text),
         ("DOMAIN KNOWLEDGE", f"DOMAIN KNOWLEDGE ({args.dataset})" in text),
@@ -81,8 +82,8 @@ def main() -> int:
         expect_core = "CORE KB (METHODOLOGY)" not in text
         if not expect_core:
             print("NOTE: omit_kb set but CORE KB still present — check ORACLE_FORGE_STRICT_OMIT_KB handling.")
-    elif args.strict and not all(c[1] for c in checks[:4]):
-        print("WARNING: expected CORE KB + CORRECTIONS + DOMAIN in strict mode (omit_kb off).")
+    elif args.strict and not all(c[1] for c in checks[:5]):
+        print("WARNING: expected CRITICAL RULES + CORE KB + CORRECTIONS + DOMAIN in strict mode (omit_kb off).")
         return 1
     return 0
 

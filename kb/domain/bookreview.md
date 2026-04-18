@@ -130,10 +130,11 @@ If the prompt asks for **all** qualifying book titles, the final answer must lis
 
 ## Common Pitfalls
 
-- Joining `book_id` and `purchase_id` without suffix normalization (`bookid_N` vs `purchaseid_N`).
+- Joining `book_id` and `purchase_id` without suffix normalization (`bookid_N` vs `purchaseid_N`). → **See Entry 001**
 - Treating `categories` JSON-array text as exact scalar categories.
-- Extracting year from only one source field and silently dropping rows.
+- Extracting year from only one source field and silently dropping rows. → **See Entry 002**
 - Applying time filters after aggregation instead of before.
+- Averaging per-book averages across categories instead of row-level review ratings. → **See Entry 006**
 - Comparing integer ratings without considering aggregate float behavior.
 
 ---
