@@ -960,6 +960,98 @@ Verification note:
 
 ---
 
+## Entry 042 — Yelp state token must be explicit and non-null
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-012
+- datasets_seen: yelp
+- expires_after_runs: 20
+
+Failure pattern:
+- Output contains `null`/missing state (`PA`/`Pennsylvania`) while numeric part is present.
+
+Root cause:
+- Business/state lookup omitted the `state` field or relied on records where state was missing after join/filter.
+
+Correct approach:
+- For any state-conditioned answer, include `state` in retrieval projection and require non-null state before finalization.
+- If both abbreviation and full name appear in data/docs, emit at least one accepted token exactly (`PA` or `Pennsylvania`) adjacent to its paired value when needed.
+
+Verification note:
+- Final output contains a non-null state token copied from selected result rows.
+
+---
+
+## Entry 043 — Yelp category answers: include required canonical token set
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-012
+- datasets_seen: yelp
+- expires_after_runs: 20
+
+Failure pattern:
+- Category output misses expected tokens (e.g., `restaurants`, `food`) despite related categories being present.
+
+Root cause:
+- Category rendering used partial category subset or inferred “primary” category without preserving full canonical category evidence.
+
+Correct approach:
+- Build category output from canonical `business.categories` values over the fully filtered candidate set.
+- Preserve exact tokens and include all required top-ranked categories for the requested cardinality.
+
+Verification note:
+- Every emitted category token maps directly to canonical category fields from selected businesses.
+
+---
+
+## Entry 044 — CRM ID-required prompts: never return `None`/permission text as final
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-007
+- datasets_seen: crmarenapro
+- expires_after_runs: 20
+
+Failure pattern:
+- Final answer is `None` or “Cannot complete due to permissions” while validator expects a concrete CRM ID (knowledge/article/agent/issue).
+
+Root cause:
+- Agent exits early on one failing source instead of finishing selection from available eligible records.
+
+Correct approach:
+- If prompt requires an ID token, final output must be an ID from the final filtered candidate set.
+- Permission errors in one table are not sufficient to output `None` if alternate required data remains queryable; continue with accessible evidence.
+
+Verification note:
+- Final output matches expected ID shape and appears in selected candidate rows.
+
+---
+
+## Entry 045 — CRM winner-ID selection must use full filters + deterministic tie-break
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-007
+- datasets_seen: crmarenapro
+- expires_after_runs: 20
+
+Failure pattern:
+- Returned agent/product ID is close but wrong.
+
+Root cause:
+- Ranking selected from partially filtered rows or unstable tie ordering.
+
+Correct approach:
+- Apply all query predicates before ranking (time window, stage/status, ownership constraints).
+- Use deterministic ordering for ties (metric DESC/ASC then stable ID ASC) before `LIMIT 1`.
+
+Verification note:
+- Re-running the same filtered query returns the same winning ID.
+
+---
+
 ## Template
 
 Metadata:

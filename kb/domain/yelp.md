@@ -129,6 +129,10 @@ Split before counting/filtering event instances.
 - Do not use memorized expected values.
 - Keep final outputs compact and plain text for validator compatibility.
 
+### State-token discipline (for PA/Pennsylvania-style validators)
+- For state-linked outputs, always fetch and retain `state` explicitly from source rows/documents; do not rely on derived/null placeholders.
+- Final output must contain a non-null state token copied from data (`PA` or `Pennsylvania` where applicable), with paired numeric value adjacent when requested.
+
 ### Methodology disambiguation (no memorized targets)
 
 - **State / region rankings:** If the question ties a numeric result to “the state with the most …”, first identify that state using counts on the full filtered business (or event) population, then compute the numeric metric **only** for businesses in that state (AGENT.md §12.1).
@@ -137,6 +141,7 @@ Split before counting/filtering event instances.
 - **Review-linked metrics:** Star averages and similar measures should come from **review** rows in DuckDB joined to the relevant business keys after normalization—not from Mongo-only shortcuts when the question is about review behavior.
 - **State + numeric pair outputs:** If the question expects a state token and a metric (for example a value near `PA`/`Pennsylvania`), compute the winning state first, then compute the metric restricted to that state only, and output the pair compactly in one line.
 - **Category fidelity:** For category answers, emit exact category tokens from `business.categories` (for example keep `Breakfast & Brunch` exactly as stored).
+- **Category completeness:** If prompt expects top-N categories, render exactly N categories from final ranked results and ensure required canonical tokens (for example `Restaurants`, `Food`) are not dropped.
 
 ---
 

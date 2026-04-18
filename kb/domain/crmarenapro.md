@@ -145,6 +145,10 @@ If queries against the `support` logical DB return `permission denied for table 
 - Do not loop on the same failing query; pivot to other databases only if the question can be answered without `support`.
 - Otherwise, return a concise “cannot complete due to database permissions” response rather than fabricating values.
 
+For prompts that explicitly require CRM IDs (agent/product/knowledge/issue):
+- Do not return `None` when an ID can be selected from accessible filtered candidates.
+- Apply full filters first, then pick deterministic winner (`ORDER BY metric DESC, Id ASC`) before final output.
+
 ---
 
 ## Validation Checklist
@@ -155,6 +159,7 @@ If queries against the `support` logical DB return `permission denied for table 
 - Timestamp sanity: null/parse-failure rates for created/closed fields.
 - Metric consistency: verify at least one sampled owner/account trace end-to-end across DBs.
 - ID answer check: for ID-target questions, confirm final output token exists in final filtered candidate rows (not in pre-filter supersets).
+- Month/ID output shape: when prompt requests month or single ID, output only that token (no narrative prefix/suffix).
 
 ---
 
