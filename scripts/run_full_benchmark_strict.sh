@@ -7,7 +7,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 DAB_ROOT="${DAB_ROOT:-$REPO_ROOT/DataAgentBench}"
-# Default: gpt-4.1 (strong planning for hardest DAB queries).
+# Default OpenRouter model (can still point to OpenAI-family via OpenRouter).
 # Cost-conscious: MODEL=openai/gpt-4.1-mini
 # Cheaper baseline: MODEL=openai/gpt-4o-mini
 MODEL="${MODEL:-openai/gpt-4.1}"
@@ -19,20 +19,20 @@ RESET_LOG="${RESET_LOG:-1}"
 
 export ORACLE_FORGE_STRICT_NO_LEAKAGE=1
 
-# Prefer OpenAI in strict mode (the agent/harness will still fall back if unset)
-export ORACLE_FORGE_LLM_PROVIDER="${ORACLE_FORGE_LLM_PROVIDER:-openai}"
+# Prefer OpenRouter in strict mode (override with ORACLE_FORGE_LLM_PROVIDER=openai if needed)
+export ORACLE_FORGE_LLM_PROVIDER="${ORACLE_FORGE_LLM_PROVIDER:-openrouter}"
 
-# Model handling:
+# OpenRouter model selection.
+export OPENROUTER_MODEL="$MODEL"
+
+# Optional OpenAI compatibility when forcing openai provider.
 # - If MODEL is "openai/<name>", export OPENAI_MODEL="<name>"
-# - Otherwise, treat MODEL as the raw OpenAI model name (e.g. "gpt-4.1")
+# - Otherwise, treat MODEL as a raw OpenAI model name.
 if [[ "$MODEL" == openai/* ]]; then
   export OPENAI_MODEL="${MODEL#openai/}"
 else
   export OPENAI_MODEL="$MODEL"
 fi
-
-# Backwards compat (some components still read OPENROUTER_MODEL for logging)
-export OPENROUTER_MODEL="$MODEL"
 
 # Discover datasets from DAB_ROOT/query_* folders (preserves on-disk case).
 if [[ ! -d "$DAB_ROOT" ]]; then
