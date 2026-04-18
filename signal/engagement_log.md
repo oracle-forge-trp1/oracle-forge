@@ -77,4 +77,7 @@ Link: https://www.reddit.com/r/learnmachinelearning/comments/1sn4nzf/comment/ogr
 - **LinkedIn post** — sharing Medium article
   Link: https://www.linkedin.com/posts/zemzem-hibet_context-engineering-is-not-prompt-engineering-activity-7451060743824711680-wSWk?utm_source=share&utm_medium=member_desktop&rcm=ACoAACoQ5tYBk-I7qgTdzeo9LHdyyk2Fl0QNAIM
 
+## April 18, 2026
+- **Medium article published** — The Silent Failure Problem — How an Empty Result Almost Fooled Our Agent
+  Link: https://medium.com/@zumihibet2/the-silent-failure-problem-how-an-empty-result-almost-fooled-our-agent-e1d89e984ce2
 
