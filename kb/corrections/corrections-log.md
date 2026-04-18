@@ -1076,6 +1076,29 @@ Verification note:
 
 ---
 
+## Entry 047 — Placeholder outputs (`None`/`null`/`N/A`) are invalid when answer shape expects entity/value
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-012
+- datasets_seen: crmarenapro, yelp, patents, pancancer_atlas
+- expires_after_runs: 20
+
+Failure pattern:
+- Final answer is `None`, `null`, `N/A`, or similar placeholder while validators expect concrete IDs/names/categories/numbers.
+
+Root cause:
+- Early termination or fallback formatting emits placeholders instead of selecting from available evidence.
+
+Correct approach:
+- Treat placeholders as invalid final output when prompt requires concrete payload.
+- If any evidence rows exist, compact/synthesize a concrete answer from selected rows.
+
+Verification note:
+- Final output contains expected payload token type (ID/name/category/value), never placeholder-only text.
+
+---
+
 ## Template
 
 Metadata:

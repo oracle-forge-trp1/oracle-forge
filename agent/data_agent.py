@@ -49,9 +49,9 @@ AGENT_MD_PATH   = Path(__file__).parent / "AGENT.md"
 KB_ROOT         = Path(__file__).parent.parent / "kb"
 CORRECTIONS_LOG = KB_ROOT / "corrections" / "corrections-log.md"
 DEFAULT_MODEL   = "anthropic/claude-haiku-4.5"
-MAX_ITERATIONS  = int(os.getenv("ORACLE_FORGE_MAX_ITERATIONS", "20"))
+MAX_ITERATIONS  = int(os.getenv("ORACLE_FORGE_MAX_ITERATIONS", "28"))
 MAX_RESULT_ROWS = 500   # cap rows returned to LLM to avoid context overflow
-_TOOL_PREVIEW_ROWS = int(os.getenv("ORACLE_FORGE_TOOL_PREVIEW_ROWS", "80"))
+_TOOL_PREVIEW_ROWS = int(os.getenv("ORACLE_FORGE_TOOL_PREVIEW_ROWS", "120"))
 MCP_URL         = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp")
 
 logger = logging.getLogger(__name__)
@@ -652,8 +652,27 @@ def _needs_compaction(answer: str) -> bool:
         "insufficient data",
         "no answer possible",
         "not available",
+        "cannot determine",
+        "no state",
     )
-    return any(m in lowered for m in narrative_markers)
+    if any(m in lowered for m in narrative_markers):
+        return True
+    placeholder_values = {"none", "n/a", "na", "null", "unknown", "no answer"}
+    return lowered in placeholder_values
+
+
+def _has_usable_evidence(query_trace: list[dict[str, Any]]) -> bool:
+    """True when at least one tool call succeeded with non-empty evidence."""
+    for step in query_trace:
+        if not step.get("success"):
+            continue
+        rows = step.get("rows")
+        if isinstance(rows, int) and rows > 0:
+            return True
+        preview = str(step.get("preview", "")).strip().lower()
+        if preview and preview not in {"[]", "none", "null"}:
+            return True
+    return False
 
 
 # ── System prompt builder ─────────────────────────────────────────────────────
@@ -1045,8 +1064,8 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
                 "content":      json.dumps(_result_for_llm(result), ensure_ascii=False)
             })
 
-            # Prevent pathological loops: repeated identical call 3+ times.
-            if repeat_counts[signature] >= 3 and not done:
+            # Prevent pathological loops, but allow enough retries for hard queries.
+            if repeat_counts[signature] >= 5 and not done:
                 logger.warning("Detected repeated tool call (%s) x%d; forcing finalization.", tool_name, repeat_counts[signature])
                 forced_finalize = True
                 break
@@ -1064,6 +1083,11 @@ def run_agent(query: str, db_config_path: str, db_description: str) -> str:
             final_answer = _force_compact_final_answer(client, model, messages, fallback="")
     elif (not _DISABLE_FORCE_COMPACT) and _needs_compaction(final_answer):
         logger.info("Compacting verbose final answer for validator compatibility.")
+        final_answer = _force_compact_final_answer(client, model, messages, fallback=final_answer)
+
+    # If we still have a placeholder/refusal answer but tool evidence exists, compact once more.
+    if (not _DISABLE_FORCE_COMPACT) and _needs_compaction(final_answer) and _has_usable_evidence(query_trace):
+        logger.info("Refusal/placeholder answer with usable evidence detected; forcing compact synthesis.")
         final_answer = _force_compact_final_answer(client, model, messages, fallback=final_answer)
 
     logger.info("Query trace (%d steps):\n%s", len(query_trace), json.dumps(query_trace, indent=2))
