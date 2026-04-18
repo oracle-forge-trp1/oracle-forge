@@ -30,6 +30,13 @@ When a query fails or stalls, find your symptom and jump to the referenced entry
 | Final answer is None / null / N/A | **047** |
 | `query_postgres()` / `query_duckdb()` called inside another engine's SQL | **048** |
 | Column "x" does not exist — schema assumed not discovered | **049** |
+| Yelp answer has wrong average rating (inflated) | **050** |
+| Yelp answer contains `businessid_XX` / `businessref_XX` instead of name | **051** |
+| Yelp WiFi filter matches zero businesses | **052** |
+| Yelp category aggregation missing expected tokens | **053** |
+| StockIndex wrong region winner / wrong eligible symbol set | **054** |
+| StockMarket `stock_trade` table does not exist | **055** |
+| StockMarket answer has ticker symbols instead of company names | **056** |
 
 ---
 

@@ -2,142 +2,209 @@
 
 ## Dataset Overview
 
-| Database | Type | Logical Name | Table | Key Fields |
-|----------|------|--------------|-------|------------|
-| stockinfo_query.db | SQLite | stockinfo_database | stock_info | ticker, market_category, trading_status, description, financial_status, exchange |
-| stocktrade_query.db | DuckDB | stocktrade_database | stock_trade | ticker, date, open, high, low, close, adj_close, volume |
-
-**Scale:** 2,754 securities with daily price data — potentially millions of rows.
+| Database | Type | Logical Name | Contents |
+|----------|------|--------------|---------|
+| stockinfo_query.db | SQLite | stockinfo_database | `stockinfo` table — 2,752 securities metadata |
+| stocktrade_query.db | DuckDB | stocktrade_database | 2,753 individual ticker tables — daily OHLCV data |
 
 ---
 
-## Cross-Database Join Keys
+## CRITICAL: DuckDB Has No `stock_trade` Table
 
-- SQLite `stock_info.ticker` → DuckDB `stock_trade.ticker`
-- Format is consistent — direct string match. **No prefix mismatch.**
+**There is NO single `stock_trade` table in DuckDB.**
+Instead, each ticker symbol has its own table. The table name IS the ticker symbol.
+
+```sql
+-- Query one ticker:
+SELECT * FROM "AAPL" WHERE Date >= '2020-01-01'
+
+-- List all available ticker tables:
+SHOW TABLES;
+```
+
+**Pattern for multi-ticker queries:**
+1. Get qualifying ticker symbols from SQLite
+2. For each ticker, query its individual DuckDB table
+3. Aggregate results across tickers in Python
+
+Example for finding ETFs on NYSE Arca below $1 at any point in 2020-2022:
+```python
+# Step 1: get qualifying tickers from SQLite
+etf_tickers = query_sqlite("stockinfo_database",
+    "SELECT Symbol FROM stockinfo WHERE ETF='Y' AND \"Listing Exchange\"='P'")
+
+# Step 2: for each ticker, check DuckDB
+results = []
+for row in etf_tickers["data"]:
+    ticker = row["Symbol"]
+    res = query_duckdb("stocktrade_database",
+        f'SELECT \'{ticker}\' AS symbol, MIN("Adj Close") AS min_adj_close '
+        f'FROM "{ticker}" '
+        f'WHERE "Date" >= \'2020-01-01\' AND "Date" <= \'2022-12-31\'')
+    if res["data"] and res["data"][0]["min_adj_close"] is not None:
+        if res["data"][0]["min_adj_close"] < 1.0:
+            results.append(ticker)
+```
 
 ---
 
-## Data Semantics
+## CRITICAL: SQLite Column Names (Use Exact Quoted Names)
 
-### Listing Exchanges
+The actual column names in `stockinfo` use display names with spaces:
+
+| Column Name | Meaning |
+|---|---|
+| `Symbol` | Ticker symbol (join key with DuckDB table names) |
+| `Listing Exchange` | Exchange code (see mapping below) |
+| `Market Category` | NASDAQ tier code (see mapping below) |
+| `ETF` | `'Y'` = ETF, `'N'` = non-ETF |
+| `Financial Status` | Status code (see mapping below) |
+| `Company Description` | Full company name — use this for final answers |
+| `Nasdaq Traded` | Whether listed on NASDAQ |
+
+**Always double-quote column names with spaces in SQLite SQL:**
+```sql
+SELECT Symbol, "Company Description", "Listing Exchange", "Market Category"
+FROM stockinfo
+WHERE ETF = 'Y' AND "Listing Exchange" = 'P'
+```
+
+---
+
+## DuckDB Per-Ticker Table Column Names
+
+Each ticker table has these columns (use double-quotes):
+- `"Date"` (text/varchar)
+- `"Open"`, `"High"`, `"Low"`, `"Close"`, `"Adj Close"` (double)
+- `"Volume"` (bigint)
+
+```sql
+SELECT "Date", "Adj Close" FROM "AAPL" WHERE "Date" >= '2020-01-01'
+```
+
+---
+
+## Listing Exchange Codes
+
 | Code | Exchange |
 |---|---|
-| A | NYSE MKT |
-| N | New York Stock Exchange |
-| P | NYSE ARCA |
-| Z | BATS Global Markets |
-| V | IEXG |
-| Q | NASDAQ |
+| `A` | NYSE MKT (American Stock Exchange) |
+| `N` | New York Stock Exchange |
+| `P` | NYSE Arca |
+| `Q` | NASDAQ |
+| `Z` | BATS Global Markets |
+| `V` | IEXG |
 
-### Financial Status Codes
-| Code | Meaning |
-|---|---|
-| N | Normal — not deficient or delinquent |
-| D | Deficient |
-| E | Delinquent |
-| Q | Bankrupt |
-| H | Deficient and delinquent |
-| G | Deficient and bankrupt |
-| K | Deficient, delinquent, and bankrupt |
+---
 
-A company is "financially troubled" if deficient, delinquent, or both.
+## Market Category Codes (NASDAQ only)
 
-### Market Categories (NASDAQ)
 | Code | Tier |
 |---|---|
-| Q | NASDAQ Global Select Market |
-| G | NASDAQ Global Market |
-| S | NASDAQ Capital Market |
+| `Q` | NASDAQ Global Select Market |
+| `G` | NASDAQ Global Market |
+| `S` | NASDAQ Capital Market |
+| (empty/`Not applicable`) | Non-NASDAQ listed |
 
 ---
 
-## Large Table Warning
+## Financial Status Codes
 
-`stock_trade` has daily data for 2,754 tickers — **always filter early:**
+| Code | Meaning |
+|---|---|
+| `N` | Normal — not deficient or delinquent |
+| `D` | Deficient |
+| `E` | Delinquent |
+| `Q` | Bankrupt |
+| `H` | Deficient and delinquent |
+| `G` | Deficient and bankrupt |
+| `K` | Deficient, delinquent, and bankrupt |
 
-```sql
--- GOOD: filter by ticker first
-SELECT * FROM stock_trade WHERE ticker = 'AAPL' AND date >= '2023-01-01'
-
--- BAD: full table scan
-SELECT * FROM stock_trade ORDER BY date
-```
+"Financially troubled" = `Financial Status` IN (`'D'`, `'E'`, `'Q'`, `'H'`, `'G'`, `'K'`) — anything other than `'N'` (normal).
 
 ---
 
-## Query Strategy Playbook
+## CRITICAL: Always Return Company Names, Not Ticker Symbols
 
-### Price analysis
-```sql
--- DuckDB: Average closing price per ticker for a date range
-SELECT ticker, AVG(close) as avg_close
-FROM stock_trade
-WHERE date BETWEEN '2023-01-01' AND '2023-12-31'
-GROUP BY ticker
-ORDER BY avg_close DESC
-LIMIT 10
-```
+For any question asking for company names (not "symbols" or "tickers"), ALWAYS:
+1. Get the ticker from DuckDB computations
+2. Join back to SQLite to retrieve `"Company Description"` as the company name
+3. Return the `"Company Description"` value, not the ticker symbol
 
-### Cross-DB: Company info + price data
 ```python
-# Step 1: Filter companies in SQLite
-companies = query_sqlite("stockinfo_database",
-    "SELECT ticker, description FROM stock_info WHERE market_category = 'Q'")
-
-# Step 2: Get price data from DuckDB
-tickers = [c["ticker"] for c in companies]
-placeholders = ",".join(f"'{t}'" for t in tickers)
-prices = query_duckdb("stocktrade_database",
-    f"SELECT ticker, AVG(close) FROM stock_trade WHERE ticker IN ({placeholders}) GROUP BY ticker")
-```
-
-### Volatility
-```sql
--- DuckDB: Average intraday volatility
-SELECT ticker, AVG((high - low) / NULLIF(open, 0)) AS avg_volatility
-FROM stock_trade
-WHERE date >= '2023-01-01'
-GROUP BY ticker
-ORDER BY avg_volatility DESC
+# After computing top tickers in DuckDB:
+tickers_str = ",".join(f"'{t}'" for t in top_tickers)
+names = query_sqlite("stockinfo_database",
+    f'SELECT Symbol, "Company Description" FROM stockinfo WHERE Symbol IN ({tickers_str})')
+# Use names["data"][i]["Company Description"] in the final answer
 ```
 
 ---
 
-## Schema Reference
+## Consecutive Down Days (Window Function Pattern)
 
-`stock_info.description` contains brief company descriptions. Use for text-based queries:
+For "most consecutive down days" queries:
 ```sql
--- SQLite
-SELECT ticker, description FROM stock_info
-WHERE description LIKE '%technology%'
+WITH daily AS (
+    SELECT "Date",
+        "Close",
+        LAG("Close") OVER (ORDER BY "Date") AS prev_close
+    FROM "TICKER"
+    WHERE "Date" >= '2022-01-01' AND "Date" <= '2022-12-31'
+),
+flags AS (
+    SELECT "Date",
+        CASE WHEN "Close" < prev_close THEN 1 ELSE 0 END AS is_down
+    FROM daily WHERE prev_close IS NOT NULL
+),
+groups AS (
+    SELECT "Date", is_down,
+        ROW_NUMBER() OVER (ORDER BY "Date") -
+        ROW_NUMBER() OVER (PARTITION BY is_down ORDER BY "Date") AS grp
+    FROM flags
+)
+SELECT MAX(cnt) AS max_consecutive_down FROM (
+    SELECT COUNT(*) AS cnt FROM groups WHERE is_down = 1 GROUP BY grp
+)
 ```
+
+Apply this per ticker, then find the maximum across the eligible set.
+
+---
+
+## Scale Warning
+
+2,753 tickers × potentially years of daily data = millions of rows.
+**Always filter by ticker early** — never do full table scans across all ticker tables.
+Process tickers in batches if the eligible set is large (>50 tickers).
 
 ---
 
 ## Common Pitfalls
 
-- Querying `stock_trade` without early ticker/date filters on large scans. → **See Entry 018** (use correct db_name)
-- Confusing exchange code semantics with market category tiers.
-- Mixing adjusted and unadjusted close values without documenting intent.
-- Joining info/trade tables after aggregation and losing required group keys. → **See Entry 017**
-- Returning different top stocks on each run due to missing tie-breaker in ORDER BY. → **See Entry 036**
-- Treating text `description` matches as precise industry labels.
+- Querying `stock_trade` table (does not exist). → **Entry 055**
+- Using `ticker` or `exchange` column names (actual names: `Symbol`, `Listing Exchange`). → **Entry 055**
+- Returning ticker symbols instead of company names when question asks for names. → **Entry 056**
+- Missing double-quotes on column names with spaces in SQLite. → **Entry 055**
+- Joining info/trade tables after aggregation and losing required group keys. → **Entry 017**
+- Returning different top stocks on each run due to missing tie-breaker. → **Entry 036**
+- `Financial Status` NULL values (most rows) treated as non-normal status.
 
 ---
 
 ## Validation Checklist
 
-- Filter effectiveness: rows scanned before vs after ticker/date constraints.
-- Join completeness: `%` of selected tickers with both metadata and trade rows.
-- Metric consistency: compare outputs using `close` vs `adj_close` where relevant.
-- Outlier sanity: inspect top/bottom volatility or return names manually.
-- Time-window correctness: verify boundaries include intended trading days only.
+- DuckDB table names: confirmed ticker tables exist with `SHOW TABLES` before querying.
+- Column names: double-quoted in SQL where spaces exist.
+- Company names: final answer uses `Company Description`, not ticker symbols.
+- Exchange filter: using correct single-letter code (`P` for NYSE Arca, not `NYSE Arca`).
+- Financial status filter: using correct codes, not NULL as "normal".
+- Results completeness: for list queries, count returned items vs expected cardinality.
 
 ---
 
 ## Leakage-Safe Policy
 
 - No pre-filled winners, expected tickers, or fixed benchmark outputs.
+- Exchange codes, column names, and financial status codes above are factual schema knowledge.
 - Keep only robust financial-data query strategy and verification guidance.
-- Any examples must remain procedural and recomputable from live data.

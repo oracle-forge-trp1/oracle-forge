@@ -57,6 +57,38 @@ MCP_URL         = os.getenv("MCP_URL", "http://127.0.0.1:5000/mcp")
 
 logger = logging.getLogger(__name__)
 
+# ── LLM client init ──────────────────────────────────────────────────────────
+
+def _init_llm_client() -> tuple["OpenAI", str]:
+    """Initialize LLM client and model from environment variables."""
+    load_dotenv(override=False)
+    llm_provider = os.getenv("ORACLE_FORGE_LLM_PROVIDER", "").strip().lower()
+
+    if llm_provider in ("openai", "open_ai"):
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+        _model = os.getenv("OPENAI_MODEL", "gpt-4.1")
+        logger.info("LLM provider: openai, model: %s", _model)
+    elif llm_provider in ("google", "google_ai_studio", "gemini"):
+        _client = OpenAI(
+            api_key=os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", "")),
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        )
+        _model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        logger.info("LLM provider: google_ai_studio, model: %s", _model)
+    else:
+        # OpenRouter (default)
+        _client = OpenAI(
+            api_key=os.getenv("ANTHROPIC_API_KEY", ""),
+            base_url="https://openrouter.ai/api/v1",
+        )
+        _model = os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL)
+        logger.info("LLM provider: openrouter, model: %s", _model)
+
+    return _client, _model
+
+
+client, model = _init_llm_client()
+
 # Prompt-size guardrails: prevent context_length_exceeded across large datasets.
 _MAX_SYSTEM_PROMPT_CHARS = int(os.getenv("ORACLE_FORGE_MAX_SYSTEM_PROMPT_CHARS", "60000"))
 _MAX_SCHEMA_SECTION_CHARS = int(os.getenv("ORACLE_FORGE_MAX_SCHEMA_SECTION_CHARS", "12000"))

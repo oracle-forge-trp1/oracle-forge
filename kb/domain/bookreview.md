@@ -11,141 +11,157 @@ Two databases for this dataset:
 
 ---
 
-## Cross-Database Join Keys
+## CRITICAL: Cross-Database Join Keys
 
-**CRITICAL:** The two databases use different key field names AND different prefixes.
+The two databases use **different key field names AND different prefixes** for the same book:
 
-- `books_info.book_id` format: `bookid_N` (e.g. `bookid_1`, `bookid_186`)
-- `review.purchase_id` format: `purchaseid_N` (e.g. `purchaseid_1`, `purchaseid_186`)
+- `books_info.book_id` → format `bookid_N` (e.g. `bookid_1`)
+- `review.purchase_id` → format `purchaseid_N` (e.g. `purchaseid_1`)
 
-These represent the same book. To join: extract the numeric N from each and match.
-
-**Cross-DB join strategy (Python):**
+**Same N = same book.** To join: replace `bookid_` with `purchaseid_` (or extract the numeric N and match).
 
 ```python
-# Step 1: Query PostgreSQL for books (e.g. with category filter)
+# Step 1: Query PostgreSQL for books with category filter
 pg_results = query_postgres("books_database",
-    "SELECT book_id, title FROM books_info WHERE categories LIKE '%Literature & Fiction%'")
+    "SELECT book_id, title FROM books_info WHERE categories ILIKE '%Literature & Fiction%'")
 
-# Step 2: Build SQLite IN clause using matching purchase_id values
-# bookid_N → purchaseid_N (same N)
-book_ids = [r["book_id"] for r in pg_results]
-purchase_ids = [bid.replace("bookid_", "purchaseid_") for bid in book_ids]
-
+# Step 2: Map book_id → purchase_id
+purchase_ids = [r["book_id"].replace("bookid_", "purchaseid_") for r in pg_results["data"]]
 placeholders = ",".join(f"'{pid}'" for pid in purchase_ids)
-sqlite_results = query_sqlite("review_database",
-    f"SELECT purchase_id, AVG(rating) AS avg_rating FROM review WHERE purchase_id IN ({placeholders}) GROUP BY purchase_id")
-```
 
-**Alternative: DuckDB-style cross-DB**
-If the agent has Python access, merge the two result sets on the numeric suffix extracted from the keys.
+# Step 3: Query SQLite with purchase_ids
+sqlite_results = query_sqlite("review_database",
+    f"SELECT purchase_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count "
+    f"FROM review WHERE purchase_id IN ({placeholders}) GROUP BY purchase_id")
+```
 
 ---
 
-## Schema Reference
+## Publication Year and Decade Extraction
 
-The `categories` field is stored as a **JSON array string**, e.g.:
+There is **NO standalone year column** in `books_info`. The publication year is embedded in the `details` text field.
+
+Typical `details` field format:
+```
+"Published by Chatto & Windus, the first edition of this book was released on January 1, 2004. 
+It is written in English and comes in a hardcover format, comprising 196 pages."
+```
+
+### PostgreSQL regex extraction:
+```sql
+-- Extract 4-digit publication year
+SUBSTRING(details FROM '((?:19|20)\d{2})') AS pub_year
+
+-- Compute decade label (e.g., 2004 → 2000, 2020 → 2020, 2023 → 2020)
+(CAST(SUBSTRING(details FROM '((?:19|20)\d{2})') AS INTEGER) / 10) * 10 AS decade_start
+```
+
+Use COALESCE across multiple fields to maximize coverage:
+```sql
+COALESCE(
+    SUBSTRING(details FROM '((?:19|20)\d{2})'),
+    SUBSTRING(subtitle FROM '((?:19|20)\d{2})')
+) AS pub_year
+```
+
+### Decade label format
+The decade is reported as the starting year: `2020` means "2020s" (2020–2029), `2010` means "2010s" (2010–2019).
+
+---
+
+## Language Filter
+
+There is **no explicit language column**. Language is embedded in the `details` field:
+`"It is written in English and comes in a hardcover format..."`
+
+To filter English-language books:
+```sql
+WHERE details ILIKE '%written in English%'
+```
+
+---
+
+## Categories Field
+
+`categories` in `books_info` is stored as a JSON-array string, e.g.:
 ```
 ["Books", "Literature & Fiction", "History & Criticism"]
 ```
 
-Use `LIKE` for filtering — no JSON parsing needed in SQL:
+Use `ILIKE` (case-insensitive) for filtering — no JSON parsing required:
 ```sql
--- PostgreSQL
-WHERE categories LIKE '%Literature & Fiction%'
-WHERE categories LIKE '%Children''s Books%'
-WHERE categories LIKE '%Science Fiction%'
-```
-Use `ILIKE` for case-insensitive matching.
-
----
-
-## Publication Year / Decade Extraction
-
-The `details` field is a free-text description containing the publication year, e.g.:
-```
-"Published by Chatto & Windus, the first edition of this book was released on January 1, 2004.
-It is written in English and comes in a hardcover format, comprising 196 pages."
-```
-
-Extract year with PostgreSQL regex:
-```sql
--- Extract 4-digit year from details
-SUBSTRING(details FROM '\m((?:19|20)\d{2})\M') AS pub_year
-
--- Compute decade (e.g. 2004 → 2000, 2023 → 2020)
-(CAST(SUBSTRING(details FROM '\m((?:19|20)\d{2})\M') AS INTEGER) / 10) * 10 AS decade
-```
-
-The `subtitle` field also often contains the year (e.g. `"Hardcover – Import, January 1, 2004"`):
-```sql
-COALESCE(
-  SUBSTRING(details FROM '\m((?:19|20)\d{2})\M'),
-  SUBSTRING(subtitle FROM '\m((?:19|20)\d{2})\M')
-) AS pub_year
+WHERE categories ILIKE '%Literature & Fiction%'
+WHERE categories ILIKE '%Children''s Books%'
 ```
 
 ---
 
 ## Review Date Filtering
 
-`review_time` format in SQLite is consistently `'YYYY-MM-DD HH:MM:SS'`.
-
-Lexicographic string comparison works for year filtering:
+`review_time` in SQLite uses `'YYYY-MM-DD HH:MM:SS'` format consistently.
+Lexicographic comparison works for year filtering:
 ```sql
--- Reviews from 2020 onwards
-WHERE review_time >= '2020'
--- Reviews from 2020-01-01 onwards (same effect)
-WHERE review_time >= '2020-01-01'
+WHERE review_time >= '2020-01-01'   -- reviews from 2020 onwards
+WHERE review_time >= '2018-01-01' AND review_time < '2019-01-01'   -- year 2018
 ```
 
 ---
 
 ## Data Semantics
 
-- `review.rating` is stored as INTEGER (1–5), NOT float.
-- `AVG(rating)` returns a float; compare with `= 5.0` or `= 5` for perfect rating.
-- For Q2 (perfect 5.0 average): `HAVING AVG(rating) = 5`
-- For Q3 (4.5+ average since 2020): `HAVING AVG(rating) >= 4.5 AND review_time >= '2020'`
+- `review.rating` is stored as INTEGER (1–5)
+- `AVG(rating)` returns float; compare with `= 5` for perfect rating
+- `rating_number` in `books_info` is a denormalized count — do not use as a proxy for review counts; use actual SQLite `review` rows
 
 ---
 
 ## Query Strategy Playbook
 
-Use these generic patterns instead of query-labeled templates:
+### Decade-level rating analysis
+1. PostgreSQL: extract pub_year with regex, compute decade, filter books with ≥N distinct reviews
+2. SQLite: aggregate ratings per purchase_id
+3. Join in Python on numeric key suffix
+4. Compute AVG(rating) per decade from row-level review data
 
-| Pattern | Required computation | Key Constraint |
-|---------|----------------------|----------------|
-| Decade-level rating analysis | Extract publication year, derive decade, aggregate ratings | decade must be parsed from text fields (details/subtitle) |
-| Category-constrained rating quality | Filter by category in PostgreSQL, join to SQLite reviews, apply HAVING threshold | categories stored as JSON-array string, use LIKE/ILIKE |
-| Time-windowed high-rating selection | Filter reviews by date window, aggregate by purchase/book id | review_time filter must be applied before final aggregation |
-
-Do not rely on memorized title lists. Always derive outputs from live query results.
+### Category-constrained rating quality
+1. PostgreSQL: `WHERE categories ILIKE '%TargetCategory%'` → get `book_id` list
+2. Convert to `purchase_id` list
+3. SQLite: `AVG(rating)` per `purchase_id`, apply `HAVING` threshold
 
 ### Exhaustive title lists
+If the prompt asks for **all** qualifying books, include every title returned by the final query — no summarization, no "and others", no ellipsis.
 
-If the prompt asks for **all** qualifying book titles, the final answer must list **every** title returned by the last aggregation — no summarization, no “and others”, no ellipsis. Copy titles verbatim from query results.
+---
+
+## When PostgreSQL Fails
+
+If `query_postgres` returns errors repeatedly:
+1. Check the exact error message — may be "relation does not exist" (wrong table name) or connection issue
+2. Try introspecting: `SELECT table_name FROM information_schema.tables WHERE table_schema='public'`
+3. The PostgreSQL `books_database` must be loaded at agent startup — if it fails entirely, report the error and attempt SQLite-only analysis with whatever information is available
+4. Do NOT return a wrong decade based on SQLite-only data (SQLite lacks publication year info)
 
 ---
 
 ## Common Pitfalls
 
-- Joining `book_id` and `purchase_id` without suffix normalization (`bookid_N` vs `purchaseid_N`). → **See Entry 001**
-- Treating `categories` JSON-array text as exact scalar categories.
-- Extracting year from only one source field and silently dropping rows. → **See Entry 002**
+- Joining `book_id` and `purchase_id` without suffix normalization (`bookid_N` vs `purchaseid_N`). → **Entry 001**
+- Assuming publication year is a column — must parse from `details` text. → **Entry 002**
+- Not filtering for English language when question specifies English-language books.
 - Applying time filters after aggregation instead of before.
-- Averaging per-book averages across categories instead of row-level review ratings. → **See Entry 006**
-- Comparing integer ratings without considering aggregate float behavior.
+- Averaging per-book averages across categories instead of row-level review ratings. → **Entry 006**
+- Using `rating_number` from `books_info` instead of counting actual SQLite review rows.
 
 ---
 
 ## Validation Checklist
 
-- Key mapping: verify `bookid_N -> purchaseid_N` conversion coverage.
-- Join quality: matched vs unmatched IDs after suffix-based join logic.
-- Year extraction quality: parse-success rate from `details`/`subtitle`.
-- Category filter sanity: sample matches for false positives from `LIKE` on JSON-array text.
-- Rating consistency: confirm integer `rating` source and float aggregate behavior.
+- Key mapping: verify `bookid_N → purchaseid_N` conversion coverage.
+- Year extraction: check non-null rate from regex on `details` field.
+- Decade formula: confirm integer division gives correct decade start year.
+- Language filter: applied before aggregation when question specifies English.
+- Rating source: row-level `AVG(rating)` from SQLite review table, not denormalized fields.
+- Completeness: for list queries, ensure ALL qualifying titles are returned.
 
 ---
 

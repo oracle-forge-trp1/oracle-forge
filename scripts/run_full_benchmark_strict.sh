@@ -40,17 +40,22 @@ export ORACLE_FORGE_MAX_ITERATIONS="${ORACLE_FORGE_MAX_ITERATIONS:-28}"
 export ORACLE_FORGE_TOOL_PREVIEW_ROWS="${ORACLE_FORGE_TOOL_PREVIEW_ROWS:-120}"
 
 # Discover datasets from DAB_ROOT/query_* folders (preserves on-disk case).
+# Override with DATASETS="yelp stockindex bookreview stockmarket" to run a subset.
 if [[ ! -d "$DAB_ROOT" ]]; then
   echo "ERROR: DAB root not found: $DAB_ROOT" >&2
   exit 1
 fi
-mapfile -t DATASETS < <(
-  cd "$DAB_ROOT"
-  for d in query_*; do
-    [[ -d "$d" ]] || continue
-    echo "${d#query_}"
-  done | sort
-)
+if [[ -n "${DATASETS:-}" ]]; then
+  read -r -a DATASETS <<< "$DATASETS"
+else
+  mapfile -t DATASETS < <(
+    cd "$DAB_ROOT"
+    for d in query_*; do
+      [[ -d "$d" ]] || continue
+      echo "${d#query_}"
+    done | sort
+  )
+fi
 
 echo "== Oracle Forge Strict Benchmark Runner =="
 echo "repo:       $REPO_ROOT"

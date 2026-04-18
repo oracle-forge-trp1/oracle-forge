@@ -1152,6 +1152,219 @@ Verification note:
 
 ---
 
+## Entry 050 — Yelp: Never Use `business.stars` for Average Rating
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-001
+- datasets_seen: yelp
+
+Failure pattern:
+- Agent returns correct state/category but wrong numeric rating value (typically 0.5–1.0 too high).
+- Example: answer is `PA, 3.70` when correct is `PA, 3.48`.
+
+Root cause:
+- `business.stars` in MongoDB is a pre-computed, stale cached field. It does NOT match the live `AVG(review.rating)` from the DuckDB review table.
+- Using `business.stars` yields inflated averages that don't match validator expectations.
+
+Correct approach:
+- For ALL "average rating" questions on Yelp data, compute from DuckDB:
+  `SELECT AVG(rating) FROM review WHERE business_ref IN (...)`
+- NEVER use `business.stars` (MongoDB) as the final numeric rating in any answer.
+- The two values differ by up to ~1.0 star.
+
+Verification note:
+- After computing a state-level or category-level avg rating, confirm the source is DuckDB `review.rating`.
+
+---
+
+## Entry 051 — Yelp: Resolve Internal IDs to Business Names
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-001
+- datasets_seen: yelp
+
+Failure pattern:
+- Agent final answer contains `businessid_9` or `businessref_49` instead of the human-readable business name.
+- Validator reports: "Missing name: Coffee House Too Cafe"
+
+Root cause:
+- After aggregating in DuckDB, the agent returns the `business_ref` identifier directly instead of looking up the name from MongoDB.
+
+Correct approach:
+1. After DuckDB aggregation yields winning `business_ref` (e.g., `businessref_9`):
+2. Convert to MongoDB key: `businessref_N` → `businessid_N`
+3. Query MongoDB: `db.business.find_one({"business_id": "businessid_9"}, {"name": 1})`
+4. Use the `name` field value in the final answer.
+
+Verification note:
+- If the final answer contains `businessid_` or `businessref_`, it will always fail validation.
+
+---
+
+## Entry 052 — Yelp: WiFi Attribute Stored as Python String Repr
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-001
+- datasets_seen: yelp
+
+Failure pattern:
+- WiFi filter matches zero businesses, or counts differ from expected.
+
+Root cause:
+- `attributes.WiFi` values are stored as Python string representations with optional `u` prefix:
+  `"u'free'"`, `"'free'"`, `"u'paid'"`, `"'no'"` etc.
+- Exact equality checks like `{"WiFi": "free"}` will match zero documents.
+
+Correct approach:
+```python
+# MongoDB: match WiFi as free or paid (has WiFi)
+{"$match": {"attributes.WiFi": {"$regex": "free|paid", "$options": "i"}}}
+
+# To match specifically free WiFi:
+{"$match": {"attributes.WiFi": {"$regex": "free", "$options": "i"}}}
+```
+Use `$regex` with case-insensitive flag, not exact string equality.
+
+Verification note:
+- After adding WiFi filter, confirm >0 documents matched before aggregating.
+
+---
+
+## Entry 053 — Yelp: `business.categories` is Absent — Parse from `description`
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-001
+- datasets_seen: yelp
+
+Failure pattern:
+- Category aggregation misses expected tokens (e.g., `American (New)` absent from top-5 result).
+- `$project: {categories: 1}` returns null or missing for most businesses.
+
+Root cause:
+- The `categories` field is NOT present as a top-level field in the MongoDB `business` collection.
+- Category information is embedded in the `description` text field.
+
+Correct approach:
+1. Use `$match` + `$project` to retrieve the `description` text
+2. Parse categories from the description using regex or text search
+3. Emit category tokens verbatim as they appear in the description text (no case normalization)
+
+Example MongoDB pipeline:
+```json
+[
+  {"$project": {"business_id": 1, "description": 1}},
+  ...parse categories from description text in Python...
+]
+```
+
+Verification note:
+- After parsing, spot-check that multi-word categories with punctuation (e.g., `Coffee & Tea`, `American (New)`) are preserved exactly.
+
+---
+
+## Entry 054 — StockIndex: No Region Column — Use Exchange-to-Symbol Mapping
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-002
+- datasets_seen: stockindex
+
+Failure pattern:
+- Agent filters wrong set of indices for a region query (e.g., includes non-Asia symbols or excludes valid ones).
+- Wrong winner for intraday volatility in Asia region.
+
+Root cause:
+- `index_info` has ONLY `Exchange` (text) and `Currency` (text) — NO region, country, or symbol column.
+- The join between `index_info` and `index_trade` is not via a foreign key.
+- Agent guesses exchange→symbol mapping incorrectly.
+- Volatility formula using `Open` as denominator instead of `Close` yields different rankings.
+
+Correct approach:
+- Use the documented Exchange→Symbol→Region mapping from `stockindex.md`:
+  - Asia: HSI, 000001.SS, 399001.SZ, N225, NSEI, TWII
+  - North America: NYA, IXIC, GSPTSE
+  - Europe: GDAXI, N100, SSMI
+  - Africa: J203.JO
+- Intraday volatility formula: `AVG(("High" - "Low") / NULLIF("Close", 0))`
+- Filter `index_trade` to the region's symbol set before computing the metric.
+
+Verification note:
+- After filtering, confirm the eligible symbol count matches the expected count for the region.
+
+---
+
+## Entry 055 — StockMarket: No `stock_trade` Table — Per-Ticker DuckDB Tables
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-004
+- datasets_seen: stockmarket
+
+Failure pattern:
+- `query_duckdb("stocktrade_database", "SELECT * FROM stock_trade ...")` returns "Table does not exist" error.
+- Agent gets 0 trace steps on queries involving DuckDB price data.
+- SQLite queries fail with "no such column: ticker" or "no such column: exchange".
+
+Root cause:
+- DuckDB has 2,753 individual tables named after ticker symbols (e.g., `AAPL`, `GOOG`), NOT a single `stock_trade` table.
+- SQLite `stockinfo` table uses column names with spaces: `Symbol` (not `ticker`), `Listing Exchange` (not `exchange`), `Company Description` (not `description`).
+
+Correct approach for DuckDB:
+```sql
+-- First: check available tables
+SHOW TABLES;
+
+-- Then query individual ticker tables:
+SELECT "Adj Close" FROM "AAPL" WHERE "Date" >= '2020-01-01'
+```
+
+Correct approach for SQLite:
+```sql
+SELECT Symbol, "Listing Exchange", "Market Category", "Company Description", ETF, "Financial Status"
+FROM stockinfo
+WHERE ETF = 'Y' AND "Listing Exchange" = 'P'
+```
+
+Correct pattern for multi-ticker queries:
+1. SQLite: get qualifying `Symbol` list
+2. DuckDB: for each ticker, query `FROM "TICKER"` individually
+3. Aggregate results in Python
+
+Verification note:
+- Before any DuckDB query on stockmarket, run `SHOW TABLES` to confirm ticker table exists.
+
+---
+
+## Entry 056 — StockMarket: Return Company Name Not Ticker Symbol
+
+Metadata:
+- confidence: high
+- last_verified_run_id: 2026-04-18-004
+- datasets_seen: stockmarket
+
+Failure pattern:
+- Final answer contains ticker symbols like `APEX, 23781...` instead of `Apex Global Brands Inc`.
+- Validator reports: "Name not found within 5 edits: 'Apex Global Brands Inc'"
+
+Root cause:
+- After computing rankings in DuckDB, agent returns the ticker symbol directly instead of the company name.
+- Company name is in `stockinfo."Company Description"` column in SQLite.
+
+Correct approach:
+1. Compute metric rankings using DuckDB ticker tables
+2. Collect winning ticker symbols
+3. Join back to SQLite: `SELECT Symbol, "Company Description" FROM stockinfo WHERE Symbol IN (...)`
+4. Use `"Company Description"` value as the final company name in the answer
+
+Verification note:
+- Final answer must not contain ticker symbols when question asks for "company names".
+
+---
+
 ## Template
 
 Metadata:

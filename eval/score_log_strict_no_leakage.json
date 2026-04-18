@@ -13,201 +13,10 @@
       {
         "query_id": "query1",
         "question": "Considering only the latest release versions for each distinct NPM package, which packages are the top 5 most popular based on the Github star number, as well as their versions?",
-        "agent_answer": "@ecomplus/storefront-twbs, 7.3.6\n@ecomplus/widget-product, 1.0.0-next.2\n@duhd4h/uikit, 1.0.9\n@ecomplus/storefront-app, 2.0.0-next.2\n@donews/nestjs-tracing, 0.9.3",
-        "query_trace": [
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT System, Name, Version, ProjectName FROM project_packageversion WHERE System = 'NPM' LIMIT 10",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 10,
-            "preview": "[{'System': 'NPM', 'Name': '@dms/io', 'Version': '0.9.0', 'ProjectName': 'dataminingsupply/dms-io'}, {'System': 'NPM', 'Name': '@dvo/fc', 'Version': '0.0.4', 'ProjectName': 'isacvale/fc'}, {'System': 'NPM', 'Name': '@djie/ui', 'Version': '1.0.17', 'ProjectName': 'laihaojie/jie'}, {'System': 'NPM', 'Name': '@djie/ui', 'Version': '1.0.16', 'ProjectName': 'laihaojie/jie'}, {'System': 'NPM', 'Name': '"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT System, Name, Version, Licenses FROM packageinfo WHERE System = 'NPM' LIMIT 10",
-              "db_name": "package_database"
-            },
-            "success": true,
-            "rows": 10,
-            "preview": "[{'System': 'NPM', 'Name': '@ecl/twig-component-carousel', 'Version': '3.11.1', 'Licenses': '[\\n  \"EUPL-1.2\"\\n]'}, {'System': 'NPM', 'Name': '@douganderson444/panzoom-node', 'Version': '1.1.5', 'Licenses': '[]'}, {'System': 'NPM', 'Name': '@douganderson444/panzoom-node', 'Version': '1.1.1', 'Licenses': '[]'}, {'System': 'NPM', 'Name': '@dreamworld/dw-select', 'Version': '3.1.2-fix-double-click-iss"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT System, Name, Version, ProjectName FROM project_packageversion WHERE System = 'NPM'",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 597602,
-            "preview": "[{'System': 'NPM', 'Name': '@dms/io', 'Version': '0.9.0', 'ProjectName': 'dataminingsupply/dms-io'}, {'System': 'NPM', 'Name': '@dvo/fc', 'Version': '0.0.4', 'ProjectName': 'isacvale/fc'}, {'System': 'NPM', 'Name': '@djie/ui', 'Version': '1.0.17', 'ProjectName': 'laihaojie/jie'}, {'System': 'NPM', 'Name': '@djie/ui', 'Version': '1.0.16', 'ProjectName': 'laihaojie/jie'}, {'System': 'NPM', 'Name': '"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "db_name": "package_database",
-              "sql": "SELECT System, Name, Version, Licenses FROM packageinfo WHERE System = 'NPM'"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'System': 'NPM', 'Name': '@ecl/twig-component-carousel', 'Version': '3.11.1', 'Licenses': '[\\n  \"EUPL-1.2\"\\n]'}, {'System': 'NPM', 'Name': '@douganderson444/panzoom-node', 'Version': '1.1.5', 'Licenses': '[]'}, {'System': 'NPM', 'Name': '@douganderson444/panzoom-node', 'Version': '1.1.1', 'Licenses': '[]'}, {'System': 'NPM', 'Name': '@dreamworld/dw-select', 'Version': '3.1.2-fix-double-click-iss"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT ppv.Name, ppv.Version, pi.Project_Information FROM project_packageversion ppv JOIN project_info pi ON ppv.ProjectName = substr(pi.Project_Information, 1, instr(pi.Project_Information, '/') - 1) || '/' || substr(pi.Project_Information, instr(pi.Project_Information, '/') + 1, instr(pi.Project_Information, ' ') - instr(pi.Project_Information, '/') - 1) WHERE ppv.System = 'NPM' LIMIT 5"
-            },
-            "success": true,
-            "rows": 0,
-            "preview": "[]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT ppv.Name, ppv.Version, pi.Project_Information FROM project_packageversion ppv JOIN project_info pi ON ppv.ProjectName = pi.Project_Information WHERE ppv.System = 'NPM' LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 0,
-            "preview": "[]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT DISTINCT ProjectName FROM project_packageversion WHERE System = 'NPM' LIMIT 5"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'ProjectName': 'felixge/node-delayed-stream'}, {'ProjectName': 'epoberezkin/fast-deep-equal'}, {'ProjectName': 'harthur/color-string'}, {'ProjectName': 'ben-eb/postcss-svgo'}, {'ProjectName': 'ai/browserslist'}]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT DISTINCT ProjectName FROM project_packageversion WHERE System = 'NPM'",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 8381,
-            "preview": "[{'ProjectName': 'felixge/node-delayed-stream'}, {'ProjectName': 'epoberezkin/fast-deep-equal'}, {'ProjectName': 'harthur/color-string'}, {'ProjectName': 'ben-eb/postcss-svgo'}, {'ProjectName': 'ai/browserslist'}, {'ProjectName': 'pillarjs/finalhandler'}, {'ProjectName': 'webpack/style-loader'}, {'ProjectName': 'analog-nico/stealthy-require'}, {'ProjectName': 'meryn/performance-now'}, {'ProjectNam"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT Name, Version, COUNT(*) AS count FROM project_packageversion WHERE System = 'NPM' GROUP BY Name, Version ORDER BY count DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@dxatscale/sfpowerscripts', 'Version': '0.0.15-beta.0', 'count': 4}, {'Name': '@dxatscale/sfpowerscripts', 'Version': '0.7.0', 'count': 4}, {'Name': '@dxatscale/sfpowerscripts.core', 'Version': '31.0.2', 'count': 4}, {'Name': '@dxatscale/sfpowerscripts', 'Version': '20.15.0', 'count': 4}, {'Name': '@dxc-technology/halstack-react', 'Version': '0.0.0-4b1188a', 'count': 4}]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT Name, MAX(Version) AS latest_version FROM project_packageversion WHERE System = 'NPM' GROUP BY Name ORDER BY COUNT(*) DESC LIMIT 5"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@dxos/credentials', 'latest_version': '2.33.9-dev.f754ba43'}, {'Name': '@draftbit/ui', 'latest_version': '48.3.3'}, {'Name': '@dxos/client', 'latest_version': '2.9.0'}, {'Name': '@dxatscale/sfpowerscripts', 'latest_version': '9.3.9'}, {'Name': '@dxc-technology/halstack-react', 'latest_version': '9.1.0'}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT Name, Version FROM packageinfo WHERE System = 'NPM' GROUP BY Name ORDER BY Name DESC LIMIT 5",
-              "db_name": "package_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@edgi/sdk', 'Version': '0.0.2'}, {'Name': '@edgi-apps/novnc', 'Version': '1.3.0'}, {'Name': '@edgi-app/novnc', 'Version': '1.3.0-fix4'}, {'Name': '@edgeworkscreative/st-press', 'Version': '1.0.1'}, {'Name': '@edgeworkscreative/pwned-password', 'Version': '1.0.1'}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT Name, MAX(Version) AS latest_version FROM packageinfo WHERE System = 'NPM' GROUP BY Name ORDER BY Name DESC LIMIT 5",
-              "db_name": "package_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@edgi/sdk', 'latest_version': '0.0.2'}, {'Name': '@edgi-apps/novnc', 'latest_version': '1.3.0'}, {'Name': '@edgi-app/novnc', 'latest_version': '1.3.0-fix4'}, {'Name': '@edgeworkscreative/st-press', 'latest_version': '1.0.3'}, {'Name': '@edgeworkscreative/pwned-password', 'latest_version': '1.0.1'}]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT Name, MAX(Version) AS latest_version, ProjectName FROM project_packageversion WHERE System = 'NPM' GROUP BY Name, ProjectName ORDER BY COUNT(*) DESC LIMIT 5"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@dxos/client', 'latest_version': '2.9.0', 'ProjectName': 'dxos/dxos'}, {'Name': '@draftbit/ui', 'latest_version': '48.3.3', 'ProjectName': 'draftbit/react-native-jigsaw'}, {'Name': '@dxc-technology/halstack-react', 'latest_version': '9.1.0', 'ProjectName': 'dxc-technology/halstack-react'}, {'Name': '@dxos/credentials', 'latest_version': '2.33.9-dev.f754ba43', 'ProjectName': 'dxos/halo'}"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT Name, MAX(Version) AS latest_version, ProjectName FROM project_packageversion WHERE System = 'NPM' GROUP BY Name, ProjectName ORDER BY COUNT(*) DESC",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 17733,
-            "preview": "[{'Name': '@dxos/client', 'latest_version': '2.9.0', 'ProjectName': 'dxos/dxos'}, {'Name': '@draftbit/ui', 'latest_version': '48.3.3', 'ProjectName': 'draftbit/react-native-jigsaw'}, {'Name': '@dxc-technology/halstack-react', 'latest_version': '9.1.0', 'ProjectName': 'dxc-technology/halstack-react'}, {'Name': '@dxos/credentials', 'latest_version': '2.33.9-dev.f754ba43', 'ProjectName': 'dxos/halo'}"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT ppv.Name, MAX(ppv.Version) AS latest_version, COUNT(DISTINCT ppv.ProjectName) AS project_count FROM project_packageversion ppv WHERE ppv.System = 'NPM' GROUP BY ppv.Name ORDER BY project_count DESC LIMIT 5"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@ecomplus/storefront-twbs', 'latest_version': '7.3.6', 'project_count': 5}, {'Name': '@duhd4h/uikit', 'latest_version': '1.0.9', 'project_count': 4}, {'Name': '@ecomplus/widget-product', 'latest_version': '1.0.0-next.2', 'project_count': 4}, {'Name': '@ecatech/chat-widget', 'latest_version': '0.0.3', 'project_count': 4}, {'Name': '@donews/nestjs-tracing', 'latest_version': '0.9.3', 'pro"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT Name, Licenses FROM packageinfo WHERE System = 'NPM' LIMIT 5",
-              "db_name": "package_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@ecl/twig-component-carousel', 'Licenses': '[\\n  \"EUPL-1.2\"\\n]'}, {'Name': '@douganderson444/panzoom-node', 'Licenses': '[]'}, {'Name': '@douganderson444/panzoom-node', 'Licenses': '[]'}, {'Name': '@dreamworld/dw-select', 'Licenses': '[\\n  \"ISC\"\\n]'}, {'Name': '@discue/ui-components', 'Licenses': '[\\n  \"MIT\"\\n]'}]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT ppv.Name, MAX(ppv.Version) AS latest_version, COUNT(DISTINCT ppv.ProjectName) AS project_count FROM project_packageversion ppv WHERE ppv.System = 'NPM' GROUP BY ppv.Name ORDER BY project_count DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@ecomplus/storefront-twbs', 'latest_version': '7.3.6', 'project_count': 5}, {'Name': '@dolosplus/zebra-capacitor', 'latest_version': '1.0.0', 'project_count': 4}, {'Name': '@duhd4h/uikit', 'latest_version': '1.0.9', 'project_count': 4}, {'Name': '@donews/nestjs-tracing', 'latest_version': '0.9.3', 'project_count': 4}, {'Name': '@easy-express/server', 'latest_version': '1.0.9', 'project_"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT ppv.Name, MAX(ppv.Version) AS latest_version, COUNT(DISTINCT ppv.ProjectName) AS project_count FROM project_packageversion ppv WHERE ppv.System = 'NPM' GROUP BY ppv.Name ORDER BY project_count DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@ecomplus/storefront-twbs', 'latest_version': '7.3.6', 'project_count': 5}, {'Name': '@ecomplus/widget-product', 'latest_version': '1.0.0-next.2', 'project_count': 4}, {'Name': '@duhd4h/uikit', 'latest_version': '1.0.9', 'project_count': 4}, {'Name': '@ecomplus/storefront-app', 'latest_version': '2.0.0-next.2', 'project_count': 4}, {'Name': '@donews/nestjs-tracing', 'latest_version': '0"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT ppv.Name, MAX(ppv.Version) AS latest_version, COUNT(DISTINCT ppv.ProjectName) AS project_count FROM project_packageversion ppv WHERE ppv.System = 'NPM' GROUP BY ppv.Name ORDER BY project_count DESC LIMIT 5"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Name': '@ecomplus/storefront-twbs', 'latest_version': '7.3.6', 'project_count': 5}, {'Name': '@ecomplus/widget-product', 'latest_version': '1.0.0-next.2', 'project_count': 4}, {'Name': '@duhd4h/uikit', 'latest_version': '1.0.9', 'project_count': 4}, {'Name': '@ecomplus/storefront-app', 'latest_version': '2.0.0-next.2', 'project_count': 4}, {'Name': '@donews/nestjs-tracing', 'latest_version': '0"
-          }
-        ],
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 49.193,
+        "execution_time_sec": 1.106,
         "validation_message": "Missing name: @dmrvos/infrajs>0.0.6>typescript",
         "error": null,
         "error_type": null
@@ -215,291 +24,10 @@
       {
         "query_id": "query2",
         "question": "Among all NPM packages with project license 'MIT' and marked as release, which 5 projects have the highest GitHub fork count?",
-        "agent_answer": "I am unable to provide an answer. The query to DuckDB to retrieve the project information and order by the number of forks failed due to a conversion error.",
-        "query_trace": [
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT Name, Version FROM packageinfo WHERE System = 'NPM' AND Licenses LIKE '%MIT%' AND VersionInfo LIKE '%IsRelease%true%'",
-              "db_name": "package_database"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'Name': '@discue/ui-components', 'Version': '0.13.0'}, {'Name': '@dvcol/web-extension-utils', 'Version': '1.1.1'}, {'Name': '@eclipsejs/cli', 'Version': '1.0.0'}, {'Name': '@ebot7/edem-react', 'Version': '0.18.8'}, {'Name': '@e4a/irmaseal-wasm-bindings', 'Version': '0.0.1'}, {'Name': '@ebury/chameleon-components', 'Version': '0.1.46'}, {'Name': '@e-group/material-form', 'Version': '3.13.9'}, {'N"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT ProjectName FROM project_packageversion WHERE System = 'NPM'"
-            },
-            "success": true,
-            "rows": 597602,
-            "preview": "[{'ProjectName': 'dataminingsupply/dms-io'}, {'ProjectName': 'isacvale/fc'}, {'ProjectName': 'laihaojie/jie'}, {'ProjectName': 'laihaojie/jie'}, {'ProjectName': 'laihaojie/jie'}, {'ProjectName': 'laihaojie/jie'}, {'ProjectName': 'laihaojie/jie'}, {'ProjectName': 'winup/dlcs-ng'}, {'ProjectName': 'dataminingsupply/dms-cli'}, {'ProjectName': 'dataminingsupply/dms-cli'}, {'ProjectName': 'dataminingsu"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT ProjectName, Description FROM project_info",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Binder Error: Referenced column \"ProjectName\" not found in FROM clause!\nCandidate bindings: \"Project_Information\", \"Homepage\"\n\nLINE 1: SELECT ProjectName, Description FROM project_info\n               ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT Project_Information, Description FROM project_info",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 770,
-            "preview": "[{'Project_Information': 'The project lberrocal/npm-packages-template is hosted on GitHub and currently has 0 open issues, 0 stars, and 0 forks.', 'Description': 'Template for npm package library configured to be used with CI/CD'}, {'Project_Information': 'The project leaflet/leaflet on GitHub is a popular open-source library that currently has 521 open issues, 38715 stars, and 5782 forks, making "
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information = T2.ProjectName WHERE T2.System = 'NPM' LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 0,
-            "preview": "[]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Project_Information': 'The GitHub project named leviticusmb/esxx-2 currently has 0 open issues, 0 stars, and 0 forks.'}, {'Project_Information': 'The project lfujiwara/dnausp-core is hosted on GITHUB and currently has an open issues count of 0, a stars count of 0, and a forks count of 1.'}, {'Project_Information': 'The project lfujiwara/dnausp-core is hosted on GITHUB and currently has an open "
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' LIMIT 5"
-            },
-            "success": true,
-            "rows": 5,
-            "preview": "[{'Project_Information': 'The project lohfu/domp-create is hosted on GitHub and currently has 0 open issues, 0 stars, and 0 forks.'}, {'Project_Information': 'The project lohfu/domp-create is hosted on GitHub and currently has 0 open issues, 0 stars, and 0 forks.'}, {'Project_Information': 'The project lohfu/domp-create is hosted on GitHub and currently has 0 open issues, 0 stars, and 0 forks.'}, "
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), LENGTH(T1.Project_Information)) AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string 'hfu/domp-create is hosted on GitHub and currently has 0 open issues, 0 stars, and 0 forks.' to INT32\n\nLINE 1: ... WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 4) AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string 'keed' to INT32\n\nLINE 1: ... WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 4) AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string 'harb' to INT32\n\nLINE 1: ... '%MIT%' AND T1.Project_Information LIKE '%forks%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                       ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 4) AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '466,' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 5) AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '129, ' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 6) AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '1699, ' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 7) AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '1699, m' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 8) AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201, ma' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 9) AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201, mak' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(SUBSTR(T1.Project_Information, INSTR(T1.Project_Inform...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 10), ',', '') AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 maki' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 11), ',', '') AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 makin' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 12), ',', '') AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 making' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 13), ',', '') AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '1699 making ' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 14), ',', '') AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '1699 making i' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 15), ',', '') AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 making it' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 16), ',', '') AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 making it ' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 17), ',', '') AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '196 making it a ' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 18), ',', '') AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 making it a ' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 19), ',', '') AS INTEGER) DESC LIMIT 5",
-              "db_name": "project_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '196 making it a no' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 20), ',', '') AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '7201 making it a po' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "project_database",
-              "sql": "SELECT T1.Project_Information FROM project_info AS T1 INNER JOIN project_packageversion AS T2 ON T1.Project_Information LIKE '%' || T2.ProjectName || '%' WHERE T2.System = 'NPM' AND T1.Licenses LIKE '%MIT%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Project_Information, 'forks count of ') + LENGTH('forks count of '), 21), ',', '') AS INTEGER) DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Conversion Error: Could not convert string '1699 making it a pop' to INT32\n\nLINE 1: ...%' AND T1.Project_Information LIKE '%forks count of%' ORDER BY CAST(REPLACE(SUBSTR(T1.Project_Information, INSTR(T1.Projec...\n                                                                          ^"
-          }
-        ],
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 293.992,
+        "execution_time_sec": 1.038,
         "validation_message": "Missing project name: mui-org/material-ui",
         "error": null,
         "error_type": null
@@ -534,139 +62,9 @@
         "query_id": "query1",
         "question": "Among repositories that do not use Python, what proportion of their README.md files include copyright information?",
         "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
-        "query_trace": [
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT DISTINCT repo_name FROM languages WHERE language_description NOT LIKE '%Python%';",
-              "db_name": "metadata_database"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'repo_name': 'juliandunn/rackspacecloud'}, {'repo_name': 'xMarkusSpringerx/coloranalyzer'}, {'repo_name': 'michaellihs/gitlab'}, {'repo_name': 'vyorkin/xftp'}, {'repo_name': 'airatshigapov/drophunter'}, {'repo_name': 'tombruijn/chef-ruby-install'}, {'repo_name': 'SenseTecnic/stsplatform-lib-ruby'}, {'repo_name': 'procore/site-reliability-scripts'}, {'repo_name': 'tibastral/web_motion'}, {'repo_n"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM files WHERE repo_name IN (SELECT DISTINCT repo_name FROM (SELECT repo_name FROM languages WHERE language_description NOT LIKE '%Python%') ) AND path LIKE '%README.md%' AND content LIKE '%Copyright%'",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name languages does not exist!\nDid you mean \"pg_namespace\"?\n\nLINE 1: ... IN (SELECT DISTINCT repo_name FROM (SELECT repo_name FROM languages WHERE language_description NOT LIKE '%Python%...\n                                                                      ^"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT DISTINCT repo_name FROM languages WHERE language_description NOT LIKE '%Python%' LIMIT 500;",
-              "db_name": "metadata_database"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'repo_name': 'juliandunn/rackspacecloud'}, {'repo_name': 'xMarkusSpringerx/coloranalyzer'}, {'repo_name': 'michaellihs/gitlab'}, {'repo_name': 'vyorkin/xftp'}, {'repo_name': 'airatshigapov/drophunter'}, {'repo_name': 'tombruijn/chef-ruby-install'}, {'repo_name': 'SenseTecnic/stsplatform-lib-ruby'}, {'repo_name': 'procore/site-reliability-scripts'}, {'repo_name': 'tibastral/web_motion'}, {'repo_n"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM files WHERE repo_name IN (SELECT DISTINCT repo_name FROM (SELECT repo_name FROM languages WHERE language_description NOT LIKE '%Python%' LIMIT 500) ) AND path LIKE '%README.md%' AND content LIKE '%Copyright%'",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name languages does not exist!\nDid you mean \"pg_namespace\"?\n\nLINE 1: ... IN (SELECT DISTINCT repo_name FROM (SELECT repo_name FROM languages WHERE language_description NOT LIKE '%Python%...\n                                                                      ^"
-          },
-          {
-            "tool": "lookup_kb",
-            "args": {
-              "entry_id": "017"
-            },
-            "success": true,
-            "rows": null,
-            "preview": "{'success': True, 'entry': 'Entry 017', 'source': 'critical_rules.md', 'content': '## Entry 017 — Cross-DB Joins: Compute Locally, Don\\'t Fake SQL\\n\\n- confidence: high\\n- datasets_seen: bookreview, deps_dev_v1, crmarenapro\\n\\n**When:** SQL JOIN across different physical DB engines yields \"relation does not exist\" or empty results.\\n**Why:** Cross-database SQL joins are not supported — each engine"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM files WHERE path LIKE '%README.md%' AND content LIKE '%Copyright%'"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Binder Error: Referenced column \"content\" not found in FROM clause!\nCandidate bindings: \"mode\"\n\nLINE 1: ...LECT count(*) FROM files WHERE path LIKE '%README.md%' AND content LIKE '%Copyright%'\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM contents WHERE sample_path LIKE '%README.md%' AND content LIKE '%Copyright%'"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'count_star()': 19}]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM contents WHERE sample_path LIKE '%README.md%'"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'count_star()': 195}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT count(DISTINCT repo_name) FROM languages WHERE language_description NOT LIKE '%Python%'",
-              "db_name": "metadata_database"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'count(DISTINCT repo_name)': 2774729}]"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(DISTINCT sample_repo_name) FROM contents WHERE sample_path LIKE '%README.md%'",
-              "db_name": "artifacts_database"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'count(DISTINCT sample_repo_name)': 191}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "db_name": "metadata_database",
-              "sql": "SELECT DISTINCT repo_name FROM languages WHERE language_description NOT LIKE '%Python%' LIMIT 191;"
-            },
-            "success": true,
-            "rows": 191,
-            "preview": "[{'repo_name': 'juliandunn/rackspacecloud'}, {'repo_name': 'xMarkusSpringerx/coloranalyzer'}, {'repo_name': 'michaellihs/gitlab'}, {'repo_name': 'vyorkin/xftp'}, {'repo_name': 'airatshigapov/drophunter'}, {'repo_name': 'tombruijn/chef-ruby-install'}, {'repo_name': 'SenseTecnic/stsplatform-lib-ruby'}, {'repo_name': 'procore/site-reliability-scripts'}, {'repo_name': 'tibastral/web_motion'}, {'repo_n"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM contents WHERE sample_repo_name IN (SELECT DISTINCT repo_name FROM (SELECT repo_name FROM languages WHERE language_description NOT LIKE '%Python%' LIMIT 191) ) AND sample_path LIKE '%README.md%' AND content LIKE '%Copyright%'"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name languages does not exist!\nDid you mean \"pg_namespace\"?\n\nLINE 1: ... IN (SELECT DISTINCT repo_name FROM (SELECT repo_name FROM languages WHERE language_description NOT LIKE '%Python%...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM contents WHERE sample_repo_name IN (SELECT repo_name FROM repos LIMIT 191) AND sample_path LIKE '%README.md%' AND content LIKE '%Copyright%'"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name repos does not exist!\nDid you mean \"pg_constraint\"?\n\nLINE 1: ... contents WHERE sample_repo_name IN (SELECT repo_name FROM repos LIMIT 191) AND sample_path LIKE '%README.md%' AND...\n                                                                      ^"
-          }
-        ],
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 87.42,
+        "execution_time_sec": 1.125,
         "validation_message": "No value in LLM output rounds to 0.33",
         "error": null,
         "error_type": null
@@ -674,61 +72,10 @@
       {
         "query_id": "query2",
         "question": "Identify the repository in Swift language that contains the most frequently copied non-binary Swift file in the dataset, ensuring that each file is uniquely determined by its ID.",
-        "agent_answer": "naokits/my-programming-marathon, d1b6baa8d0bd3ac28e0765482e204e33340ccf8c",
-        "query_trace": [
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT repo_name, id, path FROM files WHERE path LIKE '%.swift' AND mode = 33188 LIMIT 10"
-            },
-            "success": true,
-            "rows": 10,
-            "preview": "[{'repo_name': 'ello/Moya', 'id': '03ea53e1b6edaafaf4b5cabfd8628fbdba6fe40e', 'path': 'Demo/Pods/RxSwift/RxSwift/RxSwift/ObserverType.swift'}, {'repo_name': 'ello/Moya', 'id': 'e76f713921a9d20b86a88dcee3418f1a90219caf', 'path': 'Demo/Pods/RxSwift/RxSwift/RxSwift/Observables/Implementations/Sample.swift'}, {'repo_name': 'ello/Moya', 'id': '75c9123b0b91ca99402ed40efe80d21cb6bc3f90', 'path': 'Demo/Po"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT repo_name, id, path FROM files WHERE path LIKE '%.swift' AND mode = 33188"
-            },
-            "success": true,
-            "rows": 1161,
-            "preview": "[{'repo_name': 'ello/Moya', 'id': '03ea53e1b6edaafaf4b5cabfd8628fbdba6fe40e', 'path': 'Demo/Pods/RxSwift/RxSwift/RxSwift/ObserverType.swift'}, {'repo_name': 'ello/Moya', 'id': 'e76f713921a9d20b86a88dcee3418f1a90219caf', 'path': 'Demo/Pods/RxSwift/RxSwift/RxSwift/Observables/Implementations/Sample.swift'}, {'repo_name': 'ello/Moya', 'id': '75c9123b0b91ca99402ed40efe80d21cb6bc3f90', 'path': 'Demo/Po"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT repo_name, id, COUNT(id) AS count FROM files WHERE path LIKE '%.swift' AND mode = 33188 GROUP BY id, repo_name ORDER BY count DESC LIMIT 1"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'repo_name': 'naokits/my-programming-marathon', 'id': 'd1b6baa8d0bd3ac28e0765482e204e33340ccf8c', 'count': 2}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "db_name": "metadata_database",
-              "sql": "SELECT repo_name FROM languages WHERE repo_name = 'naokits/my-programming-marathon' LIMIT 1"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'repo_name': 'naokits/my-programming-marathon'}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "db_name": "metadata_database",
-              "sql": "SELECT language_description FROM languages WHERE repo_name = 'naokits/my-programming-marathon' LIMIT 1"
-            },
-            "success": true,
-            "rows": 1,
-            "preview": "[{'language_description': 'The codebase includes: Objective-C (6,332,911 bytes), Swift (6,273,237 bytes), Shell (193,984 bytes), C (118,556 bytes), JavaScript (37,710 bytes), HTML (25,653 bytes), CSS (14,694 bytes), Ruby (11,002 bytes), DTrace (412 bytes).'}]"
-          }
-        ],
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 12.738,
+        "execution_time_sec": 1.111,
         "validation_message": "No fuzzy match found for 'swiftandroid/swift' within 3-character distance",
         "error": null,
         "error_type": null
@@ -736,151 +83,10 @@
       {
         "query_id": "query3",
         "question": "How many commit messages are found in repositories that use the Shell programming language and are licensed under Apache-2.0, where each message exists, is shorter than 1,000 characters, and does not begin with 'merge', 'update', or 'test'?",
-        "agent_answer": "I cannot answer. The DuckDB query failed due to a syntax error.",
-        "query_trace": [
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "db_name": "metadata_database",
-              "sql": "SELECT DISTINCT repo_name\nFROM languages\nWHERE language_description LIKE '%Shell%'\nINTERSECT\nSELECT DISTINCT repo_name\nFROM licenses\nWHERE license = 'apache-2.0';"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'repo_name': '0--key/lib'}, {'repo_name': '0-complexity/G8VDC'}, {'repo_name': '0-complexity/whmcs-oauth2-addon'}, {'repo_name': '001szymon/phonegap-app-desktop'}, {'repo_name': '007slm/nutz'}, {'repo_name': '00christian00/unity3d-levelup'}, {'repo_name': '00pauln00/yapio'}, {'repo_name': '00wendi00/MyProject'}, {'repo_name': '01000101/cloudify-cli'}, {'repo_name': '01022499/end-to-end'}, {'repo"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT DISTINCT repo_name\n    FROM languages\n    WHERE language_description LIKE '%Shell%'\n    INTERSECT\n    SELECT DISTINCT repo_name\n    FROM licenses\n    WHERE license = 'apache-2.0'\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name languages does not exist!\nDid you mean \"pg_namespace\"?\n\nLINE 3:     FROM languages\n                 ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT DISTINCT repo_name\n    FROM query_sqlite(\n        db_name = 'metadata_database',\n        sql = 'SELECT DISTINCT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\' INTERSECT SELECT DISTINCT repo_name FROM licenses WHERE license = \\'apache-2.0\\''\n    ).repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 5: ... FROM languages WHERE language_description LIKE \\'%Shell%\\' INTERSECT SELECT DISTINCT repo_name FROM licenses WHERE...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT repo_name FROM (\n        SELECT DISTINCT repo_name\n        FROM query_sqlite(\n            db_name = 'metadata_database',\n            sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\' INTERSECT SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\''\n        )\n    )\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 6: ... FROM languages WHERE language_description LIKE \\'%Shell%\\' INTERSECT SELECT repo_name FROM licenses WHERE license...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT repo_name FROM (\n        SELECT DISTINCT l.repo_name\n        FROM query_sqlite(\n            db_name = 'metadata_database',\n            sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\''\n        ) AS l\n        INNER JOIN query_sqlite(\n            db_name = 'metadata_database',\n            sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\''\n        ) AS lic ON l.repo_name = lic.repo_name\n    )\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 6: ... FROM languages WHERE language_description LIKE \\'%Shell%\\''\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name\n    FROM query_sqlite(\n        db_name = 'metadata_database',\n        sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\''\n    ) AS l\n    INNER JOIN query_sqlite(\n        db_name = 'metadata_database',\n        sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\''\n    ) AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 5: ... FROM languages WHERE language_description LIKE \\'%Shell%\\''\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT repo_name FROM (\n        SELECT DISTINCT repo_name FROM languages WHERE language_description LIKE '%Shell%'\n        INTERSECT\n        SELECT DISTINCT repo_name FROM licenses WHERE license = 'apache-2.0'\n    )\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name languages does not exist!\nDid you mean \"pg_namespace\"?\n\nLINE 3:         SELECT DISTINCT repo_name FROM languages WHERE language_description LIKE '%Shell%'\n                                               ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT repo_name FROM (\n        SELECT DISTINCT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'')\n        INTERSECT\n        SELECT DISTINCT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'')\n    )\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 3: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'')\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'') AS l INNER JOIN query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'') AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 2: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'') AS l INNER JOIN query_sqlite(db_name = 'metadata_database...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name FROM (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'')) AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 2: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name FROM (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'')) AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 2: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name FROM (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'')) AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 2: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name FROM (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'')) AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 2: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite...\n                                                                    ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT count(*) FROM commits WHERE repo_name IN (\n    SELECT l.repo_name FROM (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite(db_name = 'metadata_database', sql = 'SELECT repo_name FROM licenses WHERE license = \\'apache-2.0\\'')) AS lic ON l.repo_name = lic.repo_name\n) AND length(message) < 1000 AND substr(message, 1, 5) NOT IN ('merge', 'Update', 'Test');"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Parser Error: syntax error at or near \"\\\"\n\nLINE 2: ... FROM languages WHERE language_description LIKE \\'%Shell%\\'')) AS l INNER JOIN (SELECT repo_name FROM query_sqlite...\n                                                                    ^"
-          }
-        ],
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 34.703,
+        "execution_time_sec": 1.085,
         "validation_message": "Number 1077 not found in LLM output.",
         "error": null,
         "error_type": null
@@ -888,141 +94,10 @@
       {
         "query_id": "query4",
         "question": "List the repository names for the top five GitHub repositories whose main language is not Python, ordered by the highest number of commits.",
-        "agent_answer": "I cannot answer because I am unable to access the tables in the metadata_database from DuckDB.",
-        "query_trace": [
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT repo_name, language_description FROM languages",
-              "db_name": "metadata_database"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'repo_name': 'juliandunn/rackspacecloud', 'language_description': 'The codebase includes: Ruby (22,438 bytes), Shell (465 bytes).'}, {'repo_name': 'xMarkusSpringerx/coloranalyzer', 'language_description': 'This repository is mainly written in Ruby (1,897 bytes), with additional code in Shell (115 bytes).'}, {'repo_name': 'michaellihs/gitlab', 'language_description': 'The codebase includes: Ruby "
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT repo_name, COUNT(commit) AS num_commits FROM commits GROUP BY repo_name ORDER BY num_commits DESC LIMIT 10",
-              "db_name": "artifacts_database"
-            },
-            "success": true,
-            "rows": 6,
-            "preview": "[{'repo_name': 'torvalds/linux', 'num_commits': 16061}, {'repo_name': 'apple/swift', 'num_commits': 1051}, {'repo_name': 'twbs/bootstrap', 'num_commits': 340}, {'repo_name': 'Microsoft/vscode', 'num_commits': 190}, {'repo_name': 'facebook/react', 'num_commits': 178}, {'repo_name': 'tensorflow/tensorflow', 'num_commits': 156}]"
-          },
-          {
-            "tool": "query_sqlite",
-            "args": {
-              "sql": "SELECT DISTINCT repo_name FROM languages WHERE language_description NOT LIKE '%Python%' LIMIT 10",
-              "db_name": "metadata_database"
-            },
-            "success": true,
-            "rows": 10,
-            "preview": "[{'repo_name': 'juliandunn/rackspacecloud'}, {'repo_name': 'xMarkusSpringerx/coloranalyzer'}, {'repo_name': 'michaellihs/gitlab'}, {'repo_name': 'vyorkin/xftp'}, {'repo_name': 'airatshigapov/drophunter'}, {'repo_name': 'tombruijn/chef-ruby-install'}, {'repo_name': 'SenseTecnic/stsplatform-lib-ruby'}, {'repo_name': 'procore/site-reliability-scripts'}, {'repo_name': 'tibastral/web_motion'}, {'repo_n"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT c.repo_name, COUNT(c.commit) AS num_commits FROM commits c JOIN (SELECT DISTINCT repo_name FROM metadata_database.languages WHERE language_description NOT LIKE '%Python%') l ON c.repo_name = l.repo_name GROUP BY c.repo_name ORDER BY num_commits DESC LIMIT 5",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.languages\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ...ommits FROM commits c JOIN (SELECT DISTINCT repo_name FROM metadata_database.languages WHERE language_description NOT...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT c.repo_name, COUNT(c.commit) AS num_commits FROM commits c JOIN (SELECT DISTINCT repo_name FROM  languages WHERE language_description NOT LIKE '%Python%') l ON c.repo_name = l.repo_name GROUP BY c.repo_name ORDER BY num_commits DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name languages does not exist!\nDid you mean \"pg_namespace\"?\n\nLINE 1: ...mmits FROM commits c JOIN (SELECT DISTINCT repo_name FROM  languages WHERE language_description NOT LIKE '%Python%...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT c.repo_name, COUNT(c.commit) AS num_commits FROM commits c WHERE c.repo_name IN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metadata_database.languages WHERE language_description LIKE '%Python%') GROUP BY c.repo_name ORDER BY num_commits DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.repos\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ... FROM commits c WHERE c.repo_name IN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metada...\n                                                                       ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT c.repo_name, COUNT(c.commit) AS num_commits FROM commits c WHERE c.repo_name IN (SELECT repo_name FROM repos EXCEPT SELECT repo_name FROM languages WHERE language_description LIKE '%Python%') GROUP BY c.repo_name ORDER BY num_commits DESC LIMIT 5",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name repos does not exist!\nDid you mean \"pg_constraint\"?\n\nLINE 1: ... FROM commits c WHERE c.repo_name IN (SELECT repo_name FROM repos EXCEPT SELECT repo_name FROM languages WHERE language...\n                                                                       ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT T1.repo_name, count(T1.commit) AS num_commits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metadata_database.languages WHERE language_description LIKE '%Python%') AS T2 ON T1.repo_name = T2.repo_name GROUP BY T1.repo_name ORDER BY num_commits DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.repos\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ...mmits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metada...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT T1.repo_name, count(T1.commit) AS num_commits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM repos EXCEPT SELECT repo_name FROM languages WHERE language_description LIKE '%Python%') AS T2 ON T1.repo_name = T2.repo_name GROUP BY T1.repo_name ORDER BY num_commits DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name repos does not exist!\nDid you mean \"pg_constraint\"?\n\nLINE 1: ...mmits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM repos EXCEPT SELECT repo_name FROM languages WHERE language...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "artifacts_database",
-              "sql": "SELECT T1.repo_name, count(T1.commit) AS num_commits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metadata_database.languages WHERE language_description LIKE '%Python%') AS T2 ON T1.repo_name = T2.repo_name GROUP BY T1.repo_name ORDER BY num_commits DESC LIMIT 5"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.repos\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ...mmits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metada...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.repo_name, count(T1.commit) AS num_commits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metadata_database.languages WHERE language_description LIKE '%Python%') AS T2 ON T1.repo_name = T2.repo_name GROUP BY T1.repo_name ORDER BY num_commits DESC LIMIT 5",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.repos\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ...mmits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metada...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.repo_name, count(T1.commit) AS num_commits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metadata_database.languages WHERE language_description LIKE '%Python%') AS T2 ON T1.repo_name = T2.repo_name GROUP BY T1.repo_name ORDER BY num_commits DESC LIMIT 5",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.repos\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ...mmits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metada...\n                                                                      ^"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "sql": "SELECT T1.repo_name, count(T1.commit) AS num_commits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metadata_database.languages WHERE language_description LIKE '%Python%') AS T2 ON T1.repo_name = T2.repo_name GROUP BY T1.repo_name ORDER BY num_commits DESC LIMIT 5",
-              "db_name": "artifacts_database"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"metadata_database.repos\" does not exist because schema \"metadata_database\" does not exist.\n\nLINE 1: ...mmits FROM commits AS T1 INNER JOIN (SELECT repo_name FROM metadata_database.repos EXCEPT SELECT repo_name FROM metada...\n                                                                      ^"
-          }
-        ],
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 22.458,
+        "execution_time_sec": 1.086,
         "validation_message": "Could not match: 'apple/swift'",
         "error": null,
         "error_type": null
@@ -1057,70 +132,9 @@
         "query_id": "query1",
         "question": "For LGG patients, compute the average log10-transformed expression of the IGF2 gene across different histology types. Only include patients with valid IGF2 expression values and histology annotations that are not enclosed in square brackets. Report the final average values with at least four decimal places of precision.",
         "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
-        "query_trace": [
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "molecular_database",
-              "sql": "SELECT AVG(LOG10(normalized_count)) AS avg_log10_expression, ParticipantBarcode FROM RNASeq_Expression WHERE Symbol = 'IGF2' AND normalized_count IS NOT NULL GROUP BY ParticipantBarcode"
-            },
-            "success": true,
-            "rows": 496,
-            "preview": "[{'avg_log10_expression': 2.836576642126782, 'ParticipantBarcode': 'TCGA-UD-AAC7'}, {'avg_log10_expression': 2.9870165715084167, 'ParticipantBarcode': 'TCGA-22-4593'}, {'avg_log10_expression': 5.024752401851824, 'ParticipantBarcode': 'TCGA-QR-A70R'}, {'avg_log10_expression': 4.987115451989859, 'ParticipantBarcode': 'TCGA-AF-2687'}, {'avg_log10_expression': 5.307404034756269, 'ParticipantBarcode': "
-          },
-          {
-            "tool": "query_postgres",
-            "args": {
-              "db_name": "clinical_database",
-              "sql": "SELECT patient_id, histological_type FROM clinical_info WHERE histological_type IS NOT NULL AND histological_type NOT LIKE '[%]%'"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'patient_id': '1953', 'histological_type': 'Serous Cystadenocarcinoma'}, {'patient_id': '1576', 'histological_type': 'Serous Cystadenocarcinoma'}, {'patient_id': '2408', 'histological_type': 'Serous Cystadenocarcinoma'}, {'patient_id': '2427', 'histological_type': 'Serous Cystadenocarcinoma'}, {'patient_id': '0933', 'histological_type': 'Serous Cystadenocarcinoma'}, {'patient_id': '1124', 'histo"
-          },
-          {
-            "tool": "query_postgres",
-            "args": {
-              "sql": "SELECT DISTINCT histological_type FROM clinical_info WHERE histological_type IS NOT NULL AND histological_type NOT LIKE '[%]%'",
-              "db_name": "clinical_database"
-            },
-            "success": true,
-            "rows": 152,
-            "preview": "[{'histological_type': 'Stomach  Adenocarcinoma  Diffuse Type'}, {'histological_type': 'Prostate Adenocarcinoma  Other Subtype'}, {'histological_type': 'Fibrolamellar Carcinoma'}, {'histological_type': 'Infiltrating Ductal Carcinoma'}, {'histological_type': 'Untreated primary (de novo) GBM'}, {'histological_type': 'Synovial Sarcoma - Biphasic'}, {'histological_type': 'Mucinous Adenocarcinoma of En"
-          },
-          {
-            "tool": "query_postgres",
-            "args": {
-              "sql": "SELECT patient_id, histological_type FROM clinical_info WHERE histological_type IS NOT NULL AND histological_type NOT LIKE '[%]%' AND histological_type IN ('Astrocytoma', 'Oligodendroglioma', 'Oligoastrocytoma')",
-              "db_name": "clinical_database"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'patient_id': 'A83X', 'histological_type': 'Oligodendroglioma'}, {'patient_id': 'A60K', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A4XH', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A4XE', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A4XC', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A5F0', 'histological_type': 'Oligodendroglioma'}, {'patie"
-          },
-          {
-            "tool": "query_postgres",
-            "args": {
-              "sql": "SELECT patient_id, histological_type FROM clinical_info WHERE histological_type IS NOT NULL AND histological_type NOT LIKE '[%]%' AND histological_type IN ('Astrocytoma', 'Oligodendroglioma', 'Oligoastrocytoma')",
-              "db_name": "clinical_database"
-            },
-            "success": true,
-            "rows": 500,
-            "preview": "[{'patient_id': 'A83X', 'histological_type': 'Oligodendroglioma'}, {'patient_id': 'A60K', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A4XH', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A4XE', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A4XC', 'histological_type': 'Oligoastrocytoma'}, {'patient_id': 'A5F0', 'histological_type': 'Oligodendroglioma'}, {'patie"
-          },
-          {
-            "tool": "query_duckdb",
-            "args": {
-              "db_name": "molecular_database",
-              "sql": "SELECT r.ParticipantBarcode, AVG(LOG10(r.normalized_count)) AS avg_log10_expression, c.histological_type FROM RNASeq_Expression r JOIN (SELECT patient_id, histological_type FROM clinical_database.clinical_info WHERE histological_type IS NOT NULL AND histological_type NOT LIKE '[%]%' AND histological_type IN ('Astrocytoma', 'Oligodendroglioma', 'Oligoastrocytoma')) c ON r.ParticipantBarcode = c.patient_id WHERE r.Symbol = 'IGF2' AND r.normalized_count IS NOT NULL GROUP BY r.ParticipantBarcode, c.histological_type"
-            },
-            "success": false,
-            "rows": 0,
-            "preview": "Catalog Error: Table with name \"clinical_database.clinical_info\" does not exist because schema \"clinical_database\" does not exist.\n\nLINE 1: ...pression r JOIN (SELECT patient_id, histological_type FROM clinical_database.clinical_info WHERE histological_type...\n                                                                      ^"
-          }
-        ],
+        "query_trace": [],
         "passed": false,
-        "execution_time_sec": 34.29,
+        "execution_time_sec": 1.037,
         "validation_message": "Missing histology type: 9382/3",
         "error": null,
         "error_type": null
@@ -1131,7 +145,7 @@
         "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
         "query_trace": [],
         "passed": false,
-        "execution_time_sec": 3.708,
+        "execution_time_sec": 1.005,
         "validation_message": "Not matched (fuzzy) within 3 chars: 'Infiltrating Lobular Carcinoma'",
         "error": null,
         "error_type": null
@@ -1142,7 +156,7 @@
         "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
         "query_trace": [],
         "passed": false,
-        "execution_time_sec": 1.319,
+        "execution_time_sec": 1.007,
         "validation_message": "No value in LLM output matches 305.12, 305.1, or 305",
         "error": null,
         "error_type": null
@@ -1152,6 +166,65 @@
       "harness_script": "eval/harness.py",
       "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
       "timeout_sec": 300,
+      "environment_errors": 0,
+      "timeout_errors": 0,
+      "agent_errors": 0,
+      "strict_no_leakage": "1",
+      "oracle_forge_llm_provider": "openrouter",
+      "openai_model": "gpt-4.1",
+      "openrouter_model": "google/gemini-2.0-flash-001",
+      "mcp_url_passed_to_child": true
+    }
+  },
+  {
+    "run_id": "2026-04-18-004",
+    "dataset": "PATENTS",
+    "date": "2026-04-18",
+    "total_queries": 3,
+    "passed": 0,
+    "failed": 3,
+    "pass_at_1": 0.0,
+    "agent_module": "agent.data_agent",
+    "dab_root": "/shared/oracle-forge/DataAgentBench",
+    "results": [
+      {
+        "query_id": "query1",
+        "question": "Identify the CPC technology areas with the highest exponential moving average of patent filings each year (smoothing factor 0.2), and return only the CPC group codes at level 5 whose best year is 2022.",
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.706,
+        "validation_message": "Missing CPC code: A22B",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query2",
+        "question": "Find the CPC technology areas in Germany with the highest exponential moving average of patent filings each year (smoothing factor 0.1) for patents granted in the second half of 2019. Include the full title, CPC group code, and the best year for each CPC group at level 4.",
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.686,
+        "validation_message": "Name fuzzy match failed for 'BAKING; EDIBLE DOUGHS' (best match: 'heagentcouldnotcom', distance=15)",
+        "error": null,
+        "error_type": null
+      },
+      {
+        "query_id": "query3",
+        "question": "Which assignees, excluding UNIV CALIFORNIA itself, have cited patents assigned to UNIV CALIFORNIA, and what are the titles of the primary CPC subclasses associated with these citations? Please provide the name of each citing assignee together with the full title of the CPC subclass.",
+        "agent_answer": "The agent could not complete this request due to an upstream error. Retry later.",
+        "query_trace": [],
+        "passed": false,
+        "execution_time_sec": 0.69,
+        "validation_message": "No match for: ABBOTT RYAN + DIAGNOSIS; SURGERY; IDENTIFICATION",
+        "error": null,
+        "error_type": null
+      }
+    ],
+    "methodology_notes": {
+      "harness_script": "eval/harness.py",
+      "validation": "Each query: agent subprocess → answer string → validate.py from DataAgentBench (no numeric repair layer).",
+      "timeout_sec": 240.0,
       "environment_errors": 0,
       "timeout_errors": 0,
       "agent_errors": 0,
